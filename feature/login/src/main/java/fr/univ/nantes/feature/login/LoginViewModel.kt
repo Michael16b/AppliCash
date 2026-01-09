@@ -35,7 +35,7 @@ class LoginViewModel(
                 )
                 navigate(user.username)
             } catch (e: LoginException) {
-                Log.d("LoginViewModel", "Authentication failed: ${e.message}")
+                Log.d("LoginViewModel", "Authentication failed: ${e::class.simpleName}")
                 _errorMessage.value = when (e) {
                     is LoginException.NotExistingException -> "Username does not exist"
                     is LoginException.WrongPasswordException -> "Incorrect password"
