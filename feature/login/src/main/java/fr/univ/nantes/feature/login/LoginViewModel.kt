@@ -1,12 +1,13 @@
-// kotlin
 package fr.univ.nantes.feature.login
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import fr.univ.nantes.domain.login.LoginException
 import fr.univ.nantes.domain.login.LoginUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 class LoginViewModel(
     private val loginUseCase: LoginUseCase,
@@ -25,18 +26,20 @@ class LoginViewModel(
     val clearError: () -> Unit = { _errorMessage.value = null }
 
     fun onLoginClick(navigate: (String) -> Unit) {
-        try {
-            _errorMessage.value = null
-            loginUseCase.authenticateUser(
-                username.value,
-                password.value,
-            )
-            navigate(username.value)
-        } catch (e: LoginException) {
-            Log.d("LoginViewModel", "Authentication failed: ${e.message}")
-            _errorMessage.value = when (e) {
-                is LoginException.NotExistingException -> "Username does not exist"
-                is LoginException.WrongPasswordException -> "Incorrect password"
+        viewModelScope.launch {
+            try {
+                _errorMessage.value = null
+                val user = loginUseCase.authenticateUser(
+                    username.value,
+                    password.value,
+                )
+                navigate(user.username)
+            } catch (e: LoginException) {
+                Log.d("LoginViewModel", "Authentication failed: ${e.message}")
+                _errorMessage.value = when (e) {
+                    is LoginException.NotExistingException -> "Username does not exist"
+                    is LoginException.WrongPasswordException -> "Incorrect password"
+                }
             }
         }
     }

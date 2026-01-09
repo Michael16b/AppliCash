@@ -1,22 +1,20 @@
 package fr.univ.nantes.domain.login
 
 /**
- * Représente le résultat de l'authentification d'un utilisateur.
+ * Repository interface for user authentication.
  *
- * Correspondance avec l'ancienne API :
- * - Success(name, email) remplaçait ["nom", "email"]
- * - UserNotFound remplaçait []
- * - InvalidPassword remplaçait [""]
+ * Returns a list representing authentication result:
+ * - [name, email] for successful authentication
+ * - [] (empty list) when username doesn't exist
+ * - [""] (single empty string) when password is incorrect
  */
-sealed class LoginResult {
-    data class Success(val name: String, val email: String) : LoginResult()
-    object UserNotFound : LoginResult()
-    object InvalidPassword : LoginResult()
-}
-
 interface LoginRepository {
-    // renvoie Success(nom, email) en cas de succès
-    // renvoie UserNotFound en cas de username inexistant
-    // renvoie InvalidPassword en cas de mauvais password
+    /**
+     * Attempts to authenticate a user with the given credentials.
+     *
+     * @param username The username provided by the user.
+     * @param password The password provided by the user.
+     * @return A list representing the authentication result.
+     */
     fun authenticateUser(username: String, password: String): List<String>
 }
