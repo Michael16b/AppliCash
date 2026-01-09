@@ -29,6 +29,7 @@ fun LoginScreen(
     val viewModel: LoginViewModel = koinViewModel()
     val username by viewModel.username.collectAsState(viewModel.defaultUsername)
     val password by viewModel.password.collectAsState("")
+    val errorMessage by viewModel.errorMessage.collectAsState(null)
 
     LoginScreenStateless(
         modifier = modifier,
@@ -36,7 +37,9 @@ fun LoginScreen(
         setUsername = viewModel.setUsername,
         password = password,
         setPassword = viewModel.setPassword,
-        onLogin = { viewModel.onLoginClick(navigateToHome) },
+        onLogin = { viewModel.onLoginClick { navigateToHome() } },
+        errorMessage = errorMessage,
+        clearError = viewModel.clearError,
     )
 }
 
@@ -48,6 +51,8 @@ private fun LoginScreenStateless(
     password: String,
     setPassword: (String) -> Unit,
     onLogin: () -> Unit,
+    errorMessage: String?,
+    clearError: () -> Unit,
 ) {
     Column(
         modifier = modifier,
@@ -56,17 +61,24 @@ private fun LoginScreenStateless(
     ) {
         OutlinedTextField(
             value = username,
-            onValueChange = { setUsername(it) },
+            onValueChange = { 
+                setUsername(it)
+                clearError()
+            },
             label = { Text("Username") },
             colors =
                 OutlinedTextFieldDefaults.colors().copy(
                     focusedTextColor = Purple40,
                     unfocusedTextColor = Purple40,
                 ),
+            isError = errorMessage != null,
         )
         OutlinedTextField(
             value = password,
-            onValueChange = { setPassword(it) },
+            onValueChange = { 
+                setPassword(it)
+                clearError()
+            },
             label = { Text("Password") },
             colors =
                 OutlinedTextFieldDefaults.colors().copy(
@@ -74,7 +86,15 @@ private fun LoginScreenStateless(
                     unfocusedTextColor = Purple40,
                 ),
             visualTransformation = PasswordVisualTransformation(),
+            isError = errorMessage != null,
         )
+
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.error,
+            )
+        }
 
         Button(onClick = {
             Log.d(
@@ -102,6 +122,8 @@ fun LoginScreenPreview() {
             setPassword = {},
             onLogin = { },
             modifier = Modifier.fillMaxSize(),
+            errorMessage = null,
+            clearError = {},
         )
     }
 }
