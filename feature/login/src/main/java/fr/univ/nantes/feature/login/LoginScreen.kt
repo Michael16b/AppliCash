@@ -37,7 +37,7 @@ fun LoginScreen(
         setUsername = viewModel.setUsername,
         password = password,
         setPassword = viewModel.setPassword,
-        onLogin = { viewModel.onLoginClick { navigateToHome() } },
+        onLogin = { viewModel.onLoginClick { navigateToHome(username) } },
         errorMessage = errorMessage,
         clearError = viewModel.clearError,
     )

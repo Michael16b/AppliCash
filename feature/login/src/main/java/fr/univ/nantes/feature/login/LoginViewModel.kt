@@ -20,14 +20,14 @@ class LoginViewModel(
 
     val clearError: () -> Unit = { errorMessage.value = null }
 
-    fun onLoginClick(navigate: () -> Unit) {
+    fun onLoginClick(navigate: (String) -> Unit) {
         try {
             errorMessage.value = null
             loginUseCase.authenticateUser(
                 username.value,
                 password.value,
             )
-            navigate(user.username)
+            navigate(username.value)
         } catch (e: LoginException) {
             Log.d("LoginViewModel", "Authentication failed: $e")
             errorMessage.value = when (e) {

@@ -18,5 +18,5 @@ interface LoginRepository {
     // renvoie Success(nom, email) en cas de succès
     // renvoie UserNotFound en cas de username inexistant
     // renvoie InvalidPassword en cas de mauvais password
-    fun authenticateUser(username: String, password: String): LoginResult
+    fun authenticateUser(username: String, password: String): List<String>
 }

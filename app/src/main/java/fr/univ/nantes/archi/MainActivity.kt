@@ -13,6 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.feature.login.Login
 import fr.univ.nantes.feature.login.LoginScreen
