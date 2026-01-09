@@ -1,4 +1,4 @@
-package fr.univ.nantes.data.login
+package fr.univ.nantes.domain.login
 
 class LoginUseCase(
     private val loginRepository: LoginRepository,
@@ -7,14 +7,14 @@ class LoginUseCase(
         LoginException.WrongPasswordException::class,
         LoginException.NotExistingException::class,
     )
-    fun authenticateUser(
+    suspend fun authenticateUser(
         username: String,
         password: String,
     ): User {
         val response = loginRepository.authenticateUser(username, password)
         return when {
             response.isEmpty() -> throw LoginException.NotExistingException
-            response.count() == 1 && response.first() == "" -> throw LoginException.WrongPasswordException
+            response.size == 1 && response.first() == "" -> throw LoginException.WrongPasswordException
             else ->
                 User(
                     username = response[0],

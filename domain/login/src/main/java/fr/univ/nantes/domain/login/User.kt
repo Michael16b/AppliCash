@@ -1,4 +1,4 @@
-package fr.univ.nantes.data.login
+package fr.univ.nantes.domain.login
 
 data class User(
     val username: String,

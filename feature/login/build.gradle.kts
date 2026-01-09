@@ -39,6 +39,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":domain:login"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -61,5 +62,4 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(project(":core:ui"))
-    implementation(project(":data:login"))
 }

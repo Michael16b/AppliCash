@@ -13,6 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.feature.login.Login
 import fr.univ.nantes.feature.login.LoginScreen
@@ -41,16 +42,17 @@ private fun App() {
             startDestination = Login,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable<Home> {
+            composable<Home> { backStackEntry ->
+                val home: Home = backStackEntry.toRoute()
                 HomeScreen(
-                    name = "MIAGEs Nantes",
+                    name = home.username,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
             composable<Login> {
                 LoginScreen(
-                    navigateToHome = {
-                        navController.navigate(Home)
+                    navigateToHome = { username ->
+                        navController.navigate(Home(username = username))
                     },
                     modifier = Modifier.fillMaxSize(),
                 )
