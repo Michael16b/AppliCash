@@ -92,7 +92,7 @@ private fun LoginScreenStateless(
         if (errorMessage != null) {
             Text(
                 text = errorMessage,
-                color = androidx.compose.ui.graphics.Color.Red,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.error,
             )
         }
 
