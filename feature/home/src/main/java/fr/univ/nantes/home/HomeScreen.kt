@@ -31,7 +31,7 @@ fun Greeting(
 }
 
 @Serializable
-data class Home(val username: String = "defaultUser")
+data class Home(val username: String = "Guest")
 
 @Preview(showBackground = true)
 @Composable

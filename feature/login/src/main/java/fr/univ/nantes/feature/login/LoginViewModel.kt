@@ -23,14 +23,14 @@ class LoginViewModel(
 
     val setPassword: (String) -> Unit = { password.value = it }
 
-    fun onLoginClick(navigate: () -> Unit) {
+    fun onLoginClick(navigate: (String) -> Unit) {
         try {
             val user = loginUseCase.authenticateUser(
                 username.value,
                 password.value,
             )
             _authenticatedUser.value = user
-            navigate()
+            navigate(user.username)
         } catch (e: LoginException) {
             Log.d("LoginViewModel", "Authentication failed")
         }
