@@ -6,7 +6,8 @@ class LoginUseCase(
     @Throws(
         LoginException.WrongPasswordException::class,
         LoginException.NotExistingException::class,
-    )fun authenticateUser(
+    )
+    suspend fun authenticateUser(
         username: String,
         password: String,
     ): User {

@@ -4,7 +4,7 @@ import fr.univ.nantes.domain.login.LoginRepository
 
 class LoginRepositoryMockImpl : LoginRepository {
 
-    override fun authenticateUser(username: String, password: String): List<String> {
+    override suspend fun authenticateUser(username: String, password: String): List<String> {
         return when {
             username != "admin" -> listOf()
             password != "admin" -> listOf("")
