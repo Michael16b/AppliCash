@@ -12,20 +12,28 @@ class LoginViewModel(
     val defaultUsername: String = ""
     val username = MutableStateFlow(defaultUsername)
     val password = MutableStateFlow("")
+    val errorMessage = MutableStateFlow<String?>(null)
 
     val setUsername: (String) -> Unit = { username.value = it }
 
     val setPassword: (String) -> Unit = { password.value = it }
 
+    val clearError: () -> Unit = { errorMessage.value = null }
+
     fun onLoginClick(navigate: () -> Unit) {
         try {
+            errorMessage.value = null
             loginUseCase.authenticateUser(
                 username.value,
                 password.value,
             )
             navigate()
         } catch (e: LoginException) {
-            Log.d("LoginViewModel", "Authentication failed")
+            Log.d("LoginViewModel", "Authentication failed: $e")
+            errorMessage.value = when (e) {
+                is LoginException.NotExistingException -> "Username does not exist"
+                is LoginException.WrongPasswordException -> "Incorrect password"
+            }
         }
     }
 }
