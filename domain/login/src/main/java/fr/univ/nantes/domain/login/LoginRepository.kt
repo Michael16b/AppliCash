@@ -4,7 +4,7 @@ package fr.univ.nantes.domain.login
  * Repository interface for user authentication.
  *
  * Returns a list representing authentication result:
- * - [name, email] for successful authentication
+ * - [username, email] for successful authentication
  * - [] (empty list) when username doesn't exist
  * - [""] (single empty string) when password is incorrect
  */
