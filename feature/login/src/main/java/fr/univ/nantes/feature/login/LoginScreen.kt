@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import fr.univ.nantes.core.ui.ArchiTPTheme
+import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.Purple40
 import kotlinx.serialization.Serializable
 import org.koin.androidx.compose.koinViewModel
@@ -94,7 +94,7 @@ data object Login
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    ArchiTPTheme {
+    AppliCashTheme {
         LoginScreenStateless(
             username = "toto",
             setUsername = {},

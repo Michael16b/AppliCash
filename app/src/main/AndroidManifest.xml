@@ -11,12 +11,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:name=".MainApplication"
-        android:theme="@style/Theme.ArchiTP">
+        android:theme="@style/Theme.AppliCash">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.ArchiTP">
+            android:theme="@style/Theme.AppliCash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

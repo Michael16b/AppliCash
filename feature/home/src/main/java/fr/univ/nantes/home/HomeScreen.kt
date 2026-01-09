@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import fr.univ.nantes.core.ui.ArchiTPTheme
+import fr.univ.nantes.core.ui.AppliCashTheme
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -36,7 +36,7 @@ object Home
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    ArchiTPTheme {
+    AppliCashTheme {
         HomeScreen(name = "Android")
     }
 }

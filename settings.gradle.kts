@@ -19,7 +19,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Archi TP"
+rootProject.name = "AppliCash"
 include(":app")
 include(":feature:home")
 include(":data:login")

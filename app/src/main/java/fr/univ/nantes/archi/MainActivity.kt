@@ -13,7 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import fr.univ.nantes.core.ui.ArchiTPTheme
+import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.feature.login.Login
 import fr.univ.nantes.feature.login.LoginScreen
 import fr.univ.nantes.home.Home
@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ArchiTPTheme {
+            AppliCashTheme {
                 App()
             }
         }
@@ -62,7 +62,7 @@ private fun App() {
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    ArchiTPTheme {
+    AppliCashTheme {
         App()
     }
 }
