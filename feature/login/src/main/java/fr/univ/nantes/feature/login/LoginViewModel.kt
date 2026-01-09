@@ -25,7 +25,7 @@ class LoginViewModel(
             )
             navigate()
         } catch (e: LoginException) {
-            Log.w("LoginViewModel", "Authentication failed", e)
+            Log.d("LoginViewModel", "Authentication failed")
         }
     }
 }
