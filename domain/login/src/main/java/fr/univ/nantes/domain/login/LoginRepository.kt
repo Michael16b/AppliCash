@@ -16,5 +16,5 @@ interface LoginRepository {
      * @param password The password provided by the user.
      * @return A list representing the authentication result.
      */
-    fun authenticateUser(username: String, password: String): List<String>
+    suspend fun authenticateUser(username: String, password: String): List<String>
 }
