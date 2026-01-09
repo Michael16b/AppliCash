@@ -27,7 +27,7 @@ class LoginViewModel(
                 username.value,
                 password.value,
             )
-            navigate()
+            navigate(user.username)
         } catch (e: LoginException) {
             Log.d("LoginViewModel", "Authentication failed: $e")
             errorMessage.value = when (e) {

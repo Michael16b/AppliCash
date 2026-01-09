@@ -23,7 +23,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun LoginScreen(
-    navigateToHome: () -> Unit,
+    navigateToHome: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: LoginViewModel = koinViewModel()
