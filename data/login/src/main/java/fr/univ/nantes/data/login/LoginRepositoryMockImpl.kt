@@ -1,5 +1,7 @@
 package fr.univ.nantes.data.login
 
+import fr.univ.nantes.domain.login.LoginRepository
+
 class LoginRepositoryMockImpl : LoginRepository {
 
     override fun authenticateUser(username: String, password: String): List<String> {
