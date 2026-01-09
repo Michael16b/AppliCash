@@ -1,6 +1,8 @@
 package fr.univ.nantes.feature.login
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import fr.univ.nantes.domain.login.LoginException
 import fr.univ.nantes.domain.login.LoginUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -22,8 +24,8 @@ class LoginViewModel(
                 password.value,
             )
             navigate()
-        } catch (e: Exception) {
-            // Gérer les erreurs d'authentification ici
+        } catch (e: LoginException) {
+            Log.w("LoginViewModel", "Authentication failed", e)
         }
     }
 }

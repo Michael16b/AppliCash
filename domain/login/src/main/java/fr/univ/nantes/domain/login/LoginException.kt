@@ -1,6 +1,6 @@
 package fr.univ.nantes.domain.login
 
-sealed class LoginException : Throwable() {
+sealed class LoginException : Exception() {
     data object WrongPasswordException : LoginException()
 
     data object NotExistingException : LoginException()
