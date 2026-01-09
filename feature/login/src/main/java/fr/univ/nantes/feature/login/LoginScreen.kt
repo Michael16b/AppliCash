@@ -23,12 +23,13 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun LoginScreen(
-    navigateToHome: () -> Unit,
+    navigateToHome: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: LoginViewModel = koinViewModel()
     val username by viewModel.username.collectAsState(viewModel.defaultUsername)
     val password by viewModel.password.collectAsState("")
+    val authenticatedUser by viewModel.authenticatedUser.collectAsState()
 
     LoginScreenStateless(
         modifier = modifier,
@@ -36,7 +37,13 @@ fun LoginScreen(
         setUsername = viewModel.setUsername,
         password = password,
         setPassword = viewModel.setPassword,
-        onLogin = { viewModel.onLoginClick { navigateToHome() } },
+        onLogin = { 
+            viewModel.onLoginClick { 
+                authenticatedUser?.let { user ->
+                    navigateToHome(user.username)
+                }
+            } 
+        },
     )
 }
 

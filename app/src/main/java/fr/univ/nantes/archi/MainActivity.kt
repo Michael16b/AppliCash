@@ -41,16 +41,17 @@ private fun App() {
             startDestination = Login,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable<Home> {
+            composable<Home> { backStackEntry ->
+                val home: Home = backStackEntry.toRoute()
                 HomeScreen(
-                    name = "MIAGEs Nantes",
+                    name = home.username,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
             composable<Login> {
                 LoginScreen(
-                    navigateToHome = {
-                        navController.navigate(Home)
+                    navigateToHome = { username ->
+                        navController.navigate(Home(username = username))
                     },
                     modifier = Modifier.fillMaxSize(),
                 )
