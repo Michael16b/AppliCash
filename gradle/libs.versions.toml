@@ -13,6 +13,7 @@ appcompat = "1.7.1"
 material = "1.13.0"
 koinBom = "4.1.1"
 nav_version = "2.9.5"
+foundationLayout = "1.10.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -40,6 +41,7 @@ koin-compose = { module = "io.insert-koin:koin-androidx-compose" }
 koin-core-coroutines = { module = "io.insert-koin:koin-core-coroutines" }
 
 androidx-compose-navigation = { group = "androidx.navigation", name = "navigation-compose", version.ref = "nav_version" }
+androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
