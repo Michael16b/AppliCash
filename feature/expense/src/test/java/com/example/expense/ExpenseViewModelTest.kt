@@ -99,8 +99,10 @@ class ExpenseViewModelTest {
         val aliceBalance = balances.find { it.participant == "Alice" }
         val bobBalance = balances.find { it.participant == "Bob" }
         
-        assertEquals(30.0, aliceBalance?.amount ?: 0.0, 0.01)
-        assertEquals(-30.0, bobBalance?.amount ?: 0.0, 0.01)
+        assertNotNull(aliceBalance)
+        assertNotNull(bobBalance)
+        assertEquals(30.0, aliceBalance!!.amount, 0.01)
+        assertEquals(-30.0, bobBalance!!.amount, 0.01)
     }
 
     @Test
@@ -120,9 +122,12 @@ class ExpenseViewModelTest {
         val bobBalance = balances.find { it.participant == "Bob" }
         val charlieBalance = balances.find { it.participant == "Charlie" }
         
-        assertEquals(90.0 - share, aliceBalance?.amount ?: 0.0, 0.01)
-        assertEquals(60.0 - share, bobBalance?.amount ?: 0.0, 0.01)
-        assertEquals(-share, charlieBalance?.amount ?: 0.0, 0.01)
+        assertNotNull(aliceBalance)
+        assertNotNull(bobBalance)
+        assertNotNull(charlieBalance)
+        assertEquals(90.0 - share, aliceBalance!!.amount, 0.01)
+        assertEquals(60.0 - share, bobBalance!!.amount, 0.01)
+        assertEquals(-share, charlieBalance!!.amount, 0.01)
     }
 
     @Test
