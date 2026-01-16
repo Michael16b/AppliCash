@@ -8,7 +8,7 @@ espressoCore = "3.7.0"
 kotlinxSerializationJson = "1.7.3"
 lifecycleRuntimeKtx = "2.9.4"
 activityCompose = "1.11.0"
-composeBom = "2024.09.00"
+composeBom = "2024.06.00"
 appcompat = "1.7.1"
 material = "1.13.0"
 koinBom = "4.1.1"
@@ -40,6 +40,7 @@ koin-compose = { module = "io.insert-koin:koin-androidx-compose" }
 koin-core-coroutines = { module = "io.insert-koin:koin-core-coroutines" }
 
 androidx-compose-navigation = { group = "androidx.navigation", name = "navigation-compose", version.ref = "nav_version" }
+androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
