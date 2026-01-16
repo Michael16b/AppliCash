@@ -61,14 +61,10 @@ dependencies {
     // koin
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.android)
-    implementation(libs.koin.compose)
 
     implementation(project(":core:ui"))
     implementation(project(":feature:home"))
     implementation(project(":feature:login"))
     implementation(project(":data:login"))
     implementation(project(":domain:login"))
-    implementation(project(":feature:expense"))
-
-
 }
