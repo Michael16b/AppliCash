@@ -46,10 +46,15 @@ fun ExpenseScreen(
     val currencyCode = stringResource(R.string.currency_code)
     val currencyFormatter = remember(currencyCode) {
         val currency = java.util.Currency.getInstance(currencyCode)
-        val locale = java.util.Currency.getAvailableLocales()
-            .firstOrNull { java.util.Currency.getInstance(it).currencyCode == currencyCode }
-            ?: Locale.getDefault()
-        NumberFormat.getCurrencyInstance(locale).apply {
+        // Find a locale that matches the currency code
+        val matchingLocale = Locale.getAvailableLocales().find { locale ->
+            try {
+                java.util.Currency.getInstance(locale).currencyCode == currencyCode
+            } catch (e: IllegalArgumentException) {
+                false
+            }
+        } ?: Locale.getDefault()
+        NumberFormat.getCurrencyInstance(matchingLocale).apply {
             this.currency = currency
         }
     }
@@ -84,11 +89,15 @@ fun ExpenseScreen(
             value = amount,
             onValueChange = { input ->
                 var dotSeen = false
+                var hasDigitBeforeDot = false
                 val filtered = buildString {
                     for (c in input) {
                         when {
-                            c.isDigit() -> append(c)
-                            c == '.' && !dotSeen && isNotEmpty() -> {
+                            c.isDigit() -> {
+                                append(c)
+                                if (!dotSeen) hasDigitBeforeDot = true
+                            }
+                            c == '.' && !dotSeen && hasDigitBeforeDot -> {
                                 // Only allow dot if there's at least one digit before it
                                 append(c)
                                 dotSeen = true
