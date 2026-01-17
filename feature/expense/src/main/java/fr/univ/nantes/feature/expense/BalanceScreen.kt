@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -38,7 +37,7 @@ fun BalanceScreen(
     val balances by viewModel.balances.collectAsState()
     val reimbursements by viewModel.reimbursements.collectAsState()
     val total = state.expenses.sumOf { it.amount }
-    
+
     val currencyCode = stringResource(R.string.currency_code)
     val currencyFormatter = remember(currencyCode) {
         val currency = java.util.Currency.getInstance(currencyCode)
@@ -53,12 +52,12 @@ fun BalanceScreen(
             else -> {
                 // Fallback: find a locale that uses this currency
                 Locale.getAvailableLocales().find { locale ->
-                    locale.country.isNotEmpty() && 
-                    try {
-                        java.util.Currency.getInstance(locale).currencyCode == currencyCode
-                    } catch (e: IllegalArgumentException) {
-                        false
-                    }
+                    locale.country.isNotEmpty() &&
+                            try {
+                                java.util.Currency.getInstance(locale).currencyCode == currencyCode
+                            } catch (_: IllegalArgumentException) {
+                                false
+                            }
                 } ?: Locale.getDefault()
             }
         }
@@ -94,7 +93,7 @@ fun BalanceScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
-            
+
             items(balances) { balance ->
                 Card(
                     modifier = Modifier

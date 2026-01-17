@@ -60,8 +60,6 @@ private fun App() {
                 )
             }
             composable<Group> {
-                // Reset the ViewModel to ensure users start with a clean state
-                expenseViewModel.reset()
                 GroupScreen(
                     viewModel = expenseViewModel,
                     navigateToExpense = {
@@ -81,6 +79,8 @@ private fun App() {
                 BalanceScreen(
                     viewModel = expenseViewModel,
                     navigateToGroup = {
+                        // Reset the ViewModel to ensure users start with a clean state
+                        expenseViewModel.reset()
                         navController.navigate(Group) {
                             popUpTo<Group> { inclusive = true }
                         }
