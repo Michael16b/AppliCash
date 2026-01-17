@@ -92,7 +92,7 @@ fun ExpenseScreen(
                         }
                     }
                 }
-                // Only accept values that are empty (clearing) or contain at least one digit
+                // Only accept if empty (clearing) or has at least one digit
                 if (filtered.isEmpty() || filtered.any { it.isDigit() }) {
                     amount = filtered
                 }
