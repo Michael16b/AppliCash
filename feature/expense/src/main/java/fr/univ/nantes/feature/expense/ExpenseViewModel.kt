@@ -1,10 +1,27 @@
 package fr.univ.nantes.feature.expense
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 
+/**
+ * Represents an expense in the group.
+ * 
+ * Note: This uses Double for currency amounts. While BigDecimal would provide better
+ * precision for financial calculations, Double is acceptable for this use case as:
+ * 1. The BALANCE_THRESHOLD constant helps mitigate display issues from floating-point errors
+ * 2. The typical expense amounts won't accumulate significant precision errors
+ * 3. The simplicity of Double makes the code more readable and performant
+ * 
+ * For production financial applications, consider using BigDecimal or storing amounts
+ * as Long representing the smallest currency unit (e.g., cents).
+ */
 data class Expense(
     val description: String,
     val amount: Double,
@@ -50,12 +67,32 @@ class ExpenseViewModel : ViewModel() {
     val state: StateFlow<ExpenseState> = _state.asStateFlow()
 
     /**
+     * Derived state flow for balances, automatically recalculated when expenses or participants change.
+     */
+    val balances: StateFlow<List<Balance>> = _state.map { calculateBalances() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    /**
+     * Derived state flow for reimbursements, automatically recalculated when balances change.
+     */
+    val reimbursements: StateFlow<List<Reimbursement>> = _state.map { calculateReimbursements() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    /**
      * Sets the name of the expense group.
      * 
      * @param name The name to assign to the group
      */
     fun setGroupName(name: String) {
-        _state.value = _state.value.copy(groupName = name)
+        _state.update { it.copy(groupName = name) }
     }
 
     /**
@@ -67,9 +104,9 @@ class ExpenseViewModel : ViewModel() {
      */
     fun addParticipant(name: String) {
         if (name.isNotBlank() && !_state.value.participants.contains(name)) {
-            _state.value = _state.value.copy(
-                participants = _state.value.participants + name
-            )
+            _state.update { it.copy(
+                participants = it.participants + name
+            ) }
         }
     }
 
@@ -82,10 +119,10 @@ class ExpenseViewModel : ViewModel() {
      * @param name The name of the participant to remove
      */
     fun removeParticipant(name: String) {
-        _state.value = _state.value.copy(
-            participants = _state.value.participants - name,
-            expenses = _state.value.expenses.filter { it.paidBy != name }
-        )
+        _state.update { it.copy(
+            participants = it.participants - name,
+            expenses = it.expenses.filter { expense -> expense.paidBy != name }
+        ) }
     }
 
     /**
@@ -104,9 +141,9 @@ class ExpenseViewModel : ViewModel() {
     fun addExpense(description: String, amount: Double, paidBy: String) {
         if (description.isNotBlank() && amount > 0 && paidBy.isNotBlank() && _state.value.participants.contains(paidBy)) {
             val expense = Expense(description, amount, paidBy)
-            _state.value = _state.value.copy(
-                expenses = _state.value.expenses + expense
-            )
+            _state.update { it.copy(
+                expenses = it.expenses + expense
+            ) }
         }
     }
 
@@ -119,7 +156,7 @@ class ExpenseViewModel : ViewModel() {
      * 
      * @return A list of Balance objects, one for each participant
      */
-    fun calculateBalances(): List<Balance> {
+    private fun calculateBalances(): List<Balance> {
         val participants = _state.value.participants
         val expenses = _state.value.expenses
 
@@ -149,7 +186,7 @@ class ExpenseViewModel : ViewModel() {
      * 
      * @return A list of Reimbursement objects representing the payments needed to settle all balances
      */
-    fun calculateReimbursements(): List<Reimbursement> {
+    private fun calculateReimbursements(): List<Reimbursement> {
         val balances = calculateBalances().toMutableList()
         val reimbursements = mutableListOf<Reimbursement>()
 
@@ -185,6 +222,6 @@ class ExpenseViewModel : ViewModel() {
      * This clears the group name, all participants, and all expenses.
      */
     fun reset() {
-        _state.value = ExpenseState()
+        _state.update { ExpenseState() }
     }
 }

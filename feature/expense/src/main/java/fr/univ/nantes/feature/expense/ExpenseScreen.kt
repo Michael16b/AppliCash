@@ -44,9 +44,30 @@ fun ExpenseScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val currencyCode = stringResource(R.string.currency_code)
-    val currencyFormatter = remember {
-        NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-            currency = java.util.Currency.getInstance(currencyCode)
+    val currencyFormatter = remember(currencyCode) {
+        val currency = java.util.Currency.getInstance(currencyCode)
+        // Map common currency codes to locales for efficiency
+        val matchingLocale = when (currencyCode) {
+            "EUR" -> Locale.FRANCE
+            "USD" -> Locale.US
+            "GBP" -> Locale.UK
+            "JPY" -> Locale.JAPAN
+            "CNY" -> Locale.CHINA
+            "CAD" -> Locale.CANADA
+            else -> {
+                // Fallback: find a locale that uses this currency
+                Locale.getAvailableLocales().find { locale ->
+                    locale.country.isNotEmpty() && 
+                    try {
+                        java.util.Currency.getInstance(locale).currencyCode == currencyCode
+                    } catch (e: IllegalArgumentException) {
+                        false
+                    }
+                } ?: Locale.getDefault()
+            }
+        }
+        NumberFormat.getCurrencyInstance(matchingLocale).apply {
+            this.currency = currency
         }
     }
 
@@ -80,11 +101,16 @@ fun ExpenseScreen(
             value = amount,
             onValueChange = { input ->
                 var dotSeen = false
+                var hasDigitBeforeDot = false
                 val filtered = buildString {
                     for (c in input) {
                         when {
-                            c.isDigit() -> append(c)
-                            c == '.' && !dotSeen -> {
+                            c.isDigit() -> {
+                                append(c)
+                                if (!dotSeen) hasDigitBeforeDot = true
+                            }
+                            c == '.' && !dotSeen && hasDigitBeforeDot -> {
+                                // Only allow dot if there's at least one digit before it
                                 append(c)
                                 dotSeen = true
                             }

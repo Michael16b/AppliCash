@@ -35,14 +35,35 @@ fun BalanceScreen(
     navigateToGroup: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-    val balances = viewModel.calculateBalances()
-    val reimbursements = viewModel.calculateReimbursements()
+    val balances by viewModel.balances.collectAsState()
+    val reimbursements by viewModel.reimbursements.collectAsState()
     val total = state.expenses.sumOf { it.amount }
     
     val currencyCode = stringResource(R.string.currency_code)
-    val currencyFormatter = remember {
-        NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-            currency = java.util.Currency.getInstance(currencyCode)
+    val currencyFormatter = remember(currencyCode) {
+        val currency = java.util.Currency.getInstance(currencyCode)
+        // Map common currency codes to locales for efficiency
+        val matchingLocale = when (currencyCode) {
+            "EUR" -> Locale.FRANCE
+            "USD" -> Locale.US
+            "GBP" -> Locale.UK
+            "JPY" -> Locale.JAPAN
+            "CNY" -> Locale.CHINA
+            "CAD" -> Locale.CANADA
+            else -> {
+                // Fallback: find a locale that uses this currency
+                Locale.getAvailableLocales().find { locale ->
+                    locale.country.isNotEmpty() && 
+                    try {
+                        java.util.Currency.getInstance(locale).currencyCode == currencyCode
+                    } catch (e: IllegalArgumentException) {
+                        false
+                    }
+                } ?: Locale.getDefault()
+            }
+        }
+        NumberFormat.getCurrencyInstance(matchingLocale).apply {
+            this.currency = currency
         }
     }
 
@@ -63,14 +84,17 @@ fun BalanceScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = stringResource(R.string.balances),
-            style = MaterialTheme.typography.titleLarge
-        )
-
         LazyColumn(
             modifier = Modifier.weight(1f)
         ) {
+            item {
+                Text(
+                    text = stringResource(R.string.balances),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            
             items(balances) { balance ->
                 Card(
                     modifier = Modifier
@@ -99,18 +123,16 @@ fun BalanceScreen(
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.reimbursements),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
 
-        Text(
-            text = stringResource(R.string.reimbursements),
-            style = MaterialTheme.typography.titleLarge
-        )
-
-        LazyColumn(
-            modifier = Modifier.weight(1f)
-        ) {
             if (reimbursements.isEmpty()) {
                 item {
                     Text(

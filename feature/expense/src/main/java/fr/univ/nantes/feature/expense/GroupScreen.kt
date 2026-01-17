@@ -99,7 +99,7 @@ fun GroupScreen(
         LazyColumn(
             modifier = Modifier.weight(1f),
         ) {
-            items(state.participants, key = { it }) { participant ->
+            items(state.participants) { participant ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

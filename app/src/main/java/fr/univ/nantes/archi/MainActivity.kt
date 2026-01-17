@@ -60,6 +60,8 @@ private fun App() {
                 )
             }
             composable<Group> {
+                // Reset the ViewModel to ensure users start with a clean state
+                expenseViewModel.reset()
                 GroupScreen(
                     viewModel = expenseViewModel,
                     navigateToExpense = {
