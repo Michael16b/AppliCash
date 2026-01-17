@@ -46,14 +46,26 @@ fun ExpenseScreen(
     val currencyCode = stringResource(R.string.currency_code)
     val currencyFormatter = remember(currencyCode) {
         val currency = java.util.Currency.getInstance(currencyCode)
-        // Find a locale that matches the currency code
-        val matchingLocale = Locale.getAvailableLocales().find { locale ->
-            try {
-                java.util.Currency.getInstance(locale).currencyCode == currencyCode
-            } catch (e: IllegalArgumentException) {
-                false
+        // Map common currency codes to locales for efficiency
+        val matchingLocale = when (currencyCode) {
+            "EUR" -> Locale.FRANCE
+            "USD" -> Locale.US
+            "GBP" -> Locale.UK
+            "JPY" -> Locale.JAPAN
+            "CNY" -> Locale.CHINA
+            "CAD" -> Locale.CANADA
+            else -> {
+                // Fallback: find a locale that uses this currency
+                Locale.getAvailableLocales().find { locale ->
+                    locale.country.isNotEmpty() && 
+                    try {
+                        java.util.Currency.getInstance(locale).currencyCode == currencyCode
+                    } catch (e: IllegalArgumentException) {
+                        false
+                    }
+                } ?: Locale.getDefault()
             }
-        } ?: Locale.getDefault()
+        }
         NumberFormat.getCurrencyInstance(matchingLocale).apply {
             this.currency = currency
         }
