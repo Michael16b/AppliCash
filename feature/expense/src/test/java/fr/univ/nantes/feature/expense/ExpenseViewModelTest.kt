@@ -49,6 +49,22 @@ class ExpenseViewModelTest {
     }
 
     @Test
+    fun removeParticipant_removesExpensesPaidByParticipant() {
+        viewModel.addParticipant("Alice")
+        viewModel.addParticipant("Bob")
+        viewModel.addExpense("Dinner", 50.0, "Alice")
+        viewModel.addExpense("Lunch", 30.0, "Bob")
+        
+        assertEquals(2, viewModel.state.value.expenses.size)
+        
+        viewModel.removeParticipant("Alice")
+        
+        assertEquals(1, viewModel.state.value.expenses.size)
+        assertEquals("Lunch", viewModel.state.value.expenses[0].description)
+        assertEquals("Bob", viewModel.state.value.expenses[0].paidBy)
+    }
+
+    @Test
     fun addExpense_addsValidExpense() {
         viewModel.addParticipant("Alice")
         viewModel.addExpense("Dinner", 50.0, "Alice")

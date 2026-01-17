@@ -18,10 +18,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.serialization.Serializable
+import java.text.NumberFormat
+import java.util.Locale
 
 @Serializable
 data object BalanceRoute
@@ -35,6 +39,13 @@ fun BalanceScreen(
     val balances = viewModel.calculateBalances()
     val reimbursements = viewModel.calculateReimbursements()
     val total = state.expenses.sumOf { it.amount }
+    
+    val currencyCode = stringResource(R.string.currency_code)
+    val currencyFormatter = remember {
+        NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
+            currency = java.util.Currency.getInstance(currencyCode)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -47,14 +58,14 @@ fun BalanceScreen(
         )
 
         Text(
-            text = "Total: ${"%.2f".format(total)} EUR",
+            text = stringResource(R.string.total_format, currencyFormatter.format(total)),
             style = MaterialTheme.typography.titleMedium
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Soldes",
+            text = stringResource(R.string.balances),
             style = MaterialTheme.typography.titleLarge
         )
 
@@ -76,9 +87,9 @@ fun BalanceScreen(
                         Text(balance.participant)
                         Text(
                             text = if (balance.amount >= 0) {
-                                "+${"%.2f".format(balance.amount)} EUR"
+                                "+" + currencyFormatter.format(balance.amount)
                             } else {
-                                "${"%.2f".format(balance.amount)} EUR"
+                                currencyFormatter.format(balance.amount)
                             },
                             color = if (balance.amount >= 0) Color(0xFF4CAF50) else Color(0xFFF44336)
                         )
@@ -90,7 +101,7 @@ fun BalanceScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Remboursements",
+            text = stringResource(R.string.reimbursements),
             style = MaterialTheme.typography.titleLarge
         )
 
@@ -100,7 +111,7 @@ fun BalanceScreen(
             if (reimbursements.isEmpty()) {
                 item {
                     Text(
-                        text = "Aucun remboursement nécessaire",
+                        text = stringResource(R.string.no_reimbursement),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -112,7 +123,12 @@ fun BalanceScreen(
                             .padding(vertical = 4.dp)
                     ) {
                         Text(
-                            text = "${reimbursement.from} doit ${"%.2f".format(reimbursement.amount)} EUR à ${reimbursement.to}",
+                            text = stringResource(
+                                R.string.owes_format,
+                                reimbursement.from,
+                                currencyFormatter.format(reimbursement.amount),
+                                reimbursement.to
+                            ),
                             modifier = Modifier.padding(12.dp)
                         )
                     }
@@ -129,7 +145,7 @@ fun BalanceScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Nouveau groupe")
+            Text(stringResource(R.string.new_group_button))
         }
     }
 }

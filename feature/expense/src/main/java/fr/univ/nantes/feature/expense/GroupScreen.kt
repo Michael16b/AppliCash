@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.serialization.Serializable
 
@@ -48,7 +49,7 @@ fun GroupScreen(
             .padding(16.dp),
     ) {
         Text(
-            text = "Nouveau Groupe",
+            text = stringResource(R.string.new_group),
             style = MaterialTheme.typography.headlineMedium,
         )
 
@@ -57,7 +58,7 @@ fun GroupScreen(
         OutlinedTextField(
             value = state.groupName,
             onValueChange = { viewModel.setGroupName(it) },
-            label = { Text("Nom du groupe") },
+            label = { Text(stringResource(R.string.group_name)) },
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -70,7 +71,7 @@ fun GroupScreen(
             OutlinedTextField(
                 value = participantInput,
                 onValueChange = { participantInput = it },
-                label = { Text("Participant") },
+                label = { Text(stringResource(R.string.participant)) },
                 modifier = Modifier.weight(1f),
             )
 
@@ -84,14 +85,14 @@ fun GroupScreen(
                     }
                 },
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Ajouter un participant")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_participant_description))
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Participants (${state.participants.size})",
+            text = stringResource(R.string.participant) + " (${state.participants.size})",
             style = MaterialTheme.typography.titleMedium,
         )
 
@@ -108,7 +109,7 @@ fun GroupScreen(
                 ) {
                     Text(participant)
                     IconButton(onClick = { viewModel.removeParticipant(participant) }) {
-                        Icon(Icons.Default.Close, contentDescription = "Supprimer le participant")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.remove_participant_description))
                     }
                 }
             }
@@ -119,7 +120,7 @@ fun GroupScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = state.groupName.isNotBlank() && state.participants.size >= 2,
         ) {
-            Text("Créer le groupe")
+            Text(stringResource(R.string.continue_button))
         }
     }
 }

@@ -27,8 +27,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.serialization.Serializable
+import java.text.NumberFormat
+import java.util.Locale
 
 @Serializable
 data object ExpenseRoute
@@ -40,6 +43,12 @@ fun ExpenseScreen(
     navigateToBalance: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val currencyCode = stringResource(R.string.currency_code)
+    val currencyFormatter = remember {
+        NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
+            currency = java.util.Currency.getInstance(currencyCode)
+        }
+    }
 
     var description by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
@@ -61,7 +70,7 @@ fun ExpenseScreen(
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Description") },
+            label = { Text(stringResource(R.string.description)) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -83,9 +92,12 @@ fun ExpenseScreen(
                         }
                     }
                 }
-                amount = filtered
+                // Only accept values that are empty (clearing) or contain at least one digit
+                if (filtered.isEmpty() || filtered.any { it.isDigit() }) {
+                    amount = filtered
+                }
             },
-            label = { Text("Montant") },
+            label = { Text(stringResource(R.string.amount)) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -99,7 +111,7 @@ fun ExpenseScreen(
                 value = selectedPayer,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Payé par") },
+                label = { Text(stringResource(R.string.paid_by)) },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -135,13 +147,13 @@ fun ExpenseScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = description.isNotBlank() && amount.isNotBlank() && selectedPayer.isNotBlank()
         ) {
-            Text("Ajouter dépense")
+            Text(stringResource(R.string.add_expense))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Dépenses (${state.expenses.size})",
+            text = stringResource(R.string.expenses) + " (${state.expenses.size})",
             style = MaterialTheme.typography.titleMedium
         )
 
@@ -163,12 +175,12 @@ fun ExpenseScreen(
                         Column {
                             Text(expense.description)
                             Text(
-                                text = "Payé par ${expense.paidBy}",
+                                text = stringResource(R.string.paid_by_format, expense.paidBy),
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
                         Text(
-                            text = String.format("%.2f EUR", expense.amount),
+                            text = currencyFormatter.format(expense.amount),
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
@@ -181,7 +193,7 @@ fun ExpenseScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = state.expenses.isNotEmpty()
         ) {
-            Text("Voir le partage")
+            Text(stringResource(R.string.view_split))
         }
     }
 }
