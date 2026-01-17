@@ -1,4 +1,4 @@
-package com.example.expense
+package fr.univ.nantes.feature.expense
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

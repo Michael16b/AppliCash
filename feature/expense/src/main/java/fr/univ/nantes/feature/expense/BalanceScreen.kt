@@ -1,4 +1,4 @@
-package com.example.expense
+package fr.univ.nantes.feature.expense
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

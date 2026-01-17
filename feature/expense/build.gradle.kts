@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.expense"
+    namespace = "fr.univ.nantes.feature.expense"
     compileSdk = 36
 
     defaultConfig {

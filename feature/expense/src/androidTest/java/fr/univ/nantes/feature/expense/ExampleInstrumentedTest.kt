@@ -1,4 +1,4 @@
-package com.example.expense
+package fr.univ.nantes.feature.expense
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

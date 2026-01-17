@@ -1,6 +1,6 @@
 package fr.univ.nantes.archi.di
 
-import com.example.expense.di.featureExpenseModule
+import fr.univ.nantes.feature.expense.di.featureExpenseModule
 import fr.univ.nantes.data.login.di.loginModule
 import fr.univ.nantes.domain.login.di.loginDomainModule
 import fr.univ.nantes.feature.login.featureLoginModule
