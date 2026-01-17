@@ -26,7 +26,7 @@
     <string name="balances">Balances</string>
     <string name="reimbursements">Reimbursements</string>
     <string name="no_reimbursement">No reimbursement needed</string>
-    <string name="owes_format">%s owes %s to %s</string>
+    <string name="owes_format">%1$s owes %2$s to %3$s</string>
     <string name="new_group_button">New group</string>
     
     <!-- Currency -->
