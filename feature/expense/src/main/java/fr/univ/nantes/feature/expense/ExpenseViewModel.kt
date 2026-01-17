@@ -1,4 +1,4 @@
-package com.example.expense
+package fr.univ.nantes.feature.expense
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +29,11 @@ data class Reimbursement(
 )
 
 class ExpenseViewModel : ViewModel() {
+
+    companion object {
+        // Threshold for floating-point comparisons to handle precision issues in currency calculations
+        private const val BALANCE_THRESHOLD = 0.01
+    }
 
     private val _state = MutableStateFlow(ExpenseState())
     val state: StateFlow<ExpenseState> = _state.asStateFlow()
@@ -94,15 +99,15 @@ class ExpenseViewModel : ViewModel() {
 
             val amount = minOf(-debtor.amount, creditor.amount)
 
-            if (amount > 0.01) {
+            if (amount > BALANCE_THRESHOLD) {
                 reimbursements.add(Reimbursement(debtor.participant, creditor.participant, amount))
             }
 
             debtors[i] = debtor.copy(amount = debtor.amount + amount)
             creditors[j] = creditor.copy(amount = creditor.amount - amount)
 
-            if (debtors[i].amount >= -0.01) i++
-            if (creditors[j].amount <= 0.01) j++
+            if (debtors[i].amount >= -BALANCE_THRESHOLD) i++
+            if (creditors[j].amount <= BALANCE_THRESHOLD) j++
         }
 
         return reimbursements

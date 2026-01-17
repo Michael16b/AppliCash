@@ -1,6 +1,6 @@
-package com.example.expense.di
+package fr.univ.nantes.feature.expense.di
 
-import com.example.expense.ExpenseViewModel
+import fr.univ.nantes.feature.expense.ExpenseViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 

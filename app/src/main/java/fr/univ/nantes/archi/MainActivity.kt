@@ -14,13 +14,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.example.expense.BalanceRoute
-import com.example.expense.BalanceScreen
-import com.example.expense.ExpenseRoute
-import com.example.expense.ExpenseScreen
-import com.example.expense.ExpenseViewModel
-import com.example.expense.Group
-import com.example.expense.GroupScreen
+import fr.univ.nantes.feature.expense.BalanceRoute
+import fr.univ.nantes.feature.expense.BalanceScreen
+import fr.univ.nantes.feature.expense.ExpenseRoute
+import fr.univ.nantes.feature.expense.ExpenseScreen
+import fr.univ.nantes.feature.expense.ExpenseViewModel
+import fr.univ.nantes.feature.expense.Group
+import fr.univ.nantes.feature.expense.GroupScreen
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.feature.login.Login
 import fr.univ.nantes.feature.login.LoginScreen
@@ -53,8 +53,8 @@ private fun App() {
         ) {
             composable<Login> {
                 LoginScreen(
-                    navigateToHome = { _ ->
-                        navController.navigate(Group)
+                    navigateToHome = { username ->
+                        navController.navigate(Home(username))
                     },
                     modifier = Modifier.fillMaxSize(),
                 )

@@ -1,4 +1,4 @@
-package com.example.expense
+package fr.univ.nantes.feature.expense
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -168,7 +168,7 @@ fun ExpenseScreen(
                             )
                         }
                         Text(
-                            text = "${expense.amount} EUR",
+                            text = String.format("%.2f EUR", expense.amount),
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
