@@ -156,7 +156,7 @@ class ExpenseViewModel : ViewModel() {
      * 
      * @return A list of Balance objects, one for each participant
      */
-    private fun calculateBalances(): List<Balance> {
+    fun calculateBalances(): List<Balance> {
         val participants = _state.value.participants
         val expenses = _state.value.expenses
 
@@ -186,7 +186,7 @@ class ExpenseViewModel : ViewModel() {
      * 
      * @return A list of Reimbursement objects representing the payments needed to settle all balances
      */
-    private fun calculateReimbursements(): List<Reimbursement> {
+    fun calculateReimbursements(): List<Reimbursement> {
         val balances = calculateBalances().toMutableList()
         val reimbursements = mutableListOf<Reimbursement>()
 
