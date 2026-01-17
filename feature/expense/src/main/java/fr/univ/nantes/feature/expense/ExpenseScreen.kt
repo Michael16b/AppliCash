@@ -44,9 +44,13 @@ fun ExpenseScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val currencyCode = stringResource(R.string.currency_code)
-    val currencyFormatter = remember {
-        NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-            currency = java.util.Currency.getInstance(currencyCode)
+    val currencyFormatter = remember(currencyCode) {
+        val currency = java.util.Currency.getInstance(currencyCode)
+        val locale = java.util.Currency.getAvailableLocales()
+            .firstOrNull { java.util.Currency.getInstance(it).currencyCode == currencyCode }
+            ?: Locale.getDefault()
+        NumberFormat.getCurrencyInstance(locale).apply {
+            this.currency = currency
         }
     }
 
@@ -84,7 +88,8 @@ fun ExpenseScreen(
                     for (c in input) {
                         when {
                             c.isDigit() -> append(c)
-                            c == '.' && !dotSeen -> {
+                            c == '.' && !dotSeen && isNotEmpty() -> {
+                                // Only allow dot if there's at least one digit before it
                                 append(c)
                                 dotSeen = true
                             }
