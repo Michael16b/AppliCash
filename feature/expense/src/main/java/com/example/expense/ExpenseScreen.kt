@@ -168,7 +168,7 @@ fun ExpenseScreen(
                             )
                         }
                         Text(
-                            text = "${expense.amount} EUR",
+                            text = String.format("%.2f EUR", expense.amount),
                             style = MaterialTheme.typography.titleMedium
                         )
                     }

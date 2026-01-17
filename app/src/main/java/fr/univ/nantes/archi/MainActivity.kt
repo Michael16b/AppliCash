@@ -53,8 +53,8 @@ private fun App() {
         ) {
             composable<Login> {
                 LoginScreen(
-                    navigateToHome = { _ ->
-                        navController.navigate(Group)
+                    navigateToHome = { username ->
+                        navController.navigate(Home(username))
                     },
                     modifier = Modifier.fillMaxSize(),
                 )
