@@ -53,7 +53,7 @@ private fun App() {
         ) {
             composable<Login> {
                 LoginScreen(
-                    navigateToHome = {
+                    navigateToHome = { _ ->
                         navController.navigate(Group)
                     },
                     modifier = Modifier.fillMaxSize(),
@@ -80,7 +80,7 @@ private fun App() {
                     viewModel = expenseViewModel,
                     navigateToGroup = {
                         navController.navigate(Group) {
-                            popUpTo(Group.toString()) { inclusive = true }
+                            popUpTo<Group> { inclusive = true }
                         }
                     }
                 )

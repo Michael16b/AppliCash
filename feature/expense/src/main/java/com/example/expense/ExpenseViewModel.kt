@@ -52,7 +52,7 @@ class ExpenseViewModel : ViewModel() {
     }
 
     fun addExpense(description: String, amount: Double, paidBy: String) {
-        if (description.isNotBlank() && amount > 0 && paidBy.isNotBlank()) {
+        if (description.isNotBlank() && amount > 0 && paidBy.isNotBlank() && _state.value.participants.contains(paidBy)) {
             val expense = Expense(description, amount, paidBy)
             _state.value = _state.value.copy(
                 expenses = _state.value.expenses + expense
@@ -74,7 +74,7 @@ class ExpenseViewModel : ViewModel() {
         }
 
         return participants.map { participant ->
-            Balance(participant, paidByParticipant[participant]!! - share)
+            Balance(participant, (paidByParticipant[participant] ?: 0.0) - share)
         }
     }
 

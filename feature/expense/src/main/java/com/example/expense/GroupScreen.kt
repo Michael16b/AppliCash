@@ -119,7 +119,7 @@ fun GroupScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = state.groupName.isNotBlank() && state.participants.size >= 2,
         ) {
-            Text("Creer le groupe")
+            Text("Créer le groupe")
         }
     }
 }
