@@ -20,7 +20,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.serialization.Serializable
@@ -91,7 +90,11 @@ fun BalanceScreen(
                             } else {
                                 currencyFormatter.format(balance.amount)
                             },
-                            color = if (balance.amount >= 0) Color(0xFF4CAF50) else Color(0xFFF44336)
+                            color = if (balance.amount >= 0) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            }
                         )
                     }
                 }

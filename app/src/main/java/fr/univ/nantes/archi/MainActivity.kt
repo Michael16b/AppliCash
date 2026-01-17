@@ -89,6 +89,9 @@ private fun App() {
                 val home: Home = backStackEntry.toRoute()
                 HomeScreen(
                     name = home.username,
+                    navigateToExpense = {
+                        navController.navigate(Group)
+                    },
                     modifier = Modifier.fillMaxSize(),
                 )
             }
