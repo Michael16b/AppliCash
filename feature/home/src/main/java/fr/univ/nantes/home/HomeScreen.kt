@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
@@ -37,7 +38,7 @@ fun HomeScreen(
             onClick = navigateToExpense,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Expense Tracking")
+            Text(stringResource(R.string.expense_tracking))
         }
     }
 }
