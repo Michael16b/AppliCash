@@ -153,7 +153,7 @@ fun ExpenseScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = stringResource(R.string.expenses) + " (${state.expenses.size})",
+            text = stringResource(R.string.expenses_count, state.expenses.size),
             style = MaterialTheme.typography.titleMedium
         )
 

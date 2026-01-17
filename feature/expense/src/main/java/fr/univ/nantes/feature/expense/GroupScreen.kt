@@ -92,7 +92,7 @@ fun GroupScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = stringResource(R.string.participant) + " (${state.participants.size})",
+            text = stringResource(R.string.participants_count, state.participants.size),
             style = MaterialTheme.typography.titleMedium,
         )
 

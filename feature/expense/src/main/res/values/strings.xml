@@ -9,6 +9,7 @@
     <string name="add_participant_description">Ajouter un participant</string>
     <string name="remove_participant_description">Supprimer le participant</string>
     <string name="continue_button">Continuer</string>
+    <string name="participants_count">Participants (%d)</string>
     
     <!-- ExpenseScreen -->
     <string name="description">Description</string>
@@ -16,6 +17,7 @@
     <string name="paid_by">Payé par</string>
     <string name="add_expense">Ajouter dépense</string>
     <string name="expenses">Dépenses</string>
+    <string name="expenses_count">Dépenses (%d)</string>
     <string name="view_split">Voir le partage</string>
     <string name="paid_by_format">Payé par %s</string>
     
