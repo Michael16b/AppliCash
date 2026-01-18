@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">expense</string>
+    
+    <!-- GroupScreen -->
+    <string name="new_group">New Group</string>
+    <string name="group_name">Group Name</string>
+    <string name="participant">Participant</string>
+    <string name="add_participant">Add participant</string>
+    <string name="add_participant_description">Add participant</string>
+    <string name="remove_participant_description">Remove participant</string>
+    <string name="continue_button">Continue</string>
+    <string name="participants_count">Participants (%d)</string>
+    
+    <!-- ExpenseScreen -->
+    <string name="description">Description</string>
+    <string name="amount">Amount</string>
+    <string name="paid_by">Paid by</string>
+    <string name="add_expense">Add expense</string>
+    <string name="expenses">Expenses</string>
+    <string name="expenses_count">Expenses (%d)</string>
+    <string name="view_split">View split</string>
+    <string name="paid_by_format">Paid by %s</string>
+    
+    <!-- BalanceScreen -->
+    <string name="total_format">Total: %s</string>
+    <string name="balances">Balances</string>
+    <string name="reimbursements">Reimbursements</string>
+    <string name="no_reimbursement">No reimbursement needed</string>
+    <string name="owes_format">%1$s owes %2$s to %3$s</string>
+    <string name="new_group_button">New group</string>
+    
+    <!-- Currency -->
+    <string name="currency_code">EUR</string>
+</resources>
