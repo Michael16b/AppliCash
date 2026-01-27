@@ -7,7 +7,7 @@ insert_final_newline = true
 # rm -rf .gradle/configuration-cache
 # See: https://github.com/diffplug/spotless/issues/1924
 
-ktlint_code_style= android_studio
+ktlint_code_style = android_studio
 indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
