@@ -1,7 +1,6 @@
 package fr.univ.nantes.home
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,11 +45,11 @@ fun HomeScreen(
 @Composable
 fun Greeting(
     name: String,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Text(
         text = "Hello $name!",
-        modifier = modifier,
+        modifier = modifier
     )
 }
 

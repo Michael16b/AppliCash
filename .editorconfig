@@ -1,0 +1,34 @@
+root = true
+[*]
+insert_final_newline = true
+# Warning: if you edit these rules, you need to clear the gradle daemon ca
+# to make it work with spotless. To do so, run:
+# ./gradlew --stop
+# rm -rf .gradle/configuration-cache
+# See: https://github.com/diffplug/spotless/issues/1924
+
+ktlint_code_style= android_studio
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+end_of_line = lf
+max_line_length = 150
+ij_kotlin_allow_trailing_comma = false
+ij_kotlin_allow_trailing_comma_on_call_site = false
+ktlint_standard_multiline-expression-wrapping = disabled
+ktlint_standard_string-template-indent = disabled
+# rules that should be fix manually later
+ktlint_standard_filename = enabled
+ktlint_standard_no-wildcard-imports = enabled
+ktlint_standard_function-naming = enabled
+ktlint_standard_property-naming = enabled
+ktlint_standard_backing-property-naming = disabled
+ktlint_standard_value-parameter-comment = disabled
+ktlint_standard_no-empty-file = enabled
+ktlint_standard_max-line-length = disabled
+ktlint_standard_if-else-wrapping = enabled
+ktlint_standard_no-consecutive-comments = disabled
+ktlint_standard_function-expression-body = disabled
+ktlint_standard_function-signature = enabled
+ktlint_standard_class-signature = enabled
+ktlint_function_naming_ignore_when_annotated_with = Composable
