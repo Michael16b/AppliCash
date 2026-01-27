@@ -22,7 +22,7 @@ import kotlinx.serialization.Serializable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     name: String = "defaultUser",
-    navigateToExpense: () -> Unit = {},
+    navigateToExpense: () -> Unit = {}
 ) {
     Column(
         modifier = modifier

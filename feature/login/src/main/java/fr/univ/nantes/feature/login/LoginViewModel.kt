@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
-    private val loginUseCase: LoginUseCase,
+    private val loginUseCase: LoginUseCase
 ) : ViewModel() {
     val defaultUsername: String = ""
     val username = MutableStateFlow(defaultUsername)
@@ -31,7 +31,7 @@ class LoginViewModel(
                 _errorMessage.value = null
                 val user = loginUseCase.authenticateUser(
                     username.value,
-                    password.value,
+                    password.value
                 )
                 navigate(user.username)
             } catch (e: LoginException) {
