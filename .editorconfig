@@ -1,7 +1,7 @@
 root = true
 [*]
 insert_final_newline = true
-# Warning: if you edit these rules, you need to clear the gradle daemon ca
+# Warning: if you edit these rules, you need to clear the gradle daemon cache
 # to make it work with spotless. To do so, run:
 # ./gradlew --stop
 # rm -rf .gradle/configuration-cache
