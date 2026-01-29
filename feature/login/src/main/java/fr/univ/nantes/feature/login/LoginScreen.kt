@@ -24,7 +24,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun LoginScreen(
     navigateToHome: (String) -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val viewModel: LoginViewModel = koinViewModel()
     val username by viewModel.username.collectAsState(viewModel.defaultUsername)
@@ -39,7 +39,7 @@ fun LoginScreen(
         setPassword = viewModel.setPassword,
         onLogin = { viewModel.onLoginClick { authenticatedUsername -> navigateToHome(authenticatedUsername) } },
         errorMessage = errorMessage,
-        clearError = viewModel.clearError,
+        clearError = viewModel.clearError
     )
 }
 
@@ -52,54 +52,54 @@ private fun LoginScreenStateless(
     setPassword: (String) -> Unit,
     onLogin: () -> Unit,
     errorMessage: String?,
-    clearError: () -> Unit,
+    clearError: () -> Unit
 ) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         OutlinedTextField(
             value = username,
-            onValueChange = { 
+            onValueChange = {
                 setUsername(it)
                 clearError()
             },
             label = { Text("Username") },
             colors =
-                OutlinedTextFieldDefaults.colors().copy(
-                    focusedTextColor = Purple40,
-                    unfocusedTextColor = Purple40,
-                ),
-            isError = errorMessage != null,
+            OutlinedTextFieldDefaults.colors().copy(
+                focusedTextColor = Purple40,
+                unfocusedTextColor = Purple40
+            ),
+            isError = errorMessage != null
         )
         OutlinedTextField(
             value = password,
-            onValueChange = { 
+            onValueChange = {
                 setPassword(it)
                 clearError()
             },
             label = { Text("Password") },
             colors =
-                OutlinedTextFieldDefaults.colors().copy(
-                    focusedTextColor = Purple40,
-                    unfocusedTextColor = Purple40,
-                ),
+            OutlinedTextFieldDefaults.colors().copy(
+                focusedTextColor = Purple40,
+                unfocusedTextColor = Purple40
+            ),
             visualTransformation = PasswordVisualTransformation(),
-            isError = errorMessage != null,
+            isError = errorMessage != null
         )
 
         if (errorMessage != null) {
             Text(
                 text = errorMessage,
-                color = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.error
             )
         }
 
         Button(onClick = {
             Log.d(
                 "LoginScreen",
-                "Login button clicked with username: $username and password: $password",
+                "Login button clicked with username: $username and password: $password"
             )
             onLogin()
         }) {
@@ -123,7 +123,7 @@ fun LoginScreenPreview() {
             onLogin = { },
             modifier = Modifier.fillMaxSize(),
             errorMessage = null,
-            clearError = {},
+            clearError = {}
         )
     }
 }
