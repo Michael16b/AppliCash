@@ -9,4 +9,5 @@
     <string name="member">member</string>
     <string name="expenses">expenses</string>
     <string name="expense">expense</string>
+    <string name="profile">Profile</string>
 </resources>

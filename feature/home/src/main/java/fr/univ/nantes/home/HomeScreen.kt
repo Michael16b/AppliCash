@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Receipt
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -35,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
-import fr.univ.nantes.feature.expense.Expense
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.GroupData
 import kotlinx.serialization.Serializable
@@ -48,7 +49,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: ExpenseViewModel? = null,
     onAddGroupClick: () -> Unit = {},
-    onGroupClick: (GroupData) -> Unit = {}
+    onGroupClick: (GroupData) -> Unit = {},
+    onProfileClick: () -> Unit = {}
 ) {
     val groups = viewModel?.state?.collectAsState()?.value?.groups ?: emptyList()
 
@@ -60,7 +62,8 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .background(Brush.horizontalGradient(listOf(Color(0xFF10B981), Color(0xFF0D9488))))
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.Start
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
                     horizontalAlignment = Alignment.Start
@@ -75,6 +78,18 @@ fun HomeScreen(
                         text = stringResource(R.string.app_tagline),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White
+                    )
+                }
+
+                androidx.compose.material3.IconButton(
+                    onClick = onProfileClick,
+                    modifier = Modifier.align(Alignment.CenterVertically)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.AccountCircle,
+                        contentDescription = stringResource(R.string.profile),
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
@@ -260,15 +275,21 @@ data class Home(val username: String? = null)
 @Composable
 fun HomeScreenPreview() {
     AppliCashTheme {
-        GroupCard(
-            group = GroupData(
-                id = 1L,
-                groupName = "Group 1",
-                participants = listOf("Alice", "Bob"),
-                expenses = listOf(Expense("Expense 1", 5.0, "Alice"), Expense("Expense 2", 10.0, "Bob"))
-            ),
-            onClick = {}
+        HomeScreen(
+            viewModel = null,
+            onAddGroupClick = {},
+            onGroupClick = {},
+            onProfileClick = {}
         )
+//        GroupCard(
+//            group = GroupData(
+//                id = 1L,
+//                groupName = "Group 1",
+//                participants = listOf("Alice", "Bob"),
+//                expenses = listOf(Expense("Expense 1", 5.0, "Alice"), Expense("Expense 2", 10.0, "Bob"))
+//            ),
+//            onClick = {}
+//        )
 
     }
 }
