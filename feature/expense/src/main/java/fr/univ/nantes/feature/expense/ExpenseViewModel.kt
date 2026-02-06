@@ -2,6 +2,7 @@ package fr.univ.nantes.feature.expense
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.launch
 
 /**
  * Represents an expense in the group.
@@ -29,7 +31,7 @@ data class Expense(
 )
 
 data class GroupData(
-    val id: String = "",
+    val id: Long = 0,
     val groupName: String = "",
     val participants: List<String> = emptyList(),
     val expenses: List<Expense> = emptyList()
@@ -60,7 +62,9 @@ data class Reimbursement(
  * the group name, list of participants, and individual expenses. It provides
  * functionality to calculate balances and determine optimal reimbursements.
  */
-class ExpenseViewModel : ViewModel() {
+class ExpenseViewModel(
+    private val repository: ExpenseRepository
+) : ViewModel() {
 
     companion object {
         /**
@@ -73,6 +77,29 @@ class ExpenseViewModel : ViewModel() {
 
     private val _state = MutableStateFlow(ExpenseState())
     val state: StateFlow<ExpenseState> = _state.asStateFlow()
+
+    init {
+        // Charger les groupes depuis la base de données
+        viewModelScope.launch {
+            repository.getAllGroupsWithDetails().collect { groupsWithDetails ->
+                val groups = groupsWithDetails.map { groupWithDetails ->
+                    GroupData(
+                        id = groupWithDetails.group.id,
+                        groupName = groupWithDetails.group.groupName,
+                        participants = groupWithDetails.participants.map { it.name },
+                        expenses = groupWithDetails.expenses.map {
+                            Expense(
+                                description = it.description,
+                                amount = it.amount,
+                                paidBy = it.paidBy
+                            )
+                        }
+                    )
+                }
+                _state.update { it.copy(groups = groups) }
+            }
+        }
+    }
 
     /**
      * Derived state flow for balances, automatically recalculated when expenses or participants change.
@@ -240,18 +267,29 @@ class ExpenseViewModel : ViewModel() {
     fun saveGroup() {
         val currentGroup = _state.value
         if (currentGroup.groupName.isNotBlank() && currentGroup.participants.isNotEmpty()) {
-            val groupData = GroupData(
-                id = System.currentTimeMillis().toString(),
-                groupName = currentGroup.groupName,
-                participants = currentGroup.participants,
-                expenses = currentGroup.expenses
-            )
-            _state.update { it.copy(
-                groups = it.groups + groupData,
-                groupName = "",
-                participants = emptyList(),
-                expenses = emptyList()
-            ) }
+            viewModelScope.launch {
+                val groupId = repository.createGroup(
+                    groupName = currentGroup.groupName,
+                    participants = currentGroup.participants
+                )
+
+                // Ajouter les dépenses si présentes
+                currentGroup.expenses.forEach { expense ->
+                    repository.addExpenseToGroup(
+                        groupId = groupId,
+                        description = expense.description,
+                        amount = expense.amount,
+                        paidBy = expense.paidBy
+                    )
+                }
+
+                // Réinitialiser l'état actuel
+                _state.update { it.copy(
+                    groupName = "",
+                    participants = emptyList(),
+                    expenses = emptyList()
+                ) }
+            }
         }
     }
 

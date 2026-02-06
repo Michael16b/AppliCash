@@ -66,6 +66,7 @@ dependencies {
     implementation(project(":feature:home"))
     implementation(project(":feature:login"))
     implementation(project(":data:login"))
+    implementation(project(":data:expense"))
     implementation(project(":domain:login"))
     implementation(project(":feature:expense"))
     implementation(project(":feature:splashscreen"))

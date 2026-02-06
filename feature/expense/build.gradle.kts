@@ -62,4 +62,5 @@ dependencies {
     implementation(libs.androidx.compose.navigation)
 
     implementation(project(":core:ui"))
+    implementation(project(":data:expense"))
 }

@@ -23,6 +23,7 @@ rootProject.name = "AppliCash"
 include(":app")
 include(":feature:home")
 include(":data:login")
+include(":data:expense")
 include(":core:ui")
 include(":feature:login")
 include(":domain:login")

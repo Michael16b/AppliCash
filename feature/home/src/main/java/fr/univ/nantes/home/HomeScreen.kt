@@ -16,8 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -30,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -64,13 +65,13 @@ fun HomeScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "AppliCash",
+                        text = stringResource(R.string.app_name),
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "Partagez vos dépenses facilement",
+                        text = stringResource(R.string.app_tagline),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White
                     )
@@ -85,7 +86,7 @@ fun HomeScreen(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = "Ajouter un groupe",
+                    contentDescription = stringResource(R.string.add_group),
                     tint = Color.White
                 )
             }
@@ -117,12 +118,12 @@ fun EmptyGroupsState(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Aucun groupe créé",
+            text = stringResource(R.string.no_groups_created),
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Text(
-            text = "Appuyez sur le bouton + pour créer un groupe",
+            text = stringResource(R.string.press_plus_to_create_group),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.Gray
         )
@@ -191,13 +192,13 @@ fun GroupCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Person,
+                            imageVector = Icons.Outlined.Group,
                             contentDescription = null,
                             modifier = Modifier.padding(0.dp),
                             tint = Color.Gray
                         )
                         Text(
-                            text = "${group.participants.size} membres",
+                            text = "${group.participants.size} ${stringResource(if (group.participants.size > 1) R.string.members else R.string.member)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.Gray
                         )
@@ -208,13 +209,13 @@ fun GroupCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Edit,
+                            imageVector = Icons.Outlined.Receipt,
                             contentDescription = null,
                             modifier = Modifier.padding(0.dp),
                             tint = Color.Gray
                         )
                         Text(
-                            text = "${group.expenses.size} dépenses",
+                            text = "${group.expenses.size} ${stringResource(if (group.expenses.size > 1) R.string.expenses else R.string.expense)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.Gray
                         )
@@ -251,7 +252,7 @@ fun HomeScreenPreview() {
     AppliCashTheme {
         GroupCard(
             group = GroupData(
-                id = "1",
+                id = 1L,
                 groupName = "Group 1",
                 participants = listOf("Alice", "Bob"),
                 expenses = listOf(Expense("Expense 1", 5.0, "Alice"), Expense("Expense 2", 10.0, "Bob"))
@@ -261,4 +262,3 @@ fun HomeScreenPreview() {
 
     }
 }
-
