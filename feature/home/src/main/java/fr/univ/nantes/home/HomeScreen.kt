@@ -41,6 +41,7 @@ import fr.univ.nantes.feature.expense.GroupData
 import kotlinx.serialization.Serializable
 import java.util.Locale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @Composable
 fun HomeScreen(
@@ -157,12 +158,20 @@ fun GroupCard(
     modifier: Modifier = Modifier
 ) {
     val totalAmount = group.expenses.sumOf { it.amount }
+    val isDarkMode = isSystemInDarkTheme()
+    val cardColor = if (isDarkMode) {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    } else {
+        Color.White
+    }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(
+            containerColor = cardColor
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(8.dp)
     ) {
@@ -180,6 +189,7 @@ fun GroupCard(
                     text = group.groupName,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
@@ -195,12 +205,12 @@ fun GroupCard(
                             imageVector = Icons.Outlined.Group,
                             contentDescription = null,
                             modifier = Modifier.padding(0.dp),
-                            tint = Color.Gray
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "${group.participants.size} ${stringResource(if (group.participants.size > 1) R.string.members else R.string.member)}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -212,12 +222,12 @@ fun GroupCard(
                             imageVector = Icons.Outlined.Receipt,
                             contentDescription = null,
                             modifier = Modifier.padding(0.dp),
-                            tint = Color.Gray
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "${group.expenses.size} ${stringResource(if (group.expenses.size > 1) R.string.expenses else R.string.expense)}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

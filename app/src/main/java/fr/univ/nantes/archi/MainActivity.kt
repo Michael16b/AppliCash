@@ -111,8 +111,7 @@ private fun App() {
                         navController.navigate(Group)
                     },
                     onGroupClick = { groupData ->
-                        // Charger le groupe sélectionné dans le ViewModel
-                        // et naviguer vers ExpenseScreen
+                        expenseViewModel.loadGroup(groupData.id)
                         navController.navigate(ExpenseRoute)
                     },
                     modifier = Modifier.fillMaxSize(),

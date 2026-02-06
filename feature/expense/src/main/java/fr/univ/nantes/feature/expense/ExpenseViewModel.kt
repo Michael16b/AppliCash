@@ -122,6 +122,39 @@ class ExpenseViewModel(
         )
 
     /**
+     * Charge un groupe existant depuis Room et met à jour l'état actuel
+     * pour permettre l'ajout de dépenses à ce groupe.
+     */
+    fun loadGroup(groupId: Long) {
+        viewModelScope.launch {
+            val groupWithDetails = repository.getGroupWithDetails(groupId)
+            if (groupWithDetails != null) {
+                _state.update {
+                    it.copy(
+                        groupName = groupWithDetails.group.groupName,
+                        participants = groupWithDetails.participants.map { participant -> participant.name },
+                        expenses = groupWithDetails.expenses.map { expense ->
+                            Expense(
+                                description = expense.description,
+                                amount = expense.amount,
+                                paidBy = expense.paidBy
+                            )
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Retourne l'ID du groupe actuellement chargé (si existant dans la liste des groupes)
+     */
+    fun getCurrentGroupId(): Long? {
+        val currentGroupName = _state.value.groupName
+        return _state.value.groups.find { it.groupName == currentGroupName }?.id
+    }
+
+    /**
      * Sets the name of the expense group.
      *
      * @param name The name to assign to the group
@@ -179,6 +212,19 @@ class ExpenseViewModel(
             _state.update { it.copy(
                 expenses = it.expenses + expense
             ) }
+
+
+            val groupId = getCurrentGroupId()
+            if (groupId != null) {
+                viewModelScope.launch {
+                    repository.addExpenseToGroup(
+                        groupId = groupId,
+                        description = description,
+                        amount = amount,
+                        paidBy = paidBy
+                    )
+                }
+            }
         }
     }
 
