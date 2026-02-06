@@ -39,6 +39,7 @@ data object Group
 fun GroupScreen(
     viewModel: ExpenseViewModel,
     navigateToExpense: () -> Unit,
+    navigateToHome: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
     var participantInput by remember { mutableStateOf("") }
@@ -116,7 +117,10 @@ fun GroupScreen(
         }
 
         Button(
-            onClick = navigateToExpense,
+            onClick = {
+                viewModel.saveGroup()
+                navigateToHome()
+            },
             modifier = Modifier.fillMaxWidth(),
             enabled = state.groupName.isNotBlank() && state.participants.size >= 2,
         ) {

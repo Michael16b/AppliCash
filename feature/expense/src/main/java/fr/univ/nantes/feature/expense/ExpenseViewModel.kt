@@ -12,13 +12,13 @@ import kotlinx.coroutines.flow.SharingStarted
 
 /**
  * Represents an expense in the group.
- * 
+ *
  * Note: This uses Double for currency amounts. While BigDecimal would provide better
  * precision for financial calculations, Double is acceptable for this use case as:
  * 1. The BALANCE_THRESHOLD constant helps mitigate display issues from floating-point errors
  * 2. The typical expense amounts won't accumulate significant precision errors
  * 3. The simplicity of Double makes the code more readable and performant
- * 
+ *
  * For production financial applications, consider using BigDecimal or storing amounts
  * as Long representing the smallest currency unit (e.g., cents).
  */
@@ -28,10 +28,18 @@ data class Expense(
     val paidBy: String
 )
 
-data class ExpenseState(
+data class GroupData(
+    val id: String = "",
     val groupName: String = "",
     val participants: List<String> = emptyList(),
     val expenses: List<Expense> = emptyList()
+)
+
+data class ExpenseState(
+    val groupName: String = "",
+    val participants: List<String> = emptyList(),
+    val expenses: List<Expense> = emptyList(),
+    val groups: List<GroupData> = emptyList()
 )
 
 data class Balance(
@@ -47,7 +55,7 @@ data class Reimbursement(
 
 /**
  * ViewModel for managing group expenses and calculating balances.
- * 
+ *
  * This ViewModel maintains the state of a group expense tracker, including
  * the group name, list of participants, and individual expenses. It provides
  * functionality to calculate balances and determine optimal reimbursements.
@@ -88,7 +96,7 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Sets the name of the expense group.
-     * 
+     *
      * @param name The name to assign to the group
      */
     fun setGroupName(name: String) {
@@ -97,9 +105,9 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Adds a new participant to the group.
-     * 
+     *
      * The participant will only be added if the name is not blank and not already in the group.
-     * 
+     *
      * @param name The name of the participant to add
      */
     fun addParticipant(name: String) {
@@ -112,10 +120,10 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Removes a participant from the group.
-     * 
+     *
      * When a participant is removed, all expenses paid by that participant are also removed
      * to maintain data consistency and ensure accurate balance calculations.
-     * 
+     *
      * @param name The name of the participant to remove
      */
     fun removeParticipant(name: String) {
@@ -127,13 +135,13 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Adds a new expense to the group.
-     * 
+     *
      * The expense will only be added if:
      * - The description is not blank
      * - The amount is greater than 0
      * - The payer name is not blank
      * - The payer is a current participant in the group
-     * 
+     *
      * @param description A description of the expense
      * @param amount The amount of the expense
      * @param paidBy The name of the participant who paid for the expense
@@ -149,11 +157,11 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Calculates the balance for each participant.
-     * 
+     *
      * The balance represents how much each participant has overpaid (positive balance)
      * or underpaid (negative balance) relative to their fair share of the total expenses.
      * The fair share is calculated by dividing the total expenses equally among all participants.
-     * 
+     *
      * @return A list of Balance objects, one for each participant
      */
     fun calculateBalances(): List<Balance> {
@@ -176,14 +184,14 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Calculates optimal reimbursements to settle all balances.
-     * 
+     *
      * This method uses a greedy algorithm to minimize the number of transactions needed
      * to settle all debts within the group. It matches debtors (those who owe money) with
      * creditors (those who are owed money) to determine the most efficient payment plan.
-     * 
+     *
      * Only reimbursements above the BALANCE_THRESHOLD are included to avoid trivial transactions
      * caused by floating-point precision issues.
-     * 
+     *
      * @return A list of Reimbursement objects representing the payments needed to settle all balances
      */
     fun calculateReimbursements(): List<Reimbursement> {
@@ -218,10 +226,37 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Resets the ViewModel to its initial state.
-     * 
+     *
      * This clears the group name, all participants, and all expenses.
      */
     fun reset() {
         _state.update { ExpenseState() }
     }
+
+    /**
+     * Saves the current group as a complete group and adds it to the groups list.
+     * This clears the current working state for creating a new group.
+     */
+    fun saveGroup() {
+        val currentGroup = _state.value
+        if (currentGroup.groupName.isNotBlank() && currentGroup.participants.isNotEmpty()) {
+            val groupData = GroupData(
+                id = System.currentTimeMillis().toString(),
+                groupName = currentGroup.groupName,
+                participants = currentGroup.participants,
+                expenses = currentGroup.expenses
+            )
+            _state.update { it.copy(
+                groups = it.groups + groupData,
+                groupName = "",
+                participants = emptyList(),
+                expenses = emptyList()
+            ) }
+        }
+    }
+
+    /**
+     * Gets the list of all saved groups.
+     */
+    fun getGroups(): List<GroupData> = _state.value.groups
 }
