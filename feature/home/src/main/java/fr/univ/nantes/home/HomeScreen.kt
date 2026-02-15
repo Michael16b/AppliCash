@@ -185,6 +185,8 @@ fun GroupCard(
     }
     
     val currencyFormat = remember {
+        // TODO: Make currency configurable per group or user preference
+        // Currently hardcoded to EUR for all users
         NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
             currency = java.util.Currency.getInstance("EUR")
         }
