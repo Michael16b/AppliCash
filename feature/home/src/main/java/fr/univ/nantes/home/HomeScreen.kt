@@ -38,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
+// TODO: These imports create tight coupling between features. Consider moving GroupData
+// and ExpenseViewModel interface/state to a shared domain module to improve modularity.
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.GroupData
 import kotlinx.serialization.Serializable

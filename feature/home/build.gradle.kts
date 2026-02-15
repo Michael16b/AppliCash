@@ -57,5 +57,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(project(":core:ui"))
+    // TODO: Decouple from feature:expense by moving GroupData and shared state to a domain/shared module
+    // This creates tight coupling between features. Consider creating a shared domain module for models
+    // and exposing only minimal interfaces needed by HomeScreen.
     implementation(project(":feature:expense"))
 }
