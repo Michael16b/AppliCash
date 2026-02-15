@@ -1,18 +1,61 @@
 package fr.univ.nantes.feature.expense
 
+import fr.univ.nantes.data.expense.repository.ExpenseRepository
+import fr.univ.nantes.data.expense.model.GroupWithDetails
+import fr.univ.nantes.data.expense.entity.ExpenseGroupEntity
+import fr.univ.nantes.data.expense.entity.ParticipantEntity
+import fr.univ.nantes.data.expense.entity.ExpenseEntity
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Test
 import org.junit.Assert.*
 import org.junit.Before
+
+/**
+ * Fake repository for testing that does not interact with the database
+ */
+class FakeExpenseRepository : ExpenseRepository {
+    override fun getAllGroupsWithDetails(): Flow<List<GroupWithDetails>> {
+        return flowOf(emptyList())
+    }
+
+    override suspend fun getGroupWithDetails(groupId: Long): GroupWithDetails? {
+        return null
+    }
+
+    override suspend fun createGroup(groupName: String, participants: List<String>): Long {
+        return 1L
+    }
+
+    override suspend fun addParticipantToGroup(groupId: Long, participantName: String) {
+        // No-op for testing
+    }
+
+    override suspend fun addExpenseToGroup(
+        groupId: Long,
+        description: String,
+        amount: Double,
+        paidBy: String
+    ) {
+        // No-op for testing
+    }
+
+    override suspend fun deleteGroup(groupId: Long) {
+        // No-op for testing
+    }
+}
 
 /**
  * Unit tests for ExpenseViewModel business logic.
  */
 class ExpenseViewModelTest {
     private lateinit var viewModel: ExpenseViewModel
+    private lateinit var fakeRepository: ExpenseRepository
 
     @Before
     fun setup() {
-        viewModel = ExpenseViewModel()
+        fakeRepository = FakeExpenseRepository()
+        viewModel = ExpenseViewModel(fakeRepository)
     }
 
     @Test
