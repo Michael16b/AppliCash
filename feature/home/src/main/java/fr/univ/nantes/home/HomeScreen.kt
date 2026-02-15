@@ -3,6 +3,7 @@ package fr.univ.nantes.home
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,9 +18,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Receipt
-import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -32,21 +33,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
-// TODO: These imports create tight coupling between features. Consider moving GroupData
-// and ExpenseViewModel interface/state to a shared domain module to improve modularity.
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.GroupData
-import kotlinx.serialization.Serializable
 import java.text.NumberFormat
 import java.util.Locale
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.foundation.isSystemInDarkTheme
+import kotlinx.serialization.Serializable
 
 @Composable
 fun HomeScreen(
@@ -183,7 +181,7 @@ fun GroupCard(
     } else {
         Color.White
     }
-    
+
     val currencyFormat = remember {
         // TODO: Make currency configurable per group or user preference
         // Currently hardcoded to EUR for all users
@@ -293,15 +291,5 @@ fun HomeScreenPreview() {
             onGroupClick = {},
             onProfileClick = {}
         )
-//        GroupCard(
-//            group = GroupData(
-//                id = 1L,
-//                groupName = "Group 1",
-//                participants = listOf("Alice", "Bob"),
-//                expenses = listOf(Expense("Expense 1", 5.0, "Alice"), Expense("Expense 2", 10.0, "Bob"))
-//            ),
-//            onClick = {}
-//        )
-
     }
 }
