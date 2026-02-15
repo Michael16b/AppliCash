@@ -46,6 +46,9 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlinx.serialization.Serializable
 
+// TODO: These imports create tight coupling between features. Consider moving GroupData
+// and ExpenseViewModel interface/state to a shared domain module to improve modularity.
+
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -291,5 +294,14 @@ fun HomeScreenPreview() {
             onGroupClick = {},
             onProfileClick = {}
         )
+//        GroupCard(
+//            group = GroupData(
+//                id = 1L,
+//                groupName = "Group 1",
+//                participants = listOf("Alice", "Bob"),
+//                expenses = listOf(Expense("Expense 1", 5.0, "Alice"), Expense("Expense 2", 10.0, "Bob"))
+//            ),
+//            onClick = {}
+//        )
     }
 }
