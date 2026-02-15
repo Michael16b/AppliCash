@@ -29,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,6 +41,7 @@ import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.GroupData
 import kotlinx.serialization.Serializable
+import java.text.NumberFormat
 import java.util.Locale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -179,6 +181,12 @@ fun GroupCard(
     } else {
         Color.White
     }
+    
+    val currencyFormat = remember {
+        NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
+            currency = java.util.Currency.getInstance("EUR")
+        }
+    }
 
     Card(
         modifier = modifier
@@ -258,7 +266,7 @@ fun GroupCard(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = String.format(Locale.US, "%.2f€", totalAmount),
+                    text = currencyFormat.format(totalAmount),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF00BFA5)

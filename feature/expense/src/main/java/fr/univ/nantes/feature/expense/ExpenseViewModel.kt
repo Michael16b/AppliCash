@@ -6,6 +6,7 @@ import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -41,7 +42,8 @@ data class ExpenseState(
     val groupName: String = "",
     val participants: List<String> = emptyList(),
     val expenses: List<Expense> = emptyList(),
-    val groups: List<GroupData> = emptyList()
+    val groups: List<GroupData> = emptyList(),
+    val currentGroupId: Long? = null
 )
 
 data class Balance(
@@ -139,7 +141,8 @@ class ExpenseViewModel(
                                 amount = expense.amount,
                                 paidBy = expense.paidBy
                             )
-                        }
+                        },
+                        currentGroupId = groupId
                     )
                 }
             }
@@ -147,11 +150,10 @@ class ExpenseViewModel(
     }
 
     /**
-     * Retourne l'ID du groupe actuellement chargé (si existant dans la liste des groupes)
+     * Retourne l'ID du groupe actuellement chargé
      */
     fun getCurrentGroupId(): Long? {
-        val currentGroupName = _state.value.groupName
-        return _state.value.groups.find { it.groupName == currentGroupName }?.id
+        return _state.value.currentGroupId
     }
 
     /**
@@ -300,10 +302,13 @@ class ExpenseViewModel(
     /**
      * Resets the ViewModel to its initial state.
      *
-     * This clears the group name, all participants, and all expenses.
+     * This clears the group name, all participants, and all expenses,
+     * but preserves the list of saved groups.
      */
     fun reset() {
-        _state.update { ExpenseState() }
+        _state.update { currentState ->
+            ExpenseState().copy(groups = currentState.groups)
+        }
     }
 
     /**
@@ -333,7 +338,8 @@ class ExpenseViewModel(
                 _state.update { it.copy(
                     groupName = "",
                     participants = emptyList(),
-                    expenses = emptyList()
+                    expenses = emptyList(),
+                    currentGroupId = null
                 ) }
             }
         }
