@@ -38,7 +38,6 @@ data object Group
 @Composable
 fun GroupScreen(
     viewModel: ExpenseViewModel,
-    navigateToExpense: () -> Unit,
     navigateToHome: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()

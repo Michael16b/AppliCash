@@ -29,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,9 +38,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
+// TODO: These imports create tight coupling between features. Consider moving GroupData
+// and ExpenseViewModel interface/state to a shared domain module to improve modularity.
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.GroupData
 import kotlinx.serialization.Serializable
+import java.text.NumberFormat
 import java.util.Locale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -69,7 +73,7 @@ fun HomeScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = stringResource(R.string.app_name),
+                        text = stringResource(R.string.home_title),
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -141,7 +145,7 @@ fun EmptyGroupsState(modifier: Modifier = Modifier) {
         Text(
             text = stringResource(R.string.press_plus_to_create_group),
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -157,7 +161,7 @@ fun GroupsList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(groups) { group ->
+        items(groups, key = { it.id }) { group ->
             GroupCard(
                 group = group,
                 onClick = { onGroupClick(group) }
@@ -178,6 +182,14 @@ fun GroupCard(
         MaterialTheme.colorScheme.surfaceContainerHigh
     } else {
         Color.White
+    }
+    
+    val currencyFormat = remember {
+        // TODO: Make currency configurable per group or user preference
+        // Currently hardcoded to EUR for all users
+        NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
+            currency = java.util.Currency.getInstance("EUR")
+        }
     }
 
     Card(
@@ -223,7 +235,7 @@ fun GroupCard(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${group.participants.size} ${stringResource(if (group.participants.size > 1) R.string.members else R.string.member)}",
+                            text = "${group.participants.size} ${stringResource(if (group.participants.size != 1) R.string.members else R.string.member)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -240,7 +252,7 @@ fun GroupCard(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${group.expenses.size} ${stringResource(if (group.expenses.size > 1) R.string.expenses else R.string.expense)}",
+                            text = "${group.expenses.size} ${stringResource(if (group.expenses.size != 1) R.string.expenses else R.string.expense)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -258,7 +270,7 @@ fun GroupCard(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = String.format(Locale.US, "%.2f€", totalAmount),
+                    text = currencyFormat.format(totalAmount),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF00BFA5)

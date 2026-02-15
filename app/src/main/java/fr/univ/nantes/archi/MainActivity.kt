@@ -10,7 +10,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -35,10 +34,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Installer et masquer immédiatement le Splash Screen système
-        val splashScreen = installSplashScreen()
-        splashScreen.setKeepOnScreenCondition { false }
-
         enableEdgeToEdge()
         setContent {
             AppliCashTheme {
@@ -60,7 +55,9 @@ private fun App() {
             modifier = Modifier.padding(innerPadding),
         ) {
             composable<Splash> {
-                SplashScreen(navigateToGroup = {
+                SplashScreen(navigateNext = {
+                    // TODO: Check authentication state and route to Login if not authenticated
+                    // For now, navigating directly to Home as authentication is not implemented
                     navController.navigate(Home()) {
                         popUpTo<Splash> { inclusive = true }
                     }
@@ -79,9 +76,6 @@ private fun App() {
             composable<Group> {
                 GroupScreen(
                     viewModel = expenseViewModel,
-                    navigateToExpense = {
-                        navController.navigate(ExpenseRoute)
-                    },
                     navigateToHome = {
                         navController.navigate(Home()) {
                             popUpTo<Group> { inclusive = true }
@@ -109,7 +103,7 @@ private fun App() {
                     }
                 )
             }
-            composable<Home> { backStackEntry ->
+            composable<Home> {
                 HomeScreen(
                     viewModel = expenseViewModel,
                     onAddGroupClick = {
