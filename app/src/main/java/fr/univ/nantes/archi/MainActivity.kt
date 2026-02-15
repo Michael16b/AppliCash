@@ -56,6 +56,8 @@ private fun App() {
         ) {
             composable<Splash> {
                 SplashScreen(navigateNext = {
+                    // TODO: Check authentication state and route to Login if not authenticated
+                    // For now, navigating directly to Home as authentication is not implemented
                     navController.navigate(Home()) {
                         popUpTo<Splash> { inclusive = true }
                     }
