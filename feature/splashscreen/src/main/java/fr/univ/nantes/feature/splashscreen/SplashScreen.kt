@@ -21,10 +21,13 @@ import kotlinx.serialization.Serializable
 object Splash
 
 @Composable
-fun SplashScreen(navigateToGroup: () -> Unit) {
+fun SplashScreen(
+    navigateNext: () -> Unit,
+    splashDurationMs: Long = 2000L
+) {
     LaunchedEffect(Unit) {
-        delay(2000)
-        navigateToGroup()
+        delay(splashDurationMs)
+        navigateNext()
     }
 
     Box(
@@ -35,7 +38,7 @@ fun SplashScreen(navigateToGroup: () -> Unit) {
     ) {
         Image(
             painter = painterResource(id = R.drawable.ic_launcher_foreground),
-            contentDescription = "AppliCash Logo",
+            contentDescription = null,
             modifier = Modifier.size(120.dp)
         )
     }

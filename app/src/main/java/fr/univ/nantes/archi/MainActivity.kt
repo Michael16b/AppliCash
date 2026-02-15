@@ -60,7 +60,7 @@ private fun App() {
             modifier = Modifier.padding(innerPadding),
         ) {
             composable<Splash> {
-                SplashScreen(navigateToGroup = {
+                SplashScreen(navigateNext = {
                     navController.navigate(Home()) {
                         popUpTo<Splash> { inclusive = true }
                     }
@@ -79,9 +79,6 @@ private fun App() {
             composable<Group> {
                 GroupScreen(
                     viewModel = expenseViewModel,
-                    navigateToExpense = {
-                        navController.navigate(ExpenseRoute)
-                    },
                     navigateToHome = {
                         navController.navigate(Home()) {
                             popUpTo<Group> { inclusive = true }
@@ -109,7 +106,7 @@ private fun App() {
                     }
                 )
             }
-            composable<Home> { backStackEntry ->
+            composable<Home> {
                 HomeScreen(
                     viewModel = expenseViewModel,
                     onAddGroupClick = {

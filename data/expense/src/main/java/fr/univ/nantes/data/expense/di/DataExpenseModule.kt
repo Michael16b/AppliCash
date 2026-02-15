@@ -1,6 +1,5 @@
 package fr.univ.nantes.data.expense.di
 
-import android.content.Context
 import androidx.room.Room
 import fr.univ.nantes.data.expense.database.AppDatabase
 import fr.univ.nantes.data.expense.repository.ExpenseRepository

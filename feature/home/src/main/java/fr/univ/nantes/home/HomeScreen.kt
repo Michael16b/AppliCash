@@ -69,7 +69,7 @@ fun HomeScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = stringResource(R.string.app_name),
+                        text = stringResource(R.string.home_title),
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -141,7 +141,7 @@ fun EmptyGroupsState(modifier: Modifier = Modifier) {
         Text(
             text = stringResource(R.string.press_plus_to_create_group),
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -157,7 +157,7 @@ fun GroupsList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(groups) { group ->
+        items(groups, key = { it.id }) { group ->
             GroupCard(
                 group = group,
                 onClick = { onGroupClick(group) }
@@ -223,7 +223,7 @@ fun GroupCard(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${group.participants.size} ${stringResource(if (group.participants.size > 1) R.string.members else R.string.member)}",
+                            text = "${group.participants.size} ${stringResource(if (group.participants.size != 1) R.string.members else R.string.member)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -240,7 +240,7 @@ fun GroupCard(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${group.expenses.size} ${stringResource(if (group.expenses.size > 1) R.string.expenses else R.string.expense)}",
+                            text = "${group.expenses.size} ${stringResource(if (group.expenses.size != 1) R.string.expenses else R.string.expense)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
