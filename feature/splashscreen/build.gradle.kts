@@ -1,20 +1,16 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     kotlin("plugin.serialization") version "2.0.21"
 }
 
 android {
-    namespace = "fr.univ.nantes.archi"
+    namespace = "fr.univ.nantes.feature.splashscreen"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "fr.univ.nantes.archi"
         minSdk = 27
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -22,10 +18,6 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
         }
     }
     compileOptions {
@@ -35,17 +27,17 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
         compose = true
     }
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.core.splashscreen)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
@@ -56,19 +48,6 @@ dependencies {
 
     // Nav
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.androidx.compose.navigation)
-
-    // koin
-    implementation(platform(libs.koin.bom))
-    implementation(libs.koin.android)
-    implementation(libs.koin.compose)
 
     implementation(project(":core:ui"))
-    implementation(project(":feature:home"))
-    implementation(project(":feature:login"))
-    implementation(project(":data:login"))
-    implementation(project(":data:expense"))
-    implementation(project(":domain:login"))
-    implementation(project(":feature:expense"))
-    implementation(project(":feature:splashscreen"))
 }

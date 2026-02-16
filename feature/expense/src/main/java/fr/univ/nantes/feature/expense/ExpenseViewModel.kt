@@ -2,23 +2,26 @@ package fr.univ.nantes.feature.expense
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.launch
 
 /**
  * Represents an expense in the group.
- * 
+ *
  * Note: This uses Double for currency amounts. While BigDecimal would provide better
  * precision for financial calculations, Double is acceptable for this use case as:
  * 1. The BALANCE_THRESHOLD constant helps mitigate display issues from floating-point errors
  * 2. The typical expense amounts won't accumulate significant precision errors
  * 3. The simplicity of Double makes the code more readable and performant
- * 
+ *
  * For production financial applications, consider using BigDecimal or storing amounts
  * as Long representing the smallest currency unit (e.g., cents).
  */
@@ -28,10 +31,19 @@ data class Expense(
     val paidBy: String
 )
 
-data class ExpenseState(
+data class GroupData(
+    val id: Long = 0,
     val groupName: String = "",
     val participants: List<String> = emptyList(),
     val expenses: List<Expense> = emptyList()
+)
+
+data class ExpenseState(
+    val groupName: String = "",
+    val participants: List<String> = emptyList(),
+    val expenses: List<Expense> = emptyList(),
+    val groups: List<GroupData> = emptyList(),
+    val currentGroupId: Long? = null
 )
 
 data class Balance(
@@ -47,12 +59,14 @@ data class Reimbursement(
 
 /**
  * ViewModel for managing group expenses and calculating balances.
- * 
+ *
  * This ViewModel maintains the state of a group expense tracker, including
  * the group name, list of participants, and individual expenses. It provides
  * functionality to calculate balances and determine optimal reimbursements.
  */
-class ExpenseViewModel : ViewModel() {
+class ExpenseViewModel(
+    private val repository: ExpenseRepository
+) : ViewModel() {
 
     companion object {
         /**
@@ -65,6 +79,29 @@ class ExpenseViewModel : ViewModel() {
 
     private val _state = MutableStateFlow(ExpenseState())
     val state: StateFlow<ExpenseState> = _state.asStateFlow()
+
+    init {
+        // Charger les groupes depuis la base de données
+        viewModelScope.launch {
+            repository.getAllGroupsWithDetails().collect { groupsWithDetails ->
+                val groups = groupsWithDetails.map { groupWithDetails ->
+                    GroupData(
+                        id = groupWithDetails.group.id,
+                        groupName = groupWithDetails.group.groupName,
+                        participants = groupWithDetails.participants.map { it.name },
+                        expenses = groupWithDetails.expenses.map {
+                            Expense(
+                                description = it.description,
+                                amount = it.amount,
+                                paidBy = it.paidBy
+                            )
+                        }
+                    )
+                }
+                _state.update { it.copy(groups = groups) }
+            }
+        }
+    }
 
     /**
      * Derived state flow for balances, automatically recalculated when expenses or participants change.
@@ -87,8 +124,41 @@ class ExpenseViewModel : ViewModel() {
         )
 
     /**
+     * Charge un groupe existant depuis Room et met à jour l'état actuel
+     * pour permettre l'ajout de dépenses à ce groupe.
+     */
+    fun loadGroup(groupId: Long) {
+        viewModelScope.launch {
+            val groupWithDetails = repository.getGroupWithDetails(groupId)
+            if (groupWithDetails != null) {
+                _state.update {
+                    it.copy(
+                        groupName = groupWithDetails.group.groupName,
+                        participants = groupWithDetails.participants.map { participant -> participant.name },
+                        expenses = groupWithDetails.expenses.map { expense ->
+                            Expense(
+                                description = expense.description,
+                                amount = expense.amount,
+                                paidBy = expense.paidBy
+                            )
+                        },
+                        currentGroupId = groupId
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Retourne l'ID du groupe actuellement chargé
+     */
+    fun getCurrentGroupId(): Long? {
+        return _state.value.currentGroupId
+    }
+
+    /**
      * Sets the name of the expense group.
-     * 
+     *
      * @param name The name to assign to the group
      */
     fun setGroupName(name: String) {
@@ -97,9 +167,9 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Adds a new participant to the group.
-     * 
+     *
      * The participant will only be added if the name is not blank and not already in the group.
-     * 
+     *
      * @param name The name of the participant to add
      */
     fun addParticipant(name: String) {
@@ -112,10 +182,10 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Removes a participant from the group.
-     * 
+     *
      * When a participant is removed, all expenses paid by that participant are also removed
      * to maintain data consistency and ensure accurate balance calculations.
-     * 
+     *
      * @param name The name of the participant to remove
      */
     fun removeParticipant(name: String) {
@@ -127,13 +197,13 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Adds a new expense to the group.
-     * 
+     *
      * The expense will only be added if:
      * - The description is not blank
      * - The amount is greater than 0
      * - The payer name is not blank
      * - The payer is a current participant in the group
-     * 
+     *
      * @param description A description of the expense
      * @param amount The amount of the expense
      * @param paidBy The name of the participant who paid for the expense
@@ -144,16 +214,29 @@ class ExpenseViewModel : ViewModel() {
             _state.update { it.copy(
                 expenses = it.expenses + expense
             ) }
+
+
+            val groupId = getCurrentGroupId()
+            if (groupId != null) {
+                viewModelScope.launch {
+                    repository.addExpenseToGroup(
+                        groupId = groupId,
+                        description = description,
+                        amount = amount,
+                        paidBy = paidBy
+                    )
+                }
+            }
         }
     }
 
     /**
      * Calculates the balance for each participant.
-     * 
+     *
      * The balance represents how much each participant has overpaid (positive balance)
      * or underpaid (negative balance) relative to their fair share of the total expenses.
      * The fair share is calculated by dividing the total expenses equally among all participants.
-     * 
+     *
      * @return A list of Balance objects, one for each participant
      */
     fun calculateBalances(): List<Balance> {
@@ -176,14 +259,14 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Calculates optimal reimbursements to settle all balances.
-     * 
+     *
      * This method uses a greedy algorithm to minimize the number of transactions needed
      * to settle all debts within the group. It matches debtors (those who owe money) with
      * creditors (those who are owed money) to determine the most efficient payment plan.
-     * 
+     *
      * Only reimbursements above the BALANCE_THRESHOLD are included to avoid trivial transactions
      * caused by floating-point precision issues.
-     * 
+     *
      * @return A list of Reimbursement objects representing the payments needed to settle all balances
      */
     fun calculateReimbursements(): List<Reimbursement> {
@@ -218,10 +301,52 @@ class ExpenseViewModel : ViewModel() {
 
     /**
      * Resets the ViewModel to its initial state.
-     * 
-     * This clears the group name, all participants, and all expenses.
+     *
+     * This clears the group name, all participants, and all expenses,
+     * but preserves the list of saved groups.
      */
     fun reset() {
-        _state.update { ExpenseState() }
+        _state.update { currentState ->
+            ExpenseState().copy(groups = currentState.groups)
+        }
     }
+
+    /**
+     * Saves the current group as a complete group and adds it to the groups list.
+     * This clears the current working state for creating a new group.
+     */
+    fun saveGroup() {
+        val currentGroup = _state.value
+        if (currentGroup.groupName.isNotBlank() && currentGroup.participants.isNotEmpty()) {
+            viewModelScope.launch {
+                val groupId = repository.createGroup(
+                    groupName = currentGroup.groupName,
+                    participants = currentGroup.participants
+                )
+
+                // Ajouter les dépenses si présentes
+                currentGroup.expenses.forEach { expense ->
+                    repository.addExpenseToGroup(
+                        groupId = groupId,
+                        description = expense.description,
+                        amount = expense.amount,
+                        paidBy = expense.paidBy
+                    )
+                }
+
+                // Réinitialiser l'état actuel
+                _state.update { it.copy(
+                    groupName = "",
+                    participants = emptyList(),
+                    expenses = emptyList(),
+                    currentGroupId = null
+                ) }
+            }
+        }
+    }
+
+    /**
+     * Gets the list of all saved groups.
+     */
+    fun getGroups(): List<GroupData> = _state.value.groups
 }
