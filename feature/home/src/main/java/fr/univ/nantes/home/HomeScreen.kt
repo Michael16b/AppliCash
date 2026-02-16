@@ -22,7 +22,8 @@ import kotlinx.serialization.Serializable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     name: String = "defaultUser",
-    navigateToExpense: () -> Unit = {}
+    navigateToExpense: () -> Unit = {},
+    navigateToProfil: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -38,6 +39,12 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(stringResource(R.string.expense_tracking))
+        }
+        Button(
+            onClick = navigateToProfil,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("profil")
         }
     }
 }
