@@ -1,18 +1,16 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.ktlint)
+    alias(libs.plugins.ksp)
 }
 
 android {
-    namespace = "fr.univ.nantes.data.login"
+    namespace = "fr.univ.nantes.data.expense"
     compileSdk = 36
 
     defaultConfig {
         minSdk = 27
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
@@ -37,16 +35,18 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":domain:login"))
-
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
 
-    // koin
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    // Koin
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.android)
+
+    testImplementation(libs.junit)
 }
+
+

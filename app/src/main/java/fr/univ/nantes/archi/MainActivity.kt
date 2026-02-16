@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.feature.expense.BalanceRoute
 import fr.univ.nantes.feature.expense.BalanceScreen
 import fr.univ.nantes.feature.expense.ExpenseRoute
@@ -21,9 +22,10 @@ import fr.univ.nantes.feature.expense.ExpenseScreen
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.Group
 import fr.univ.nantes.feature.expense.GroupScreen
-import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.feature.login.Login
 import fr.univ.nantes.feature.login.LoginScreen
+import fr.univ.nantes.feature.splashscreen.Splash
+import fr.univ.nantes.feature.splashscreen.SplashScreen
 import fr.univ.nantes.home.Home
 import fr.univ.nantes.home.HomeScreen
 import org.koin.androidx.compose.koinViewModel
@@ -31,6 +33,7 @@ import org.koin.androidx.compose.koinViewModel
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
         setContent {
             AppliCashTheme {
@@ -48,22 +51,35 @@ private fun App() {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Login,
+            startDestination = Splash,
             modifier = Modifier.padding(innerPadding),
         ) {
+            composable<Splash> {
+                SplashScreen(navigateNext = {
+                    // TODO: Check authentication state and route to Login if not authenticated
+                    // For now, navigating directly to Home as authentication is not implemented
+                    navController.navigate(Home()) {
+                        popUpTo<Splash> { inclusive = true }
+                    }
+                })
+            }
             composable<Login> {
                 LoginScreen(
                     navigateToHome = { username ->
-                        navController.navigate(Home(username))
+                        navController.navigate(Home(username = username)) {
+                            popUpTo<Login> { inclusive = true }
+                        }
                     },
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize()
                 )
             }
             composable<Group> {
                 GroupScreen(
                     viewModel = expenseViewModel,
-                    navigateToExpense = {
-                        navController.navigate(ExpenseRoute)
+                    navigateToHome = {
+                        navController.navigate(Home()) {
+                            popUpTo<Group> { inclusive = true }
+                        }
                     }
                 )
             }
@@ -87,12 +103,19 @@ private fun App() {
                     }
                 )
             }
-            composable<Home> { backStackEntry ->
-                val home: Home = backStackEntry.toRoute()
+            composable<Home> {
                 HomeScreen(
-                    name = home.username,
-                    navigateToExpense = {
+                    viewModel = expenseViewModel,
+                    onAddGroupClick = {
                         navController.navigate(Group)
+                    },
+                    onGroupClick = { groupData ->
+                        expenseViewModel.loadGroup(groupData.id)
+                        navController.navigate(ExpenseRoute)
+                    },
+                    onProfileClick = {
+                        // TODO: Naviguer vers l'écran de profil utilisateur
+                        // navController.navigate(Profile)
                     },
                     modifier = Modifier.fillMaxSize(),
                 )

@@ -1,3 +1,13 @@
 <resources>
     <string name="expense_tracking">Expense Tracking</string>
+    <string name="home_title">AppliCash</string>
+    <string name="app_tagline">Share your expenses easily</string>
+    <string name="add_group">Add a group</string>
+    <string name="no_groups_created">No groups created</string>
+    <string name="press_plus_to_create_group">Press the + button to create a group</string>
+    <string name="members">members</string>
+    <string name="member">member</string>
+    <string name="expenses">expenses</string>
+    <string name="expense">expense</string>
+    <string name="profile">Profile</string>
 </resources>
