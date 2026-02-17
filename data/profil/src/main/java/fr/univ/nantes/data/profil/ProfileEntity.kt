@@ -11,5 +11,6 @@ data class ProfileEntity(
     @ColumnInfo(name = "last_name") val lastName: String,
     @ColumnInfo(name = "email") val email: String,
     @ColumnInfo(name = "currency") val currency: String,
+    @ColumnInfo(name = "password") val password: String,
+    @ColumnInfo(name = "is_logged_in") val isLoggedIn: Boolean,
 )
-

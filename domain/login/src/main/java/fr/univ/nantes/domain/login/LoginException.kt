@@ -18,4 +18,9 @@ sealed class LoginException : Throwable() {
      * (for example, username or email) during a login attempt.
      */
     data object NotExistingException : LoginException()
+
+    /**
+     * Thrown when an attempt is made to create a user account that already exists.
+     */
+    data object AlreadyExistsException : LoginException()
 }

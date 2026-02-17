@@ -1,9 +1,15 @@
 package fr.univ.nantes.data.profil.di
 
 import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
+import fr.univ.nantes.data.profil.CurrencyEntity
 import fr.univ.nantes.data.profil.ProfileDatabase
 import fr.univ.nantes.data.profil.ProfileRepositoryImpl
 import fr.univ.nantes.domain.profil.ProfileRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -15,9 +21,28 @@ val profileDataModule = module {
             androidContext(),
             ProfileDatabase::class.java,
             "profile.db"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .addCallback(object : RoomDatabase.Callback() {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    super.onCreate(db)
+                    // prepopulate currency table
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val dao = get<ProfileDatabase>().currencyDao()
+                        dao.insertAll(
+                            listOf(
+                                CurrencyEntity(code = "EUR", name = "Euro"),
+                                CurrencyEntity(code = "USD", name = "Dollar"),
+                                CurrencyEntity(code = "GBP", name = "Livre"),
+                                CurrencyEntity(code = "JPY", name = "Yen")
+                            )
+                        )
+                    }
+                }
+            })
+            .build()
     }
     single { get<ProfileDatabase>().profileDao() }
+    single { get<ProfileDatabase>().currencyDao() }
     singleOf(::ProfileRepositoryImpl) bind ProfileRepository::class
 }
-

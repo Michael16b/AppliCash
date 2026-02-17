@@ -1,139 +1,195 @@
 package fr.univ.nantes.feature.login
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.AppTopBar
-import fr.univ.nantes.core.ui.Purple40
 import kotlinx.serialization.Serializable
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     navigateToHome: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val viewModel: LoginViewModel = koinViewModel()
-    val username by viewModel.username.collectAsState(viewModel.defaultUsername)
-    val password by viewModel.password.collectAsState("")
-    val errorMessage by viewModel.errorMessage.collectAsState(null)
+    val state by viewModel.uiState.collectAsState()
+    var currencyMenuExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { AppTopBar(title = "Connexion") }
+        topBar = { AppTopBar(title = if (state.isRegister) stringResource(R.string.login_create_account) else stringResource(R.string.login_login)) }
     ) { innerPadding ->
-        LoginScreenStateless(
+        Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .padding(horizontal = 24.dp),
-            username = username,
-            setUsername = viewModel.setUsername,
-            password = password,
-            setPassword = viewModel.setPassword,
-            onLogin = { viewModel.onLoginClick { authenticatedUsername -> navigateToHome(authenticatedUsername) } },
-            errorMessage = errorMessage,
-            clearError = viewModel.clearError
-        )
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            OutlinedTextField(
+                value = state.email,
+                onValueChange = viewModel::setEmail,
+                label = { Text(stringResource(R.string.login_email)) },
+                leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
+                modifier = Modifier.fillMaxWidth(),
+                isError = state.errorMessage != null
+            )
+            OutlinedTextField(
+                value = state.password,
+                onValueChange = viewModel::setPassword,
+                label = { Text(stringResource(R.string.login_password)) },
+                leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+                isError = state.errorMessage != null
+            )
+            if (state.isRegister) {
+                OutlinedTextField(
+                    value = state.firstName,
+                    onValueChange = viewModel::setFirstName,
+                    label = { Text(stringResource(R.string.login_first_name)) },
+                    leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = state.errorMessage != null
+                )
+                OutlinedTextField(
+                    value = state.lastName,
+                    onValueChange = viewModel::setLastName,
+                    label = { Text(stringResource(R.string.login_last_name)) },
+                    leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = state.errorMessage != null
+                )
+                ExposedDropdownMenuBox(
+                    expanded = currencyMenuExpanded,
+                    onExpandedChange = { currencyMenuExpanded = !currencyMenuExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = state.currency,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.login_preferred_currency)) },
+                        leadingIcon = { Icon(Icons.Outlined.ArrowDropDown, contentDescription = null) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = currencyMenuExpanded,
+                        onDismissRequest = { currencyMenuExpanded = false }
+                    ) {
+                        val currencies = state.currencies.ifEmpty { listOf("EUR - Euro") }
+                        currencies.forEach { currency ->
+                            DropdownMenuItem(
+                                text = { Text(currency) },
+                                onClick = {
+                                    viewModel.setCurrency(currency)
+                                    currencyMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            state.errorMessage?.let {
+                Text(text = it, color = MaterialTheme.colorScheme.error)
+            }
+
+            Button(
+                onClick = { viewModel.submit(navigateToHome) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                enabled = !state.isLoading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF10B981),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(vertical = 14.dp, horizontal = 16.dp)
+            ) {
+                Text(if (state.isRegister) stringResource(R.string.login_create_account) else stringResource(R.string.login_login), fontWeight = FontWeight.SemiBold)
+            }
+
+            TextButton(onClick = viewModel::toggleMode) {
+                Text(if (state.isRegister) stringResource(R.string.login_already_have_account) else stringResource(R.string.login_create_account_prompt))
+            }
+        }
     }
 }
 
 @Composable
-private fun LoginScreenStateless(
-    modifier: Modifier,
-    username: String,
-    setUsername: (String) -> Unit,
-    password: String,
-    setPassword: (String) -> Unit,
-    onLogin: () -> Unit,
-    errorMessage: String?,
-    clearError: () -> Unit
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally
+private fun LoginSectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        OutlinedTextField(
-            value = username,
-            onValueChange = {
-                setUsername(it)
-                clearError()
-            },
-            label = { Text("Username") },
-            colors =
-            OutlinedTextFieldDefaults.colors().copy(
-                focusedTextColor = Purple40,
-                unfocusedTextColor = Purple40
-            ),
-            isError = errorMessage != null
-        )
-        OutlinedTextField(
-            value = password,
-            onValueChange = {
-                setPassword(it)
-                clearError()
-            },
-            label = { Text("Password") },
-            colors =
-            OutlinedTextFieldDefaults.colors().copy(
-                focusedTextColor = Purple40,
-                unfocusedTextColor = Purple40
-            ),
-            visualTransformation = PasswordVisualTransformation(),
-            isError = errorMessage != null
-        )
-
-        if (errorMessage != null) {
-            Text(
-                text = errorMessage,
-                color = androidx.compose.material3.MaterialTheme.colorScheme.error
-            )
-        }
-
-        Button(onClick = {
-            Log.d(
-                "LoginScreen",
-                "Login button clicked with username: $username and password: $password"
-            )
-            onLogin()
-        }) {
-            Text("Login")
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(4.dp))
+            content()
         }
     }
 }
 
 @Serializable
-data object Login
+object Login
 
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
     AppliCashTheme {
-        LoginScreenStateless(
-            username = "toto",
-            setUsername = {},
-            password = "toto",
-            setPassword = {},
-            onLogin = { },
-            modifier = Modifier.fillMaxSize(),
-            errorMessage = null,
-            clearError = {}
-        )
+        LoginScreen(navigateToHome = {}, modifier = Modifier.fillMaxSize())
     }
 }

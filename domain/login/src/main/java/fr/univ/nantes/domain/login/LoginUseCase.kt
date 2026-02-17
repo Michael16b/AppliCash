@@ -8,18 +8,16 @@ class LoginUseCase(
         LoginException.NotExistingException::class,
     )
     suspend fun authenticateUser(
-        username: String,
+        email: String,
         password: String,
-    ): User {
-        val response = loginRepository.authenticateUser(username, password)
-        return when {
-            response.isEmpty() -> throw LoginException.NotExistingException
-            response.size == 1 && response.first() == "" -> throw LoginException.WrongPasswordException
-            else ->
-                User(
-                    username = response[0],
-                    email = response[1],
-                )
-        }
-    }
+    ): User = loginRepository.authenticate(email, password)
+
+    @Throws(LoginException.AlreadyExistsException::class)
+    suspend fun registerUser(
+        firstName: String,
+        lastName: String,
+        email: String,
+        password: String,
+        currency: String
+    ): User = loginRepository.createUser(firstName, lastName, email, password, currency)
 }

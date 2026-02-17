@@ -51,7 +51,7 @@ fun AppTopBar(
 
 @Composable
 private fun ColumnText(title: String, subtitle: String?) {
-    androidx.compose.foundation.layout.Column(
+    Column(
         horizontalAlignment = Alignment.Start
     ) {
         Text(

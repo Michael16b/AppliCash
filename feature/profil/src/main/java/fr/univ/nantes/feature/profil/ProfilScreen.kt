@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,7 +28,7 @@ import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,12 +48,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.AppTopBar
 import org.koin.androidx.compose.koinViewModel
+import fr.univ.nantes.feature.profil.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,14 +66,22 @@ fun ProfileScreen(
     onLogout: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
-    val currencies = listOf("EUR - Euro", "USD - Dollar", "GBP - Livre", "JPY - Yen")
+    val currencies = state.currencies.ifEmpty {
+        listOf(
+            stringResource(id = R.string.currency_usd),
+            stringResource(id = R.string.currency_eur),
+            stringResource(id = R.string.currency_jpy),
+            stringResource(id = R.string.currency_gbp),
+            stringResource(id = R.string.currency_chf)
+        )
+    }
     var currencyMenuExpanded by remember { mutableStateOf(false) }
 
     androidx.compose.material3.Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             AppTopBar(
-                title = "Mon profil",
+                title = stringResource(id = R.string.profile_title),
                 showBack = true,
                 onBack = onBack
             )
@@ -119,12 +132,12 @@ fun ProfileScreen(
                 }
             }
 
-            ProfileSectionCard(title = "Informations personnelles") {
+            ProfileSectionCard(title = stringResource(id = R.string.profile_personal_information)) {
                 OutlinedTextField(
                     value = state.firstName,
                     onValueChange = viewModel::onFirstNameChange,
                     leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
-                    label = { Text("Prénom") },
+                    label = { Text(stringResource(id = R.string.profile_first_name)) },
                     isError = state.errors.containsKey("firstName"),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -136,7 +149,7 @@ fun ProfileScreen(
                     value = state.lastName,
                     onValueChange = viewModel::onLastNameChange,
                     leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
-                    label = { Text("Nom") },
+                    label = { Text(stringResource(id = R.string.profile_last_name)) },
                     isError = state.errors.containsKey("lastName"),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -148,7 +161,7 @@ fun ProfileScreen(
                     value = state.email,
                     onValueChange = viewModel::onEmailChange,
                     leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
-                    label = { Text("Adresse email") },
+                    label = { Text(stringResource(id = R.string.profile_email)) },
                     isError = state.errors.containsKey("email"),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -157,7 +170,7 @@ fun ProfileScreen(
                 }
             }
 
-            ProfileSectionCard(title = "Préférences") {
+            ProfileSectionCard(title = stringResource(id = R.string.profile_preferences)) {
                 ExposedDropdownMenuBox(
                     expanded = currencyMenuExpanded,
                     onExpandedChange = { currencyMenuExpanded = !currencyMenuExpanded }
@@ -168,7 +181,7 @@ fun ProfileScreen(
                         readOnly = true,
                         leadingIcon = { Icon(Icons.Outlined.Public, contentDescription = null) },
                         trailingIcon = { Icon(Icons.Outlined.ArrowDropDown, contentDescription = null) },
-                        label = { Text("Devise préférée") },
+                        label = { Text(stringResource(id = R.string.profile_preferred_currency)) },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth()
@@ -190,7 +203,7 @@ fun ProfileScreen(
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Les montants seront automatiquement convertis dans votre devise préférée",
+                    text = stringResource(id = R.string.profile_currency_conversion_info),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -202,18 +215,24 @@ fun ProfileScreen(
                 onClick = { viewModel.saveProfile { } },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp)
+                    .padding(top = 4.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF10B981),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(vertical = 14.dp, horizontal = 16.dp)
             ) {
-                Icon(Icons.Outlined.Public, contentDescription = null)
+                Icon(Icons.Outlined.Save, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Enregistrer les modifications")
+                Text(stringResource(id = R.string.profile_save_changes), fontWeight = FontWeight.SemiBold)
             }
 
             TextButton(
                 onClick = { viewModel.logout(onLogout) },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Text("Se déconnecter", color = MaterialTheme.colorScheme.error)
+                Text(stringResource(id = R.string.profile_logout), color = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -252,14 +271,14 @@ private fun InfoBanner(preferredCurrency: String) {
         ) {
             Icon(Icons.Outlined.Public, contentDescription = null, tint = Color(0xFF16A34A))
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Conversion automatique", fontWeight = FontWeight.SemiBold, color = Color(0xFF166534))
+                Text(stringResource(id = R.string.profile_automatic_conversion), fontWeight = FontWeight.SemiBold, color = Color(0xFF166534))
                 Text(
-                    "Votre devise préférée : $preferredCurrency",
+                    stringResource(id = R.string.profile_preferred_currency_info, preferredCurrency),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF166534)
                 )
                 Text(
-                    "Les dépenses dans d\'autres devises seront automatiquement converties pour les calculs de soldes.",
+                    stringResource(id = R.string.profile_conversion_calculation_info),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF166534)
                 )

@@ -18,6 +18,7 @@ data class ProfileUiState(
     val lastName: String = "",
     val email: String = "",
     val currency: String = DEFAULT_CURRENCY,
+    val currencies: List<String> = emptyList(),
     val isExistingProfile: Boolean = false,
     val isLoading: Boolean = true,
     val errors: Map<String, String> = emptyMap()
@@ -32,6 +33,20 @@ class ProfilViewModel(
 
     init {
         observeProfile()
+        observeCurrencies()
+    }
+
+    private fun observeCurrencies() {
+        viewModelScope.launch {
+            profileUseCase.observeCurrencies().collect { currencies ->
+                _uiState.update { state ->
+                    val selected = if (state.currency == DEFAULT_CURRENCY && currencies.isNotEmpty()) {
+                        currencies.first()
+                    } else state.currency
+                    state.copy(currencies = currencies, currency = selected)
+                }
+            }
+        }
     }
 
     private fun observeProfile() {

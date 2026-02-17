@@ -31,6 +31,7 @@ android {
 
 dependencies {
     implementation(project(":domain:login"))
+    implementation(project(":data:profil"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
