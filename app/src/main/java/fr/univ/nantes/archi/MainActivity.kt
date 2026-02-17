@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.splashscreen.SplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -27,6 +28,8 @@ import fr.univ.nantes.feature.login.Login
 import fr.univ.nantes.feature.login.LoginScreen
 import fr.univ.nantes.feature.profil.ProfilRoute
 import fr.univ.nantes.feature.profil.ProfileScreen
+import fr.univ.nantes.feature.splashscreen.Splash
+import fr.univ.nantes.feature.splashscreen.SplashScreen
 import fr.univ.nantes.home.Home
 import fr.univ.nantes.home.HomeScreen
 import kotlinx.coroutines.flow.first
@@ -135,14 +138,6 @@ private fun App() {
                                 navController.navigate(Login)
                             }
                         }
-                    },
-                    onGroupClick = { groupData ->
-                        expenseViewModel.loadGroup(groupData.id)
-                        navController.navigate(ExpenseRoute)
-                    },
-                    onProfileClick = {
-                        // TODO: Naviguer vers l'écran de profil utilisateur
-                        // navController.navigate(Profile)
                     },
                     modifier = Modifier.fillMaxSize(),
                 )
