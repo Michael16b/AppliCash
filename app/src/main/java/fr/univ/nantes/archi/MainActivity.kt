@@ -60,6 +60,15 @@ private fun App() {
             startDestination = Home(),
             modifier = Modifier.padding(innerPadding),
         ) {
+            composable<Splash> {
+                SplashScreen(navigateNext = {
+                    // TODO: Check authentication state and route to Login if not authenticated
+                    // For now, navigating directly to Home as authentication is not implemented
+                    navController.navigate(Home()) {
+                        popUpTo<Splash> { inclusive = true }
+                    }
+                })
+            }
             composable<Login> {
                 LoginScreen(
                     navigateToHome = { username ->
@@ -126,6 +135,14 @@ private fun App() {
                                 navController.navigate(Login)
                             }
                         }
+                    },
+                    onGroupClick = { groupData ->
+                        expenseViewModel.loadGroup(groupData.id)
+                        navController.navigate(ExpenseRoute)
+                    },
+                    onProfileClick = {
+                        // TODO: Naviguer vers l'écran de profil utilisateur
+                        // navController.navigate(Profile)
                     },
                     modifier = Modifier.fillMaxSize(),
                 )
