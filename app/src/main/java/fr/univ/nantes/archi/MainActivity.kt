@@ -13,7 +13,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.feature.expense.BalanceRoute
 import fr.univ.nantes.feature.expense.BalanceScreen
@@ -24,6 +23,8 @@ import fr.univ.nantes.feature.expense.Group
 import fr.univ.nantes.feature.expense.GroupScreen
 import fr.univ.nantes.feature.login.Login
 import fr.univ.nantes.feature.login.LoginScreen
+import fr.univ.nantes.feature.profil.ProfilRoute
+import fr.univ.nantes.feature.profil.ProfileScreen
 import fr.univ.nantes.feature.splashscreen.Splash
 import fr.univ.nantes.feature.splashscreen.SplashScreen
 import fr.univ.nantes.home.Home
@@ -114,10 +115,20 @@ private fun App() {
                         navController.navigate(ExpenseRoute)
                     },
                     onProfileClick = {
-                        // TODO: Naviguer vers l'écran de profil utilisateur
-                        // navController.navigate(Profile)
+                        navController.navigate(ProfilRoute)
                     },
                     modifier = Modifier.fillMaxSize(),
+                )
+            }
+            composable<ProfilRoute> {
+                ProfileScreen(
+                    onBack = { navController.popBackStack() },
+                    onLogout = {
+                        navController.navigate(Login) {
+                            popUpTo<Home> { inclusive = true }
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }

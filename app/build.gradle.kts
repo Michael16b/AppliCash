@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     kotlin("plugin.serialization") version "2.0.21"
 }
@@ -31,9 +30,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
     }
     buildFeatures {
         compose = true
@@ -71,4 +67,7 @@ dependencies {
     implementation(project(":domain:login"))
     implementation(project(":feature:expense"))
     implementation(project(":feature:splashscreen"))
+    implementation(project(":feature:profil"))
+    implementation(project(":data:profil"))
+    implementation(project(":domain:profil"))
 }

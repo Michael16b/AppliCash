@@ -4,9 +4,11 @@ import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -17,6 +19,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
+import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.Purple40
 import kotlinx.serialization.Serializable
 import org.koin.androidx.compose.koinViewModel
@@ -31,16 +34,23 @@ fun LoginScreen(
     val password by viewModel.password.collectAsState("")
     val errorMessage by viewModel.errorMessage.collectAsState(null)
 
-    LoginScreenStateless(
-        modifier = modifier,
-        username = username,
-        setUsername = viewModel.setUsername,
-        password = password,
-        setPassword = viewModel.setPassword,
-        onLogin = { viewModel.onLoginClick { authenticatedUsername -> navigateToHome(authenticatedUsername) } },
-        errorMessage = errorMessage,
-        clearError = viewModel.clearError
-    )
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = { AppTopBar(title = "Connexion") }
+    ) { innerPadding ->
+        LoginScreenStateless(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(horizontal = 24.dp),
+            username = username,
+            setUsername = viewModel.setUsername,
+            password = password,
+            setPassword = viewModel.setPassword,
+            onLogin = { viewModel.onLoginClick { authenticatedUsername -> navigateToHome(authenticatedUsername) } },
+            errorMessage = errorMessage,
+            clearError = viewModel.clearError
+        )
+    }
 }
 
 @Composable
