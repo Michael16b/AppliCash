@@ -41,6 +41,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.AppTopBar
+import fr.univ.nantes.core.ui.Teal400
+import fr.univ.nantes.core.ui.TealBg50
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.GroupData
 import java.text.NumberFormat
@@ -81,7 +83,7 @@ fun HomeScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddGroupClick,
-                containerColor = Color(0xFF00BFA5),
+                containerColor = Teal400,
                 modifier = Modifier.padding(16.dp)
             ) {
                 Icon(
@@ -243,7 +245,7 @@ fun GroupCard(
             Box(
                 modifier = Modifier
                     .background(
-                        color = Color(0xFFE8F5E9),
+                        color = TealBg50,
                         shape = RoundedCornerShape(8.dp)
                     )
                     .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -253,7 +255,7 @@ fun GroupCard(
                     text = currencyFormat.format(totalAmount),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF00BFA5)
+                    color = Teal400
                 )
             }
         }

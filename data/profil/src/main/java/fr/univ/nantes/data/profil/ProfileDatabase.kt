@@ -3,7 +3,7 @@ package fr.univ.nantes.data.profil
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
-@Database(entities = [ProfileEntity::class, CurrencyEntity::class], version = 2, exportSchema = false)
+@Database(entities = [ProfileEntity::class, CurrencyEntity::class], version = 1, exportSchema = false)
 abstract class ProfileDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun currencyDao(): CurrencyDao

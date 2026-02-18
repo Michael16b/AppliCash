@@ -1,11 +1,11 @@
 package fr.univ.nantes.data.login
 
+import fr.univ.nantes.core.security.PasswordHasher
 import fr.univ.nantes.data.profil.ProfileDao
 import fr.univ.nantes.data.profil.ProfileEntity
 import fr.univ.nantes.domain.login.LoginException
 import fr.univ.nantes.domain.login.LoginRepository
 import fr.univ.nantes.domain.login.User
-import java.security.MessageDigest
 
 class LoginRepositoryRoomImpl(
     private val profileDao: ProfileDao,
@@ -13,8 +13,9 @@ class LoginRepositoryRoomImpl(
 
     override suspend fun authenticate(email: String, password: String): User {
         val existing = profileDao.findByEmail(email) ?: throw LoginException.NotExistingException
-        val hashed = hash(password)
-        if (existing.password != hashed) throw LoginException.WrongPasswordException
+        if (!PasswordHasher.verifyPassword(password, existing.password)) {
+            throw LoginException.WrongPasswordException
+        }
         // ensure single session
         profileDao.logout()
         profileDao.upsert(existing.copy(isLoggedIn = true))
@@ -36,16 +37,11 @@ class LoginRepositoryRoomImpl(
             lastName = lastName,
             email = email,
             currency = currency,
-            password = hash(password),
+            password = PasswordHasher.hashPassword(password),
             isLoggedIn = true
         )
         profileDao.logout()
         profileDao.upsert(entity)
         return User(username = entity.firstName.ifBlank { entity.email }, email = entity.email)
-    }
-
-    private fun hash(raw: String): String {
-        val bytes = MessageDigest.getInstance("SHA-256").digest(raw.toByteArray())
-        return bytes.joinToString(separator = "") { b -> "%02x".format(b) }
     }
 }

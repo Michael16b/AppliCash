@@ -47,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.AppTopBar
+import fr.univ.nantes.core.ui.Green500
 import kotlinx.serialization.Serializable
 import org.koin.androidx.compose.koinViewModel
 
@@ -149,7 +150,7 @@ fun LoginScreen(
                     .padding(top = 4.dp),
                 enabled = !state.isLoading,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF10B981),
+                    containerColor = Green500,
                     contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(12.dp),
@@ -161,24 +162,6 @@ fun LoginScreen(
             TextButton(onClick = viewModel::toggleMode) {
                 Text(if (state.isRegister) stringResource(R.string.login_already_have_account) else stringResource(R.string.login_create_account_prompt))
             }
-        }
-    }
-}
-
-@Composable
-private fun LoginSectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(4.dp))
-            content()
         }
     }
 }
