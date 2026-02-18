@@ -76,7 +76,7 @@ class ProfilViewModel(
     fun onEmailChange(value: String) = _uiState.update { it.copy(email = value) }
     fun onCurrencyChange(value: String) = _uiState.update { it.copy(currency = value) }
 
-    fun saveProfile(onSaved: () -> Unit) {
+    fun saveProfile() {
         val current = _uiState.value
         val errors = validate(current)
         if (errors.isNotEmpty()) {
@@ -93,7 +93,6 @@ class ProfilViewModel(
                 )
             )
             _uiState.update { it.copy(isExistingProfile = true, errors = emptyMap()) }
-            onSaved()
         }
     }
 

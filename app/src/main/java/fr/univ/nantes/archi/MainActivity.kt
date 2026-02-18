@@ -64,7 +64,7 @@ private fun App() {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Home(),
+            startDestination = Splash,
             modifier = Modifier.padding(innerPadding),
         ) {
             composable<Splash> {

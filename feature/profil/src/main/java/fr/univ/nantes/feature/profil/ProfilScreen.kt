@@ -217,7 +217,7 @@ fun ProfileScreen(
             InfoBanner(preferredCurrency = state.currency)
 
             Button(
-                onClick = { viewModel.saveProfile { } },
+                onClick = { viewModel.saveProfile() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp),
