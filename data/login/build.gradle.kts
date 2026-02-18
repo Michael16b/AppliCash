@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ktlint)
 }
 
@@ -32,6 +33,7 @@ android {
 dependencies {
     implementation(project(":domain:login"))
     implementation(project(":data:profil"))
+    implementation(project(":core:security"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

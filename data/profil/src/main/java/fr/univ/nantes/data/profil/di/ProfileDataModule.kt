@@ -7,9 +7,7 @@ import fr.univ.nantes.data.profil.CurrencyEntity
 import fr.univ.nantes.data.profil.ProfileDatabase
 import fr.univ.nantes.data.profil.ProfileRepositoryImpl
 import fr.univ.nantes.domain.profil.ProfileRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -26,8 +24,8 @@ val profileDataModule = module {
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     super.onCreate(db)
-                    // prepopulate currency table
-                    CoroutineScope(Dispatchers.IO).launch {
+                    // prepopulate currency table synchronously to avoid race conditions
+                    runBlocking {
                         val dao = get<ProfileDatabase>().currencyDao()
                         dao.insertAll(
                             listOf(
