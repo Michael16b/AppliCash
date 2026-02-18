@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
@@ -55,6 +59,7 @@ private fun App() {
     val expenseViewModel: ExpenseViewModel = koinViewModel()
     val profileUseCase: ProfileUseCase = koinInject()
     val scope = rememberCoroutineScope()
+    var isNavigating by remember { mutableStateOf(false) }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         NavHost(
@@ -115,12 +120,16 @@ private fun App() {
                 HomeScreen(
                     viewModel = expenseViewModel,
                     onAddGroupClick = {
-                        scope.launch {
-                            val loggedIn = profileUseCase.observeProfile().first() != null
-                            if (loggedIn) {
-                                navController.navigate(Group)
-                            } else {
-                                navController.navigate(Login)
+                        if (!isNavigating) {
+                            isNavigating = true
+                            scope.launch {
+                                val loggedIn = profileUseCase.observeProfile().first() != null
+                                if (loggedIn) {
+                                    navController.navigate(Group)
+                                } else {
+                                    navController.navigate(Login)
+                                }
+                                isNavigating = false
                             }
                         }
                     },
@@ -129,12 +138,16 @@ private fun App() {
                         navController.navigate(ExpenseRoute)
                     },
                     onProfileClick = {
-                        scope.launch {
-                            val loggedIn = profileUseCase.observeProfile().first() != null
-                            if (loggedIn) {
-                                navController.navigate(ProfilRoute)
-                            } else {
-                                navController.navigate(Login)
+                        if (!isNavigating) {
+                            isNavigating = true
+                            scope.launch {
+                                val loggedIn = profileUseCase.observeProfile().first() != null
+                                if (loggedIn) {
+                                    navController.navigate(ProfilRoute)
+                                } else {
+                                    navController.navigate(Login)
+                                }
+                                isNavigating = false
                             }
                         }
                     },

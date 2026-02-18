@@ -54,6 +54,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.AppTopBar
+import fr.univ.nantes.core.ui.Green500
+import fr.univ.nantes.core.ui.Green600
+import fr.univ.nantes.core.ui.Green700
+import fr.univ.nantes.core.ui.Green900
+import fr.univ.nantes.core.ui.GreenBg50
 import org.koin.androidx.compose.koinViewModel
 import fr.univ.nantes.feature.profil.R
 
@@ -118,7 +123,7 @@ fun ProfileScreen(
                         .clip(CircleShape)
                         .background(
                             Brush.linearGradient(
-                                listOf(Color(0xFF10B981), Color(0xFF0D9488))
+                                listOf(Green500, Green600)
                             )
                         ),
                     contentAlignment = Alignment.Center
@@ -217,7 +222,7 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .padding(top = 4.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF10B981),
+                    containerColor = Green500,
                     contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(12.dp),
@@ -261,7 +266,7 @@ private fun InfoBanner(preferredCurrency: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFECFDF3)),
+        colors = CardDefaults.cardColors(containerColor = GreenBg50),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -269,18 +274,18 @@ private fun InfoBanner(preferredCurrency: String) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Outlined.Public, contentDescription = null, tint = Color(0xFF16A34A))
+            Icon(Icons.Outlined.Public, contentDescription = null, tint = Green700)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(stringResource(id = R.string.profile_automatic_conversion), fontWeight = FontWeight.SemiBold, color = Color(0xFF166534))
+                Text(stringResource(id = R.string.profile_automatic_conversion), fontWeight = FontWeight.SemiBold, color = Green900)
                 Text(
                     stringResource(id = R.string.profile_preferred_currency_info, preferredCurrency),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF166534)
+                    color = Green900
                 )
                 Text(
                     stringResource(id = R.string.profile_conversion_calculation_info),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF166534)
+                    color = Green900
                 )
             }
         }
