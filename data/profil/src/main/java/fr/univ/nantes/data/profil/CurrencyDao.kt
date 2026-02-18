@@ -13,5 +13,7 @@ interface CurrencyDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(currencies: List<CurrencyEntity>)
-}
 
+    @Query("SELECT COUNT(*) FROM currencies")
+    suspend fun countCurrencies(): Int
+}
