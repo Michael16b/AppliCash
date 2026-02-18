@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.Green500
-import fr.univ.nantes.core.ui.Green600
+import fr.univ.nantes.core.ui.Teal600
 import fr.univ.nantes.core.ui.Green700
 import fr.univ.nantes.core.ui.Green900
 import fr.univ.nantes.core.ui.GreenBg50
@@ -123,7 +123,7 @@ fun ProfileScreen(
                         .clip(CircleShape)
                         .background(
                             Brush.linearGradient(
-                                listOf(Green500, Green600)
+                                listOf(Green500, Teal600)
                             )
                         ),
                     contentAlignment = Alignment.Center

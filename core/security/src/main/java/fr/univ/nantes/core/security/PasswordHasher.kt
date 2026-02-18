@@ -10,6 +10,8 @@ import javax.crypto.spec.PBEKeySpec
  * - Salt: Random per-password salt to prevent rainbow table attacks
  * - Iterations: High iteration count to slow down brute-force attempts
  * - Strong algorithm: PBKDF2 with HMAC-SHA256
+ * 
+ * Hash format: salt$hash (both hex-encoded, separated by '$' as per standard practice)
  */
 object PasswordHasher {
     private const val ALGORITHM = "PBKDF2WithHmacSHA256"
@@ -21,7 +23,7 @@ object PasswordHasher {
      * Hashes a password using PBKDF2WithHmacSHA256 with a random salt.
      * 
      * @param password The plain text password to hash
-     * @return A string containing the salt and hash in the format: salt:hash (both hex-encoded)
+     * @return A string containing the salt and hash in the format: salt$hash (both hex-encoded)
      */
     fun hashPassword(password: String): String {
         val salt = ByteArray(SALT_LENGTH)
@@ -29,18 +31,18 @@ object PasswordHasher {
         
         val hash = pbkdf2(password, salt)
         
-        return "${bytesToHex(salt)}:${bytesToHex(hash)}"
+        return "${bytesToHex(salt)}$${bytesToHex(hash)}"
     }
 
     /**
      * Verifies a password against a stored hash.
      * 
      * @param password The plain text password to verify
-     * @param storedHash The stored hash in the format: salt:hash
+     * @param storedHash The stored hash in the format: salt$hash
      * @return true if the password matches, false otherwise
      */
     fun verifyPassword(password: String, storedHash: String): Boolean {
-        val parts = storedHash.split(":")
+        val parts = storedHash.split("$")
         if (parts.size != 2) return false
         
         val salt = hexToBytes(parts[0])

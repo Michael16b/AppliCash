@@ -24,7 +24,9 @@ val profileDataModule = module {
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     super.onCreate(db)
-                    // prepopulate currency table synchronously to avoid race conditions
+                    // prepopulate currency table synchronously to ensure data is available before first use
+                    // This runs during database creation (first app launch only) so the blocking is acceptable
+                    // Alternative async approach would require handling empty currency list throughout the app
                     runBlocking {
                         val dao = get<ProfileDatabase>().currencyDao()
                         dao.insertAll(
