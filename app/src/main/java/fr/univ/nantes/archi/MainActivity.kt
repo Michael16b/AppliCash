@@ -8,18 +8,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import fr.univ.nantes.core.ui.AppliCashTheme
-import fr.univ.nantes.domain.profil.ProfileUseCase
 import fr.univ.nantes.feature.expense.BalanceRoute
 import fr.univ.nantes.feature.expense.BalanceScreen
 import fr.univ.nantes.feature.expense.ExpenseRoute
@@ -35,10 +29,7 @@ import fr.univ.nantes.feature.splashscreen.Splash
 import fr.univ.nantes.feature.splashscreen.SplashScreen
 import fr.univ.nantes.home.Home
 import fr.univ.nantes.home.HomeScreen
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,9 +48,6 @@ class MainActivity : ComponentActivity() {
 private fun App() {
     val navController = rememberNavController()
     val expenseViewModel: ExpenseViewModel = koinViewModel()
-    val profileUseCase: ProfileUseCase = koinInject()
-    val scope = rememberCoroutineScope()
-    var isNavigating by remember { mutableStateOf(false) }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         NavHost(
@@ -69,8 +57,6 @@ private fun App() {
         ) {
             composable<Splash> {
                 SplashScreen(navigateNext = {
-                    // TODO: Check authentication state and route to Login if not authenticated
-                    // For now, navigating directly to Home as authentication is not implemented
                     navController.navigate(Home()) {
                         popUpTo<Splash> { inclusive = true }
                     }
@@ -108,7 +94,6 @@ private fun App() {
                 BalanceScreen(
                     viewModel = expenseViewModel,
                     navigateToGroup = {
-                        // Reset the ViewModel to ensure users start with a clean state
                         expenseViewModel.reset()
                         navController.navigate(Group) {
                             popUpTo<Group> { inclusive = true }
@@ -120,36 +105,15 @@ private fun App() {
                 HomeScreen(
                     viewModel = expenseViewModel,
                     onAddGroupClick = {
-                        if (!isNavigating) {
-                            isNavigating = true
-                            scope.launch {
-                                val loggedIn = profileUseCase.observeProfile().first() != null
-                                if (loggedIn) {
-                                    navController.navigate(Group)
-                                } else {
-                                    navController.navigate(Login)
-                                }
-                                isNavigating = false
-                            }
-                        }
+                        // Navigation directe vers création de groupe
+                        navController.navigate(Group)
                     },
                     onGroupClick = { groupData ->
                         expenseViewModel.loadGroup(groupData.id)
                         navController.navigate(ExpenseRoute)
                     },
                     onProfileClick = {
-                        if (!isNavigating) {
-                            isNavigating = true
-                            scope.launch {
-                                val loggedIn = profileUseCase.observeProfile().first() != null
-                                if (loggedIn) {
-                                    navController.navigate(ProfilRoute)
-                                } else {
-                                    navController.navigate(Login)
-                                }
-                                isNavigating = false
-                            }
-                        }
+                        navController.navigate(ProfilRoute)
                     },
                     modifier = Modifier.fillMaxSize(),
                 )

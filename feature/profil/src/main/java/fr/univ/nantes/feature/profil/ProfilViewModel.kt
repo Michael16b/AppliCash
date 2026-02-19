@@ -20,7 +20,7 @@ data class ProfileUiState(
     val currency: String = DEFAULT_CURRENCY,
     val currencies: List<String> = emptyList(),
     val isExistingProfile: Boolean = false,
-    val isLoading: Boolean = true,
+    val isLoading: Boolean = false,
     val errors: Map<String, String> = emptyMap()
 )
 
@@ -38,35 +38,45 @@ class ProfilViewModel(
 
     private fun observeCurrencies() {
         viewModelScope.launch {
-            profileUseCase.observeCurrencies().collect { currencies ->
-                _uiState.update { state ->
-                    val selected = if (state.currency == DEFAULT_CURRENCY && currencies.isNotEmpty()) {
-                        currencies.first()
-                    } else state.currency
-                    state.copy(currencies = currencies, currency = selected)
+            try {
+                profileUseCase.observeCurrencies().collect { currencies ->
+                    _uiState.update { state ->
+                        val selected = if (state.currency == DEFAULT_CURRENCY && currencies.isNotEmpty()) {
+                            currencies.first()
+                        } else state.currency
+                        state.copy(currencies = currencies, currency = selected)
+                    }
                 }
+            } catch (e: Exception) {
+                // En cas d'erreur, utiliser la devise par défaut
+                _uiState.update { it.copy(currencies = emptyList(), currency = DEFAULT_CURRENCY) }
             }
         }
     }
 
     private fun observeProfile() {
         viewModelScope.launch {
-            profileUseCase.observeProfile().collect { profile ->
-                if (profile == null) {
-                    _uiState.update { it.copy(isExistingProfile = false, isLoading = false) }
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            firstName = profile.firstName,
-                            lastName = profile.lastName,
-                            email = profile.email,
-                            currency = profile.currency,
-                            isExistingProfile = true,
-                            isLoading = false,
-                            errors = emptyMap()
-                        )
+            try {
+                profileUseCase.observeProfile().collect { profile ->
+                    if (profile == null) {
+                        _uiState.update { it.copy(isExistingProfile = false, isLoading = false) }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                firstName = profile.firstName,
+                                lastName = profile.lastName,
+                                email = profile.email,
+                                currency = profile.currency,
+                                isExistingProfile = true,
+                                isLoading = false,
+                                errors = emptyMap()
+                            )
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                // En cas d'erreur, afficher l'écran vide
+                _uiState.update { it.copy(isExistingProfile = false, isLoading = false) }
             }
         }
     }
