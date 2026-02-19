@@ -11,6 +11,9 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -25,7 +28,11 @@ include(":feature:home")
 include(":data:login")
 include(":data:expense")
 include(":core:ui")
+include(":core:security")
 include(":feature:login")
 include(":domain:login")
 include(":feature:expense")
 include(":feature:splashscreen")
+include(":data:profil")
+include(":domain:profil")
+include(":feature:profil")
