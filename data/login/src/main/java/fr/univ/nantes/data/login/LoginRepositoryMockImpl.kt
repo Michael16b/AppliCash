@@ -6,7 +6,7 @@ import fr.univ.nantes.domain.login.User
 
 class LoginRepositoryMockImpl : LoginRepository {
     override suspend fun authenticate(email: String, password: String): User {
-        if (email != "admin@admin" ) throw LoginException.NotExistingException
+        if (email != "admin@admin") throw LoginException.NotExistingException
         if (password != "admin") throw LoginException.WrongPasswordException
         return User(username = "admin", email = email)
     }
