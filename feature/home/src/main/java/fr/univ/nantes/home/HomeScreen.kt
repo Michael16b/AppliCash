@@ -49,9 +49,6 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlinx.serialization.Serializable
 
-// TODO: These imports create tight coupling between features. Consider moving GroupData
-// and ExpenseViewModel interface/state to a shared domain module to improve modularity.
-
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,

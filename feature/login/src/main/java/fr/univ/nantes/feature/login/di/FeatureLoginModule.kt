@@ -7,4 +7,3 @@ import org.koin.dsl.module
 val featureLoginModule = module {
     viewModelOf(::LoginViewModel)
 }
-
