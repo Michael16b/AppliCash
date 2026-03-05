@@ -2,7 +2,7 @@
     <string name="app_name">expense</string>
 
     <!-- GroupScreen -->
-    <string name="new_group">Nouveau groupe</string>
+    <string name="new_group">Nouveau Groupe</string>
     <string name="group_name">Nom du groupe</string>
     <string name="group_name_label">Nom du groupe</string>
     <string name="group_name_placeholder">Ex: Vacances, Colocation …</string>
@@ -14,6 +14,7 @@
     <string name="add_member">Ajouter un membre</string>
     <string name="remove_participant_description">Supprimer le membre</string>
     <string name="continue_button">Continuer</string>
+
     <string name="create_group_button">Créer le groupe</string>
     <string name="participants_count">Membres (%d)</string>
     <string name="error_group_name">Veuillez entrer un nom de groupe</string>
@@ -30,7 +31,7 @@
     <string name="paid_by_format">Payé par %s</string>
 
     <!-- BalanceScreen -->
-    <string name="total_format">Total : %s</string>
+    <string name="total_format">Total: %s</string>
     <string name="balances">Soldes</string>
     <string name="reimbursements">Remboursements</string>
     <string name="no_reimbursement">Aucun remboursement nécessaire</string>
