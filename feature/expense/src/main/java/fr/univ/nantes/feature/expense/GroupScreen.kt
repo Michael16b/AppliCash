@@ -1,8 +1,6 @@
 package fr.univ.nantes.feature.expense
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -31,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,13 +46,16 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object Group
 
+private data class MemberField(val id: Int, val value: String)
+
 @Composable
 fun GroupScreen(
     viewModel: ExpenseViewModel,
     navigateToHome: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
-    val memberFields = remember { mutableStateListOf("") }
+    val nextId = remember { mutableStateOf(1) }
+    val memberFields = remember { mutableStateListOf(MemberField(id = 0, value = "")) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val groupNameError = stringResource(R.string.error_group_name)
     val membersError = stringResource(R.string.error_members)
@@ -84,18 +85,24 @@ fun GroupScreen(
 
             OutlinedTextField(
                 value = state.groupName,
-                onValueChange = { viewModel.setGroupName(it) },
+                onValueChange = {
+                    viewModel.setGroupName(it)
+                    errorMessage = null
+                },
+                label = {
+                    Text(stringResource(R.string.group_name_label))
+                },
                 placeholder = {
                     Text(
                         stringResource(R.string.group_name_placeholder),
-                        color = Color(0xFFBBBBBB)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color(0xFFDDDDDD),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
                     focusedBorderColor = Green500,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
@@ -119,44 +126,49 @@ fun GroupScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 // --- Champs des membres ---
-                memberFields.forEachIndexed { index, value ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        OutlinedTextField(
-                            value = value,
-                            onValueChange = { memberFields[index] = it },
-                            placeholder = {
-                                Text(
-                                    stringResource(R.string.member_placeholder),
-                                    color = Color(0xFFBBBBBB)
+                memberFields.forEachIndexed { index, member ->
+                    key(member.id) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            OutlinedTextField(
+                                value = member.value,
+                                onValueChange = { newValue ->
+                                    memberFields[index] = member.copy(value = newValue)
+                                    errorMessage = null
+                                },
+                                placeholder = {
+                                    Text(
+                                        stringResource(R.string.member_placeholder),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    )
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                    focusedBorderColor = Green500,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedContainerColor = Color.Transparent,
+                                    cursorColor = Green500
                                 )
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedBorderColor = Color(0xFFDDDDDD),
-                                focusedBorderColor = Green500,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedContainerColor = Color.Transparent,
-                                cursorColor = Green500
                             )
-                        )
 
-                        if (memberFields.size > 1) {
-                            IconButton(
-                                onClick = { memberFields.removeAt(index) },
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = stringResource(R.string.remove_participant_description),
-                                    tint = Color(0xFFE53935)
-                                )
+                            if (memberFields.size > 1) {
+                                IconButton(
+                                    onClick = { memberFields.removeAt(index) },
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = stringResource(R.string.remove_member_description),
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
                         }
                     }
@@ -168,7 +180,7 @@ fun GroupScreen(
                 if (errorMessage != null) {
                     Text(
                         text = errorMessage!!,
-                        color = Color(0xFFE53935),
+                        color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
@@ -178,7 +190,7 @@ fun GroupScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable {
-                        memberFields.add("")
+                        memberFields.add(MemberField(id = nextId.value++, value = ""))
                     }
                 ) {
                     Icon(
@@ -203,13 +215,13 @@ fun GroupScreen(
                 // --- Bouton Créer groupe ---
                 Button(
                     onClick = {
-                        val members = memberFields.filter { it.isNotBlank() }
+                        val members = memberFields.filter { it.value.isNotBlank() }
                         when {
                             state.groupName.isBlank() -> errorMessage = groupNameError
                             members.size < 2 -> errorMessage = membersError
                             else -> {
                                 errorMessage = null
-                                members.forEach { viewModel.addParticipant(it) }
+                                members.forEach { viewModel.addParticipant(it.value) }
                                 viewModel.saveGroup()
                                 navigateToHome()
                             }
