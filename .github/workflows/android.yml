@@ -31,4 +31,4 @@ jobs:
             - name: Build Android (assembleDebug)
               env:
                   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -XX:+UseParallelGC"
-              run: ./gradlew assembleDebug --max-workers=2 --configuration-cache --configuration-cache-problems=warn --no-daemon --console=plain
+              run: ./gradlew assembleDebug --max-workers=2 --build-cache --configuration-cache --configuration-cache-problems=warn --no-daemon --console=plain
