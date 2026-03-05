@@ -10,4 +10,17 @@
     <string name="expenses">dépenses</string>
     <string name="expense">dépense</string>
     <string name="profile">Profil</string>
+    <string name="tab_expenses">Dépenses</string>
+    <string name="tab_balances">Soldes</string>
+    <string name="total_expenses">Total des dépenses</string>
+    <string name="balances_title">Soldes des membres</string>
+    <string name="suggested_reimbursements">Remboursements suggérés</string>
+    <string name="no_expenses">Aucune dépense pour l\'instant</string>
+    <string name="no_reimbursements">Aucun remboursement nécessaire</string>
+    <string name="paid_by">Payé par %1$s</string>
+    <string name="participants_list">Participants : %1$s</string>
+    <string name="participants_list_short">Pour %1$s</string>
+    <string name="per_person_amount">Par personne : %1$s</string>
+    <string name="expenses_preview">Aperçu des dépenses</string>
+    <string name="more_expenses">%1$d dépenses supplémentaires</string>
 </resources>

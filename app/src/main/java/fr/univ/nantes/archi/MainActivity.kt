@@ -13,6 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.feature.expense.BalanceRoute
 import fr.univ.nantes.feature.expense.BalanceScreen
@@ -27,6 +28,8 @@ import fr.univ.nantes.feature.profil.ProfilRoute
 import fr.univ.nantes.feature.profil.ProfileScreen
 import fr.univ.nantes.feature.splashscreen.Splash
 import fr.univ.nantes.feature.splashscreen.SplashScreen
+import fr.univ.nantes.home.GroupDetail
+import fr.univ.nantes.home.GroupDetailScreen
 import fr.univ.nantes.home.Home
 import fr.univ.nantes.home.HomeScreen
 import org.koin.androidx.compose.koinViewModel
@@ -105,18 +108,27 @@ private fun App() {
                 HomeScreen(
                     viewModel = expenseViewModel,
                     onAddGroupClick = {
-                        // Navigation directe vers création de groupe
                         navController.navigate(Group)
                     },
                     onGroupClick = { groupData ->
-                        expenseViewModel.loadGroup(groupData.id)
-                        navController.navigate(ExpenseRoute)
+                        navController.navigate(GroupDetail(groupId = groupData.id))
                     },
                     onProfileClick = {
                         navController.navigate(ProfilRoute)
                     },
                     modifier = Modifier.fillMaxSize(),
                 )
+            }
+            composable<GroupDetail> { backStackEntry ->
+                val route = backStackEntry.toRoute<GroupDetail>()
+                val groups = expenseViewModel.state.value.groups
+                val group = groups.find { it.id == route.groupId }
+                if (group != null) {
+                    GroupDetailScreen(
+                        group = group,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
             composable<ProfilRoute> {
                 ProfileScreen(

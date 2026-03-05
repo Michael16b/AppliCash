@@ -10,4 +10,17 @@
     <string name="expenses">expenses</string>
     <string name="expense">expense</string>
     <string name="profile">Profile</string>
+    <string name="tab_expenses">Expenses</string>
+    <string name="tab_balances">Balances</string>
+    <string name="total_expenses">Total expenses</string>
+    <string name="balances_title">Member balances</string>
+    <string name="suggested_reimbursements">Suggested reimbursements</string>
+    <string name="no_expenses">No expenses yet</string>
+    <string name="no_reimbursements">No reimbursements needed</string>
+    <string name="paid_by">Paid by %1$s</string>
+    <string name="participants_list">Participants: %1$s</string>
+    <string name="participants_list_short">For %1$s</string>
+    <string name="per_person_amount">Per person: %1$s</string>
+    <string name="expenses_preview">Expenses preview</string>
+    <string name="more_expenses">%1$d more expenses</string>
 </resources>
