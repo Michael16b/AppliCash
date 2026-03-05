@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
  * as Long representing the smallest currency unit (e.g., cents).
  */
 data class Expense(
+    val id: Long = 0,
     val description: String,
     val amount: Double,
     val paidBy: String
@@ -91,6 +92,7 @@ class ExpenseViewModel(
                         participants = groupWithDetails.participants.map { it.name },
                         expenses = groupWithDetails.expenses.map {
                             Expense(
+                                id = it.id,
                                 description = it.description,
                                 amount = it.amount,
                                 paidBy = it.paidBy
@@ -137,6 +139,7 @@ class ExpenseViewModel(
                         participants = groupWithDetails.participants.map { participant -> participant.name },
                         expenses = groupWithDetails.expenses.map { expense ->
                             Expense(
+                                id = expense.id,
                                 description = expense.description,
                                 amount = expense.amount,
                                 paidBy = expense.paidBy
@@ -210,7 +213,7 @@ class ExpenseViewModel(
      */
     fun addExpense(description: String, amount: Double, paidBy: String) {
         if (description.isNotBlank() && amount > 0 && paidBy.isNotBlank() && _state.value.participants.contains(paidBy)) {
-            val expense = Expense(description, amount, paidBy)
+            val expense = Expense(description = description, amount = amount, paidBy = paidBy)
             _state.update { it.copy(
                 expenses = it.expenses + expense
             ) }
@@ -324,7 +327,6 @@ class ExpenseViewModel(
                     participants = currentGroup.participants
                 )
 
-                // Ajouter les dépenses si présentes
                 currentGroup.expenses.forEach { expense ->
                     repository.addExpenseToGroup(
                         groupId = groupId,
@@ -334,7 +336,6 @@ class ExpenseViewModel(
                     )
                 }
 
-                // Réinitialiser l'état actuel
                 _state.update { it.copy(
                     groupName = "",
                     participants = emptyList(),
@@ -342,6 +343,17 @@ class ExpenseViewModel(
                     currentGroupId = null
                 ) }
             }
+        }
+    }
+
+    /**
+     * Deletes an expense by id from the repository and reloads the current group.
+     */
+    fun deleteExpense(expenseId: Long) {
+        val groupId = getCurrentGroupId() ?: return
+        viewModelScope.launch {
+            repository.deleteExpense(expenseId)
+            loadGroup(groupId)
         }
     }
 

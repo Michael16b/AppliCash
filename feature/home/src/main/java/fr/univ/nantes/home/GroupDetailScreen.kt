@@ -3,6 +3,7 @@ package fr.univ.nantes.home
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,8 +13,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
@@ -53,11 +60,14 @@ data class GroupDetail(val groupId: Long)
 @Composable
 fun GroupDetailScreen(
     group: GroupData,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onAddExpense: () -> Unit = {},
+    onDeleteExpense: (Long) -> Unit = {}
 ) {
+    val currencyCode = "EUR"
     val currencyFormat = remember {
         NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-            currency = Currency.getInstance("EUR")
+            currency = Currency.getInstance(currencyCode)
         }
     }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -71,10 +81,24 @@ fun GroupDetailScreen(
                 showBack = true,
                 onBack = onBack
             )
+        },
+        floatingActionButton = {
+            if (selectedTab == 0) {
+                FloatingActionButton(
+                    onClick = onAddExpense,
+                    containerColor = Teal400
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = stringResource(R.string.add_expense),
+                        tint = Color.White
+                    )
+                }
+            }
         }
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            HeaderSummary(group, currencyFormat)
+            HeaderSummary(group, currencyFormat, currencyCode)
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
@@ -113,15 +137,15 @@ fun GroupDetailScreen(
             }
 
             when (selectedTab) {
-                0 -> ExpensesTab(group, currencyFormat)
-                1 -> BalancesTab(group, currencyFormat)
+                0 -> ExpensesTab(group, currencyFormat, onDeleteExpense)
+                1 -> BalancesTab(group, currencyFormat, currencyCode)
             }
         }
     }
 }
 
 @Composable
-private fun HeaderSummary(group: GroupData, currencyFormat: NumberFormat) {
+private fun HeaderSummary(group: GroupData, currencyFormat: NumberFormat, currencyCode: String) {
     val total = group.expenses.sumOf { it.amount }
     val isDarkMode = isSystemInDarkTheme()
     val cardColor = if (isDarkMode) MaterialTheme.colorScheme.surfaceContainerHigh else TealBg50
@@ -139,27 +163,39 @@ private fun HeaderSummary(group: GroupData, currencyFormat: NumberFormat) {
             Text(
                 text = stringResource(R.string.total_expenses),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.White.copy(alpha = 0.8f)
             )
             Text(
                 text = currencyFormat.format(total),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = Teal400
+                color = Color.White
+            )
+            Text(
+                text = stringResource(R.string.currency_label, currencyCode),
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
 }
 
 @Composable
-private fun ExpensesTab(group: GroupData, currencyFormat: NumberFormat) {
+private fun ExpensesTab(
+    group: GroupData,
+    currencyFormat: NumberFormat,
+    onDeleteExpense: (Long) -> Unit
+) {
     if (group.expenses.isEmpty()) {
-        Text(
-            text = stringResource(R.string.no_expenses),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(16.dp)
-        )
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text = stringResource(R.string.no_expenses),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
         return
     }
     LazyColumn(
@@ -167,18 +203,29 @@ private fun ExpensesTab(group: GroupData, currencyFormat: NumberFormat) {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(group.expenses) { expense ->
-            ExpenseItem(expense, group, currencyFormat)
+        items(group.expenses, key = { it.id }) { expense ->
+            ExpenseItem(expense, group, currencyFormat, onDeleteExpense)
         }
     }
 }
 
 @Composable
-private fun ExpenseItem(expense: Expense, group: GroupData, currencyFormat: NumberFormat) {
+private fun ExpenseItem(
+    expense: Expense,
+    group: GroupData,
+    currencyFormat: NumberFormat,
+    onDeleteExpense: (Long) -> Unit
+) {
+    val sharePerPerson = if (group.participants.isNotEmpty()) {
+        expense.amount / group.participants.size
+    } else {
+        0.0
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             Row(
@@ -190,20 +237,30 @@ private fun ExpenseItem(expense: Expense, group: GroupData, currencyFormat: Numb
                     text = expense.description,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = currencyFormat.format(expense.amount),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = currencyFormat.format(expense.amount),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    IconButton(onClick = { onDeleteExpense(expense.id) }) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.delete_expense),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             }
             Text(
                 text = stringResource(R.string.paid_by, expense.paidBy),
                 style = MaterialTheme.typography.bodySmall,
                 color = Teal400,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = 2.dp)
             )
             Text(
                 text = stringResource(R.string.participants_list_short, group.participants.joinToString()),
@@ -211,33 +268,52 @@ private fun ExpenseItem(expense: Expense, group: GroupData, currencyFormat: Numb
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp)
             )
+            Card(
+                modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                ),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.per_person_amount, currencyFormat.format(sharePerPerson)),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
+private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat, currencyCode: String) {
     val balances = calculateBalances(group)
     val reimbursements = calculateReimbursements(balances)
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = stringResource(R.string.balances_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        if (balances.isEmpty()) {
+        item {
             Text(
-                text = stringResource(R.string.no_expenses),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = stringResource(R.string.balances_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
+        }
+        if (balances.isEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.no_expenses),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         } else {
-            balances.forEach { balance ->
+            items(balances) { balance ->
                 val positive = balance.amount >= 0
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -269,22 +345,38 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
                     }
                 }
             }
+            item {
+                Text(
+                    text = stringResource(R.string.balances_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(R.string.currency_label, currencyCode),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Teal400
+                )
+            }
         }
-
-        Text(
-            text = stringResource(R.string.suggested_reimbursements),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        if (reimbursements.isEmpty()) {
+        item {
             Text(
-                text = stringResource(R.string.no_reimbursements),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = stringResource(R.string.suggested_reimbursements),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 4.dp)
             )
+        }
+        if (reimbursements.isEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.no_reimbursements),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         } else {
-            reimbursements.forEach { item ->
+            items(reimbursements) { item ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -293,7 +385,7 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -302,12 +394,18 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
-                        Text(
-                            text = currencyFormat.format(item.amount),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Teal400
-                        )
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = TealBg50),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text(
+                                text = currencyFormat.format(item.amount),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Teal400,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
                         Text(
                             text = item.to,
                             style = MaterialTheme.typography.bodyLarge,
@@ -361,9 +459,9 @@ private fun GroupDetailPreview() {
         groupName = "Vacances été 2025",
         participants = listOf("Alice", "Bob", "Charlie"),
         expenses = listOf(
-            Expense("Essence", 80.0, "Alice"),
-            Expense("Hôtel", 300.0, "Bob"),
-            Expense("Restaurant", 120.0, "Alice")
+            Expense(1, "Essence", 80.0, "Alice"),
+            Expense(2, "Hôtel", 300.0, "Bob"),
+            Expense(3, "Restaurant", 120.0, "Alice")
         )
     )
     AppliCashTheme {

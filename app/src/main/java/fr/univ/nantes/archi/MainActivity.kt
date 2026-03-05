@@ -126,7 +126,14 @@ private fun App() {
                 if (group != null) {
                     GroupDetailScreen(
                         group = group,
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onAddExpense = {
+                            expenseViewModel.loadGroup(group.id)
+                            navController.navigate(ExpenseRoute)
+                        },
+                        onDeleteExpense = { expenseId ->
+                            expenseViewModel.deleteExpense(expenseId)
+                        }
                     )
                 }
             }

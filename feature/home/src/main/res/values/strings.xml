@@ -23,4 +23,8 @@
     <string name="per_person_amount">Per person: %1$s</string>
     <string name="expenses_preview">Expenses preview</string>
     <string name="more_expenses">%1$d more expenses</string>
+    <string name="add_expense">Add an expense</string>
+    <string name="delete_expense">Delete expense</string>
+    <string name="currency_label">In your currency (%1$s)</string>
+    <string name="balances_hint">Positive balances indicate amounts to receive, negative amounts to pay</string>
 </resources>
