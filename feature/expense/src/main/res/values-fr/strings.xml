@@ -8,11 +8,12 @@
     <string name="group_name_placeholder">Ex: Vacances, Colocation …</string>
     <string name="members_label">Membres</string>
     <string name="member_placeholder">Membre1</string>
-    <string name="participant">Participant</string>
+    <string name="member">Membre</string>
     <string name="add_participant">Ajouter un participant</string>
     <string name="add_participant_description">Ajouter un membre</string>
     <string name="add_member">Ajouter un membre</string>
     <string name="remove_participant_description">Supprimer le membre</string>
+    <string name="remove_member_description">Supprimer le membre</string>
     <string name="continue_button">Continuer</string>
 
     <string name="create_group_button">Créer le groupe</string>
