@@ -269,7 +269,7 @@ fun GroupCard(
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(
                         imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        contentDescription = null,
+                        contentDescription = if (expanded) stringResource(R.string.hide_expenses_preview) else stringResource(R.string.show_expenses_preview),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

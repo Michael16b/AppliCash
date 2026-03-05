@@ -25,6 +25,8 @@
     <string name="more_expenses">%1$d more expenses</string>
     <string name="add_expense">Add an expense</string>
     <string name="delete_expense">Delete expense</string>
-    <string name="currency_label">In your currency (%1$s)</string>
+    <string name="currency_label">Currency: %1$s</string>
+    <string name="show_expenses_preview">Show expenses preview</string>
+    <string name="hide_expenses_preview">Hide expenses preview</string>
     <string name="balances_hint">Positive balances indicate amounts to receive, negative amounts to pay</string>
 </resources>
