@@ -1,16 +1,24 @@
 <resources>
     <string name="app_name">expense</string>
-    
+
     <!-- GroupScreen -->
     <string name="new_group">New Group</string>
     <string name="group_name">Group Name</string>
+    <string name="group_name_label">Group Name</string>
+    <string name="group_name_placeholder">Enter group name</string>
     <string name="participant">Participant</string>
+    <string name="members_label">Members</string>
+    <string name="member_placeholder">Enter member name</string>
     <string name="add_participant">Add participant</string>
     <string name="add_participant_description">Add participant</string>
+    <string name="add_member">Add Member</string>
     <string name="remove_participant_description">Remove participant</string>
     <string name="continue_button">Continue</string>
+    <string name="create_group_button">Create Group</string>
     <string name="participants_count">Participants (%d)</string>
-    
+    <string name="error_group_name">Group name cannot be empty</string>
+    <string name="error_members">At least 2 members are required</string>
+
     <!-- ExpenseScreen -->
     <string name="description">Description</string>
     <string name="amount">Amount</string>
@@ -20,7 +28,7 @@
     <string name="expenses_count">Expenses (%d)</string>
     <string name="view_split">View split</string>
     <string name="paid_by_format">Paid by %s</string>
-    
+
     <!-- BalanceScreen -->
     <string name="total_format">Total: %s</string>
     <string name="balances">Balances</string>
@@ -28,7 +36,7 @@
     <string name="no_reimbursement">No reimbursement needed</string>
     <string name="owes_format">%1$s owes %2$s to %3$s</string>
     <string name="new_group_button">New group</string>
-    
+
     <!-- Currency -->
     <string name="currency_code">EUR</string>
 </resources>
