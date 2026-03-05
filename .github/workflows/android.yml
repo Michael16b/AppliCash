@@ -25,9 +25,5 @@ jobs:
         additional-cache-paths: |
           ~/.konan
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-    - name: Check Code Style (Ktlint)
-      run: ./gradlew ktlintCheck
-    - name: Build with Gradle
-      run: ./gradlew build
+    - name: Check Code Style & Build
+      run: ./gradlew ktlintCheck assembleDebug --parallel --configuration-cache
