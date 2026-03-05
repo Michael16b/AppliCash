@@ -347,10 +347,9 @@ class ExpenseViewModel(
     }
 
     /**
-     * Deletes an expense by id from the repository and reloads the current group.
+     * Deletes an expense by id from the repository and reloads the given group.
      */
-    fun deleteExpense(expenseId: Long) {
-        val groupId = getCurrentGroupId() ?: return
+    fun deleteExpense(expenseId: Long, groupId: Long) {
         viewModelScope.launch {
             repository.deleteExpense(expenseId)
             loadGroup(groupId)

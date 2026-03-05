@@ -149,11 +149,15 @@ private fun HeaderSummary(group: GroupData, currencyFormat: NumberFormat, curren
     val total = group.expenses.sumOf { it.amount }
     val isDarkMode = isSystemInDarkTheme()
     val cardColor = if (isDarkMode) MaterialTheme.colorScheme.surfaceContainerHigh else TealBg50
+    val cardTextColor = MaterialTheme.colorScheme.onSurface
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(12.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
+        colors = CardDefaults.cardColors(
+            containerColor = cardColor,
+            contentColor = cardTextColor
+        ),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
@@ -163,18 +167,18 @@ private fun HeaderSummary(group: GroupData, currencyFormat: NumberFormat, curren
             Text(
                 text = stringResource(R.string.total_expenses),
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = 0.8f)
+                color = cardTextColor.copy(alpha = 0.8f)
             )
             Text(
                 text = currencyFormat.format(total),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = cardTextColor
             )
             Text(
                 text = stringResource(R.string.currency_label, currencyCode),
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.7f),
+                color = cardTextColor.copy(alpha = 0.7f),
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
@@ -288,8 +292,8 @@ private fun ExpenseItem(
 
 @Composable
 private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat, currencyCode: String) {
-    val balances = calculateBalances(group)
-    val reimbursements = calculateReimbursements(balances)
+    val balances = remember(group) { calculateBalances(group) }
+    val reimbursements = remember(balances) { calculateReimbursements(balances) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),

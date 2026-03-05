@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
@@ -121,8 +123,8 @@ private fun App() {
             }
             composable<GroupDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<GroupDetail>()
-                val groups = expenseViewModel.state.value.groups
-                val group = groups.find { it.id == route.groupId }
+                val state by expenseViewModel.state.collectAsState()
+                val group = state.groups.find { it.id == route.groupId }
                 if (group != null) {
                     GroupDetailScreen(
                         group = group,
@@ -132,7 +134,7 @@ private fun App() {
                             navController.navigate(ExpenseRoute)
                         },
                         onDeleteExpense = { expenseId ->
-                            expenseViewModel.deleteExpense(expenseId)
+                            expenseViewModel.deleteExpense(expenseId, group.id)
                         }
                     )
                 }
