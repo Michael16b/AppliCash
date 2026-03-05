@@ -26,5 +26,7 @@
     <string name="add_expense">Ajouter une dépense</string>
     <string name="delete_expense">Supprimer la dépense</string>
     <string name="currency_label">Dans votre devise (%1$s)</string>
+    <string name="show_expenses_preview">Voir l\'aperçu des dépenses</string>
+    <string name="hide_expenses_preview">Cacher l\'aperçu des dépenses</string>
     <string name="balances_hint">Les soldes positifs indiquent les montants à recevoir, les négatifs les montants à payer</string>
 </resources>
