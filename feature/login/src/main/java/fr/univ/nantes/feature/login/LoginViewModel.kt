@@ -39,11 +39,16 @@ class LoginViewModel(
 
     private fun observeCurrencies() {
         viewModelScope.launch {
-            profileUseCase.observeCurrencies().collect { list ->
-                _uiState.update { state ->
-                    val selected = if (state.currency == DEFAULT_CURRENCY && list.isNotEmpty()) list.first() else state.currency
-                    state.copy(currencies = list, currency = selected)
+            try {
+                profileUseCase.observeCurrencies().collect { list ->
+                    val currencies = if (list.isEmpty()) listOf(DEFAULT_CURRENCY) else list
+                    _uiState.update { state ->
+                        val selected = if (state.currency == DEFAULT_CURRENCY && currencies.isNotEmpty()) currencies.first() else state.currency
+                        state.copy(currencies = currencies, currency = selected)
+                    }
                 }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(currencies = listOf(DEFAULT_CURRENCY), currency = DEFAULT_CURRENCY) }
             }
         }
     }
