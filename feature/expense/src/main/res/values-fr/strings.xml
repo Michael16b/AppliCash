@@ -4,18 +4,28 @@
     <!-- GroupScreen -->
     <string name="new_group">Nouveau Groupe</string>
     <string name="group_name">Nom du groupe</string>
-    <string name="participant">Participant</string>
+    <string name="group_name_label">Nom du groupe</string>
+    <string name="group_name_placeholder">Ex: Vacances, Colocation …</string>
+    <string name="members_label">Membres</string>
+    <string name="member_placeholder">Membre1</string>
+    <string name="member">Membre</string>
     <string name="add_participant">Ajouter un participant</string>
-    <string name="add_participant_description">Ajouter un participant</string>
-    <string name="remove_participant_description">Supprimer le participant</string>
+    <string name="add_participant_description">Ajouter un membre</string>
+    <string name="add_member">Ajouter un membre</string>
+    <string name="remove_participant_description">Supprimer le membre</string>
+    <string name="remove_member_description">Supprimer le membre</string>
     <string name="continue_button">Continuer</string>
-    <string name="participants_count">Participants (%d)</string>
+
+    <string name="create_group_button">Créer le groupe</string>
+    <string name="participants_count">Membres (%d)</string>
+    <string name="error_group_name">Veuillez entrer un nom de groupe</string>
+    <string name="error_members">Ajoutez au moins 2 membres</string>
 
     <!-- ExpenseScreen -->
     <string name="description">Description</string>
     <string name="amount">Montant</string>
     <string name="paid_by">Payé par</string>
-    <string name="add_expense">Ajouter dépense</string>
+    <string name="add_expense">Ajouter une dépense</string>
     <string name="expenses">Dépenses</string>
     <string name="expenses_count">Dépenses (%d)</string>
     <string name="view_split">Voir le partage</string>
@@ -26,7 +36,7 @@
     <string name="balances">Soldes</string>
     <string name="reimbursements">Remboursements</string>
     <string name="no_reimbursement">Aucun remboursement nécessaire</string>
-    <string name="owes_format">%s doit %s à %s</string>
+    <string name="owes_format">%1$s doit %2$s à %3$s</string>
     <string name="new_group_button">Nouveau groupe</string>
 
     <!-- Currency -->

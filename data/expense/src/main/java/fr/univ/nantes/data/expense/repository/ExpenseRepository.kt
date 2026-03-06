@@ -21,6 +21,7 @@ interface ExpenseRepository {
         paidBy: String
     )
     suspend fun deleteGroup(groupId: Long)
+    suspend fun deleteExpense(expenseId: Long)
 }
 
 class ExpenseRepositoryImpl(
@@ -38,12 +39,10 @@ class ExpenseRepositoryImpl(
     }
 
     override suspend fun createGroup(groupName: String, participants: List<String>): Long {
-        // Créer le groupe
         val groupId = groupDao.insertGroup(
             ExpenseGroupEntity(groupName = groupName)
         )
 
-        // Ajouter les participants
         if (participants.isNotEmpty()) {
             val participantEntities = participants.map { name ->
                 ParticipantEntity(groupId = groupId, name = name)
@@ -78,6 +77,10 @@ class ExpenseRepositoryImpl(
 
     override suspend fun deleteGroup(groupId: Long) {
         groupDao.deleteGroup(groupId)
+    }
+
+    override suspend fun deleteExpense(expenseId: Long) {
+        expenseDao.deleteExpense(expenseId)
     }
 }
 

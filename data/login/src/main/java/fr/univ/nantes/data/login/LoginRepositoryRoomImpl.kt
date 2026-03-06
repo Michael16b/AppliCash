@@ -8,7 +8,7 @@ import fr.univ.nantes.domain.login.LoginRepository
 import fr.univ.nantes.domain.login.User
 
 class LoginRepositoryRoomImpl(
-    private val profileDao: ProfileDao,
+    private val profileDao: ProfileDao
 ) : LoginRepository {
 
     override suspend fun authenticate(email: String, password: String): User {

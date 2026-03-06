@@ -48,6 +48,10 @@ class FakeExpenseRepository : ExpenseRepository {
     override suspend fun deleteGroup(groupId: Long) {
         // No-op for testing
     }
+
+    override suspend fun deleteExpense(expenseId: Long) {
+        // No-op for testing
+    }
 }
 
 /**
