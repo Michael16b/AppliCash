@@ -26,9 +26,8 @@ jobs:
                       ~/.konan
 
             - name: Check Code Style (Ktlint)
-              run: ./gradlew ktlintCheck --no-daemon --console=plain
+              run: ./gradlew ktlintCheck --build-cache --configuration-cache --configuration-cache-problems=warn --no-daemon --console=plain
 
-            - name: Build Android (assembleDebug)
-              env:
-                  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -XX:+UseParallelGC"
-              run: ./gradlew assembleDebug --max-workers=2 --build-cache --configuration-cache --configuration-cache-problems=warn --no-daemon --console=plain
+
+            - name: Build Android app only
+              run: ./gradlew :app:assembleDebug --build-cache --configuration-cache --configuration-cache-problems=warn --no-daemon --console=plain
