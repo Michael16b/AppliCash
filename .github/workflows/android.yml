@@ -21,9 +21,7 @@ jobs:
 
             - name: Setup Gradle (with KMP cache)
               uses: gradle/actions/setup-gradle@v3
-              with:
-                  additional-cache-paths: |
-                      ~/.konan
+
 
             - name: Check Code Style (Ktlint)
               run: ./gradlew ktlintCheck --build-cache --configuration-cache --configuration-cache-problems=warn --no-daemon --console=plain
