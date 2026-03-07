@@ -17,4 +17,5 @@
     <string name="currency_jpy">JPY - Japanese Yen</string>
     <string name="currency_gbp">GBP - British Pound</string>
     <string name="currency_chf">CHF - Swiss Franc</string>
+    <string name="profile_saved_success">Profile saved successfully</string>
 </resources>

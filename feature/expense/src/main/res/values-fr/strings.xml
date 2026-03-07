@@ -15,7 +15,6 @@
     <string name="remove_participant_description">Supprimer le membre</string>
     <string name="remove_member_description">Supprimer le membre</string>
     <string name="continue_button">Continuer</string>
-
     <string name="create_group_button">Créer le groupe</string>
     <string name="participants_count">Membres (%d)</string>
     <string name="error_group_name">Veuillez entrer un nom de groupe</string>

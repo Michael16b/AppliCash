@@ -22,7 +22,7 @@ data class ProfileUiState(
     val isExistingProfile: Boolean = false,
     val isLoading: Boolean = false,
     val errors: Map<String, String> = emptyMap(),
-    val saveSuccessMessage: String? = null
+    val saveSuccess: Boolean= false
 )
 
 class ProfilViewModel(
@@ -106,11 +106,8 @@ class ProfilViewModel(
                         isLoggedIn = true
                     )
                 )
-                println("💾 SAUVEGARDE RÉUSSIE dans la base de données !")
-                _uiState.update { it.copy(isExistingProfile = true, errors = emptyMap(),saveSuccessMessage = "Profil enregistré avec succès") }
+                _uiState.update { it.copy(isExistingProfile = true, errors = emptyMap(), saveSuccess = true) }
             } catch (e: Exception) {
-                // TEST 3 : Est-ce que Room plante silencieusement ?
-                println("❌ ERREUR LORS DE LA SAUVEGARDE : ${e.message}")
                 e.printStackTrace()
             }
         }
@@ -139,6 +136,6 @@ class ProfilViewModel(
     }
 
     fun clearSuccessMessage() {
-        _uiState.update { it.copy(saveSuccessMessage = null) }
+        _uiState.update { it.copy(saveSuccess = false) }
     }
 }

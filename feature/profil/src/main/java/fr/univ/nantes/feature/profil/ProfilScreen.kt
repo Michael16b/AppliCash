@@ -82,11 +82,14 @@ fun ProfileScreen(
             stringResource(id = R.string.currency_gbp),
             stringResource(id = R.string.currency_chf)
         )}
-        LaunchedEffect(state.saveSuccessMessage) {
-            state.saveSuccessMessage?.let { message ->
-                snackbarHostState.showSnackbar(message = message)
-                viewModel.clearSuccessMessage()
-            }
+
+    val saveSuccessMessage = stringResource(id = R.string.profile_saved_success)
+
+    LaunchedEffect(state.saveSuccess, saveSuccessMessage) {
+        if (state.saveSuccess) {
+            snackbarHostState.showSnackbar(message = saveSuccessMessage)
+            viewModel.clearSuccessMessage()
+        }
     }
     var currencyMenuExpanded by remember { mutableStateOf(false) }
 

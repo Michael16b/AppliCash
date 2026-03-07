@@ -2,9 +2,6 @@ package fr.univ.nantes.feature.expense
 
 import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import fr.univ.nantes.data.expense.model.GroupWithDetails
-import fr.univ.nantes.data.expense.entity.ExpenseGroupEntity
-import fr.univ.nantes.data.expense.entity.ParticipantEntity
-import fr.univ.nantes.data.expense.entity.ExpenseEntity
 import fr.univ.nantes.domain.profil.ProfileUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,6 +13,8 @@ import kotlinx.coroutines.test.setMain
 import org.junit.Test
 import org.junit.Assert.*
 import org.junit.Before
+import fr.univ.nantes.domain.profil.Profile
+import fr.univ.nantes.domain.profil.ProfileRepository
 
 /**
  * Fake repository for testing that does not interact with the database
@@ -54,6 +53,17 @@ class FakeExpenseRepository : ExpenseRepository {
         // No-op for testing
     }
 }
+private fun fakeProfileUseCase(): ProfileUseCase {
+    val fakeRepository = object : ProfileRepository {
+        override fun observeProfile(): Flow<Profile?> = flowOf(null)
+        override fun observeCurrencies(): Flow<List<String>> = flowOf(listOf("EUR - Euro"))
+        override suspend fun saveProfile(profile: Profile) = Unit
+        override suspend fun clearProfile() = Unit
+    }
+    return ProfileUseCase(fakeRepository)
+}
+
+
 
 /**
  * Unit tests for ExpenseViewModel business logic.
@@ -69,6 +79,7 @@ class ExpenseViewModelTest {
     fun setup() {
         Dispatchers.setMain(mainDispatcher)
         fakeRepository = FakeExpenseRepository()
+        fakeProfileUseCase = fakeProfileUseCase()
         viewModel = ExpenseViewModel(fakeRepository, fakeProfileUseCase)
     }
 
