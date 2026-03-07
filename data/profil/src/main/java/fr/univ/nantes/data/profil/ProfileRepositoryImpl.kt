@@ -1,6 +1,6 @@
+
 package fr.univ.nantes.data.profil
 
-import fr.univ.nantes.core.security.PasswordHasher
 import fr.univ.nantes.domain.profil.Profile
 import fr.univ.nantes.domain.profil.ProfileRepository
 import kotlinx.coroutines.flow.Flow
@@ -32,9 +32,10 @@ class ProfileRepositoryImpl(
             .map { list -> list.map { "${it.code} - ${it.name}" } }
 
     override suspend fun saveProfile(profile: Profile) {
-        val existing = dao.findByEmail(profile.email)
+        val existing = dao.getActiveProfile()
         val hashed = existing?.password ?: ""
         val entity = profile.toEntity(
+            id=existing?.id ?: 0,
             password = hashed,
             isLoggedIn = profile.isLoggedIn || existing?.isLoggedIn == true
         )
@@ -54,9 +55,9 @@ class ProfileRepositoryImpl(
             isLoggedIn = isLoggedIn
         )
 
-    private fun Profile.toEntity(password: String, isLoggedIn: Boolean): ProfileEntity =
+    private fun Profile.toEntity(id: Int, password: String, isLoggedIn: Boolean): ProfileEntity =
         ProfileEntity(
-            id = 0,
+            id=id,
             firstName = firstName,
             lastName = lastName,
             email = email,
