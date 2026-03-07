@@ -24,7 +24,7 @@ jobs:
 
 
             - name: Check Code Style (Ktlint)
-              run: ./gradlew ktlintCheck --build-cache --configuration-cache --configuration-cache-problems=warn --console=plain
+              run: ./gradlew ktlintCheck --build-cache --configuration-cache --configuration-cache-problems=warn --parallel --console=plain
 
 
             - name: Build Android app only
