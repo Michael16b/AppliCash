@@ -5,6 +5,7 @@ import fr.univ.nantes.data.expense.model.GroupWithDetails
 import fr.univ.nantes.data.expense.entity.ExpenseGroupEntity
 import fr.univ.nantes.data.expense.entity.ParticipantEntity
 import fr.univ.nantes.data.expense.entity.ExpenseEntity
+import fr.univ.nantes.domain.profil.ProfileUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -61,13 +62,14 @@ class FakeExpenseRepository : ExpenseRepository {
 class ExpenseViewModelTest {
     private lateinit var viewModel: ExpenseViewModel
     private lateinit var fakeRepository: ExpenseRepository
+    private lateinit var fakeProfileUseCase: ProfileUseCase
     private val mainDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(mainDispatcher)
         fakeRepository = FakeExpenseRepository()
-        viewModel = ExpenseViewModel(fakeRepository)
+        viewModel = ExpenseViewModel(fakeRepository, fakeProfileUseCase)
     }
 
     @org.junit.After
