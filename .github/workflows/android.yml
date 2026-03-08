@@ -35,6 +35,14 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
           cache-cleanup: on-success
+          # Requis pour sauvegarder le configuration-cache entre les runs CI.
+          # Sans cette clé, "--configuration-cache" recalcule le task graph à chaque run
+          # (message "no cached configuration is available").
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          # Permet un partial cache hit entre commits (restaure le cache du commit précédent
+          # si le commit exact n'est pas trouvé). Indispensable pour que main bénéficie
+          # du cache produit par les PRs.
+          gradle-home-cache-strict-match: false
           # Inclure init.d pour mettre en cache les plugins injectés par gradle/actions
           gradle-home-cache-includes: |
             caches
@@ -68,8 +76,8 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
           cache-cleanup: on-success
-          # Inclure init.d pour mettre en cache les plugins injectés par gradle/actions
-          # (dont le dependency-graph plugin résolu depuis plugins.gradle.org)
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          gradle-home-cache-strict-match: false
           gradle-home-cache-includes: |
             caches
             notifications
