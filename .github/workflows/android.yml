@@ -23,9 +23,5 @@ jobs:
               uses: gradle/actions/setup-gradle@v3
 
 
-            - name: Check Code Style (Ktlint)
-              run: ./gradlew ktlintCheck --build-cache --configuration-cache --configuration-cache-problems=warn --parallel --console=plain
-
-
-            - name: Build Android app only
-              run: ./gradlew :app:assembleDebug --build-cache --configuration-cache --configuration-cache-problems=warn --parallel --console=plain
+            - name: Build and Check Code Style
+              run: ./gradlew ktlintCheck :app:assembleDebug --build-cache --parallel --console=plain
