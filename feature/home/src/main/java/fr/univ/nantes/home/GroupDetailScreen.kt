@@ -29,6 +29,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -129,6 +130,13 @@ fun GroupDetailScreen(
             SecondaryTabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
+                indicator = {
+                    SecondaryIndicator(
+                        color = Teal400,
+                        height = 3.dp,
+                        modifier = Modifier.tabIndicatorOffset(selectedTab, matchContentSize = false)
+                    )
+                },
                 divider = {}
             ) {
                 Tab(
