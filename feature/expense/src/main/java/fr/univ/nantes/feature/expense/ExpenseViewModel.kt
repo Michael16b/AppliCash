@@ -225,8 +225,6 @@ class ExpenseViewModel(
      * @param paidBy The name of the participant who paid for the expense
      */
     fun addExpense(description: String, amount: Double, paidBy: String) {
-        val loggedIn = _state.value.isLoggedIn
-        if (!loggedIn) return
         if (description.isNotBlank() && amount > 0 && paidBy.isNotBlank() && _state.value.participants.contains(paidBy)) {
             val expense = Expense(description = description, amount = amount, paidBy = paidBy)
             _state.update { it.copy(
