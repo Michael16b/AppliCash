@@ -121,7 +121,6 @@ class ProfilViewModel(
 
     fun redirectToLogin(onLogout: () -> Unit) {
         performLogout(resetUiState = false, onLogout = onLogout)
-        _uiState.update { it.copy(shouldRedirectLogin = false) }
     }
 
     fun logout(onLogout: () -> Unit) {
@@ -131,8 +130,12 @@ class ProfilViewModel(
     private fun performLogout(resetUiState: Boolean, onLogout: () -> Unit) {
         viewModelScope.launch {
             profileUseCase.clear()
-            if (resetUiState) {
-                _uiState.update { ProfileUiState(isExistingProfile = false, isLoading = false) }
+            _uiState.update {
+                if (resetUiState) {
+                    ProfileUiState(isExistingProfile = false, isLoading = false)
+                } else {
+                    it.copy(shouldRedirectLogin = false)
+                }
             }
             onLogout()
         }
