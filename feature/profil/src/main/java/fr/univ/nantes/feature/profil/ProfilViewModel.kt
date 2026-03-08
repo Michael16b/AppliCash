@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.univ.nantes.domain.profil.Profile
 import fr.univ.nantes.domain.profil.ProfileUseCase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +23,7 @@ data class ProfileUiState(
     val isExistingProfile: Boolean = false,
     val isLoading: Boolean = true,
     val errors: Map<String, String> = emptyMap(),
-    val saveSuccess: Boolean= false,
+    val saveSuccess: Boolean = false,
     val shouldRedirectLogin: Boolean = false
 )
 
@@ -49,7 +50,9 @@ class ProfilViewModel(
                         state.copy(currencies = currencies, currency = selected)
                     }
                 }
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
                 // En cas d'erreur, utiliser la devise par défaut
                 _uiState.update { it.copy(currencies = emptyList(), currency = DEFAULT_CURRENCY) }
             }
@@ -77,7 +80,9 @@ class ProfilViewModel(
                         }
                     }
                 }
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
                 _uiState.update { it.copy(isExistingProfile = false, isLoading = false, shouldRedirectLogin = true) }
             }
         }
@@ -115,18 +120,19 @@ class ProfilViewModel(
     }
 
     fun redirectToLogin(onLogout: () -> Unit) {
-        viewModelScope.launch {
-            profileUseCase.clear()
-            _uiState.update { it.copy(shouldRedirectLogin = false) }
-            onLogout()
-        }
+        performLogout(resetUiState = false, onLogout = onLogout)
+        _uiState.update { it.copy(shouldRedirectLogin = false) }
     }
 
     fun logout(onLogout: () -> Unit) {
+        performLogout(resetUiState = true, onLogout = onLogout)
+    }
+
+    private fun performLogout(resetUiState: Boolean, onLogout: () -> Unit) {
         viewModelScope.launch {
             profileUseCase.clear()
-            _uiState.update {
-                ProfileUiState(isExistingProfile = false, isLoading = false)
+            if (resetUiState) {
+                _uiState.update { ProfileUiState(isExistingProfile = false, isLoading = false) }
             }
             onLogout()
         }
