@@ -1,7 +1,7 @@
 package fr.univ.nantes.archi
 
 import android.app.Application
-import fr.univ.nantes.archi.di.appModules
+import fr.univ.nantes.archi.di.AppModules
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.GlobalContext.startKoin
@@ -18,7 +18,7 @@ class MainApplication : Application() {
         startKoin {
             androidLogger(Level.DEBUG)
             androidContext(this@MainApplication)
-            modules(appModules)
+            modules(AppModules)
         }
     }
 }
