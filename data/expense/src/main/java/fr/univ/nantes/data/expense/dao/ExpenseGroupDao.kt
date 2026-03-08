@@ -28,4 +28,3 @@ interface ExpenseGroupDao {
     @Query("SELECT * FROM expense_groups WHERE id = :groupId")
     suspend fun getGroupById(groupId: Long): ExpenseGroupEntity?
 }
-

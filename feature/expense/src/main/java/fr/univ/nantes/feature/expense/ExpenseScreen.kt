@@ -14,9 +14,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -58,11 +58,11 @@ fun ExpenseScreen(
                 // Fallback: find a locale that uses this currency
                 Locale.getAvailableLocales().find { locale ->
                     locale.country.isNotEmpty() &&
-                    try {
-                        java.util.Currency.getInstance(locale).currencyCode == currencyCode
-                    } catch (_: IllegalArgumentException) {
-                        false
-                    }
+                        try {
+                            java.util.Currency.getInstance(locale).currencyCode == currencyCode
+                        } catch (_: IllegalArgumentException) {
+                            false
+                        }
                 } ?: Locale.getDefault()
             }
         }

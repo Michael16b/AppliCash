@@ -23,4 +23,3 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun participantDao(): ParticipantDao
     abstract fun expenseDao(): ExpenseDao
 }
-

@@ -28,4 +28,3 @@ val dataExpenseModule = module {
         )
     }
 }
-

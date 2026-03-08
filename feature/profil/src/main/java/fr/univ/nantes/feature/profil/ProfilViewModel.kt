@@ -43,7 +43,9 @@ class ProfilViewModel(
                     _uiState.update { state ->
                         val selected = if (state.currency == DEFAULT_CURRENCY && currencies.isNotEmpty()) {
                             currencies.first()
-                        } else state.currency
+                        } else {
+                            state.currency
+                        }
                         state.copy(currencies = currencies, currency = selected)
                     }
                 }

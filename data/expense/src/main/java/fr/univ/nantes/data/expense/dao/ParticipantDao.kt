@@ -20,4 +20,3 @@ interface ParticipantDao {
     @Query("DELETE FROM participants WHERE id = :participantId")
     suspend fun deleteParticipant(participantId: Long)
 }
-

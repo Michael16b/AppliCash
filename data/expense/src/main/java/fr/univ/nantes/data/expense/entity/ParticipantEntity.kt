@@ -23,4 +23,3 @@ data class ParticipantEntity(
     val groupId: Long,
     val name: String
 )
-

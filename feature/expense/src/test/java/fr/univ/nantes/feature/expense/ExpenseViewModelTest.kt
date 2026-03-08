@@ -1,10 +1,7 @@
 package fr.univ.nantes.feature.expense
 
-import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import fr.univ.nantes.data.expense.model.GroupWithDetails
-import fr.univ.nantes.data.expense.entity.ExpenseGroupEntity
-import fr.univ.nantes.data.expense.entity.ParticipantEntity
-import fr.univ.nantes.data.expense.entity.ExpenseEntity
+import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -12,9 +9,12 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
-import org.junit.Test
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Test
 
 /**
  * Fake repository for testing that does not interact with the database

@@ -4,13 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -177,9 +177,11 @@ class ExpenseViewModel(
      */
     fun addParticipant(name: String) {
         if (name.isNotBlank() && !_state.value.participants.contains(name)) {
-            _state.update { it.copy(
-                participants = it.participants + name
-            ) }
+            _state.update {
+                it.copy(
+                    participants = it.participants + name
+                )
+            }
         }
     }
 
@@ -192,10 +194,12 @@ class ExpenseViewModel(
      * @param name The name of the participant to remove
      */
     fun removeParticipant(name: String) {
-        _state.update { it.copy(
-            participants = it.participants - name,
-            expenses = it.expenses.filter { expense -> expense.paidBy != name }
-        ) }
+        _state.update {
+            it.copy(
+                participants = it.participants - name,
+                expenses = it.expenses.filter { expense -> expense.paidBy != name }
+            )
+        }
     }
 
     /**
@@ -214,10 +218,11 @@ class ExpenseViewModel(
     fun addExpense(description: String, amount: Double, paidBy: String) {
         if (description.isNotBlank() && amount > 0 && paidBy.isNotBlank() && _state.value.participants.contains(paidBy)) {
             val expense = Expense(description = description, amount = amount, paidBy = paidBy)
-            _state.update { it.copy(
-                expenses = it.expenses + expense
-            ) }
-
+            _state.update {
+                it.copy(
+                    expenses = it.expenses + expense
+                )
+            }
 
             val groupId = getCurrentGroupId()
             if (groupId != null) {
@@ -336,12 +341,14 @@ class ExpenseViewModel(
                     )
                 }
 
-                _state.update { it.copy(
-                    groupName = "",
-                    participants = emptyList(),
-                    expenses = emptyList(),
-                    currentGroupId = null
-                ) }
+                _state.update {
+                    it.copy(
+                        groupName = "",
+                        participants = emptyList(),
+                        expenses = emptyList(),
+                        currentGroupId = null
+                    )
+                }
             }
         }
     }

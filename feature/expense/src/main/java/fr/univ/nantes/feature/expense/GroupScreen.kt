@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -51,7 +51,7 @@ private data class MemberField(val id: Int, val value: String)
 @Composable
 fun GroupScreen(
     viewModel: ExpenseViewModel,
-    navigateToHome: () -> Unit = {},
+    navigateToHome: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val nextId = remember { mutableStateOf(1) }
@@ -73,7 +73,7 @@ fun GroupScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             // --- Nom du groupe ---
             Text(
@@ -132,7 +132,7 @@ fun GroupScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             OutlinedTextField(
                                 value = member.value,

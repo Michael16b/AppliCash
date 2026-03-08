@@ -21,9 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import kotlinx.serialization.Serializable
 import java.text.NumberFormat
 import java.util.Locale
+import kotlinx.serialization.Serializable
 
 @Serializable
 data object BalanceRoute
@@ -53,11 +53,11 @@ fun BalanceScreen(
                 // Fallback: find a locale that uses this currency
                 Locale.getAvailableLocales().find { locale ->
                     locale.country.isNotEmpty() &&
-                            try {
-                                java.util.Currency.getInstance(locale).currencyCode == currencyCode
-                            } catch (_: IllegalArgumentException) {
-                                false
-                            }
+                        try {
+                            java.util.Currency.getInstance(locale).currencyCode == currencyCode
+                        } catch (_: IllegalArgumentException) {
+                            false
+                        }
                 } ?: Locale.getDefault()
             }
         }

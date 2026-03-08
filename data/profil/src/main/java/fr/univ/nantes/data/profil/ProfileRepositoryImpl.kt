@@ -1,6 +1,5 @@
 package fr.univ.nantes.data.profil
 
-import fr.univ.nantes.core.security.PasswordHasher
 import fr.univ.nantes.domain.profil.Profile
 import fr.univ.nantes.domain.profil.ProfileRepository
 import kotlinx.coroutines.flow.Flow
@@ -19,17 +18,15 @@ class ProfileRepositoryImpl(
         CurrencyEntity(code = "JPY", name = "Yen")
     )
 
-    override fun observeProfile(): Flow<Profile?> =
-        dao.observeProfile().map { entity -> entity?.toDomain() }
+    override fun observeProfile(): Flow<Profile?> = dao.observeProfile().map { entity -> entity?.toDomain() }
 
-    override fun observeCurrencies(): Flow<List<String>> =
-        currencyDao.observeCurrencies()
-            .onStart {
-                if (currencyDao.countCurrencies() == 0) {
-                    currencyDao.insertAll(defaultCurrencies)
-                }
+    override fun observeCurrencies(): Flow<List<String>> = currencyDao.observeCurrencies()
+        .onStart {
+            if (currencyDao.countCurrencies() == 0) {
+                currencyDao.insertAll(defaultCurrencies)
             }
-            .map { list -> list.map { "${it.code} - ${it.name}" } }
+        }
+        .map { list -> list.map { "${it.code} - ${it.name}" } }
 
     override suspend fun saveProfile(profile: Profile) {
         val existing = dao.findByEmail(profile.email)
@@ -45,23 +42,21 @@ class ProfileRepositoryImpl(
         dao.logout()
     }
 
-    private fun ProfileEntity.toDomain(): Profile =
-        Profile(
-            firstName = firstName,
-            lastName = lastName,
-            email = email,
-            currency = currency,
-            isLoggedIn = isLoggedIn
-        )
+    private fun ProfileEntity.toDomain(): Profile = Profile(
+        firstName = firstName,
+        lastName = lastName,
+        email = email,
+        currency = currency,
+        isLoggedIn = isLoggedIn
+    )
 
-    private fun Profile.toEntity(password: String, isLoggedIn: Boolean): ProfileEntity =
-        ProfileEntity(
-            id = 0,
-            firstName = firstName,
-            lastName = lastName,
-            email = email,
-            currency = currency,
-            password = password,
-            isLoggedIn = isLoggedIn
-        )
+    private fun Profile.toEntity(password: String, isLoggedIn: Boolean): ProfileEntity = ProfileEntity(
+        id = 0,
+        firstName = firstName,
+        lastName = lastName,
+        email = email,
+        currency = currency,
+        password = password,
+        isLoggedIn = isLoggedIn
+    )
 }

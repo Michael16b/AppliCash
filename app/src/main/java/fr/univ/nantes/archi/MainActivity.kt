@@ -58,7 +58,7 @@ private fun App() {
         NavHost(
             navController = navController,
             startDestination = Splash,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(innerPadding)
         ) {
             composable<Splash> {
                 SplashScreen(navigateNext = {
@@ -118,7 +118,7 @@ private fun App() {
                     onProfileClick = {
                         navController.navigate(ProfilRoute)
                     },
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize()
                 )
             }
             composable<GroupDetail> { backStackEntry ->

@@ -10,4 +10,3 @@ data class ExpenseGroupEntity(
     val groupName: String,
     val createdAt: Long = System.currentTimeMillis()
 )
-

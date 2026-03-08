@@ -26,4 +26,3 @@ data class ExpenseEntity(
     val paidBy: String,
     val createdAt: Long = System.currentTimeMillis()
 )
-

@@ -7,4 +7,3 @@ import org.koin.dsl.module
 val profileFeatureModule = module {
     viewModelOf(::ProfilViewModel)
 }
-
