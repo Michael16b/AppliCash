@@ -37,7 +37,6 @@ jobs:
         with:
           cache-read-only: false
           cache-cleanup: on-success
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           gradle-home-cache-strict-match: false
           gradle-home-cache-includes: |
             caches
@@ -75,7 +74,6 @@ jobs:
         with:
           cache-read-only: false
           cache-cleanup: on-success
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           gradle-home-cache-strict-match: false
           gradle-home-cache-includes: |
             caches
