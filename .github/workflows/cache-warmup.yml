@@ -37,7 +37,6 @@ jobs:
         with:
           cache-read-only: false
           cache-cleanup: on-success
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
             caches/modules-*/files-*/com.android.tools*
@@ -70,7 +69,6 @@ jobs:
         with:
           cache-read-only: false
           cache-cleanup: on-success
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
             caches/modules-*/files-*/com.android.tools*

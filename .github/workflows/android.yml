@@ -33,10 +33,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          cache-read-only: false
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
           cache-cleanup: on-success
-          # Cle de chiffrement requise pour sauvegarder le configuration-cache entre les runs
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           # Exclut les artefacts volumineux non reutilisables pour reduire la taille du cache
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
@@ -64,9 +62,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          cache-read-only: false
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
           cache-cleanup: on-success
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
             caches/modules-*/files-*/com.android.tools*
@@ -96,4 +93,3 @@ jobs:
             exit 1
           fi
           echo "All jobs passed successfully"
-
