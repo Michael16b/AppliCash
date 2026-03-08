@@ -11,10 +11,6 @@ permissions:
   contents: read
   actions: write
 
-env:
-  # Desactive le daemon (conteneur CI ephemere) - les options JVM sont dans gradle.properties
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-
 jobs:
   warmup-lint:
     name: Warm-up KtLint cache
@@ -40,7 +36,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Warm-up KtLint
-        run: ./gradlew ktlintCheck --no-configuration-cache --build-cache --parallel --console=plain
+        run: ./gradlew ktlintCheck --no-daemon --no-configuration-cache --build-cache --parallel --console=plain
 
   warmup-build:
     name: Warm-up Build cache
@@ -66,4 +62,4 @@ jobs:
         run: chmod +x gradlew
 
       - name: Warm-up Build & Test cache
-        run: ./gradlew assembleDebug testDebugUnitTest --build-cache --configuration-cache --parallel --console=plain
+        run: ./gradlew assembleDebug testDebugUnitTest --no-daemon --build-cache --configuration-cache --parallel --console=plain

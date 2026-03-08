@@ -14,10 +14,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Desactive le daemon (conteneur CI ephemere) - les options JVM sont dans gradle.properties
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-
 jobs:
   lint:
     name: KtLint
@@ -41,8 +37,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run KtLint
-        # ktlint est incompatible avec le configuration-cache → on le désactive pour ce job
-        run: ./gradlew ktlintCheck --no-configuration-cache --build-cache --parallel --console=plain
+        run: ./gradlew ktlintCheck --no-daemon --no-configuration-cache --build-cache --parallel --console=plain
 
   build:
     name: Build & Test
@@ -70,4 +65,5 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Debug & Unit Tests
-        run: ./gradlew assembleDebug testDebugUnitTest --build-cache --configuration-cache --parallel --console=plain
+        # --no-daemon : methode officielle Gradle pour desactiver le daemon en CI
+        run: ./gradlew assembleDebug testDebugUnitTest --no-daemon --build-cache --configuration-cache --parallel --console=plain
