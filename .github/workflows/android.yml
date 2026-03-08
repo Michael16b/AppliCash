@@ -33,21 +33,21 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
+          # Toujours false : le configuration cache doit être écrit depuis les PRs
+          # pour être réutilisé au run suivant. Il est auto-invalidant côté Gradle
+          # (régénéré si les sources changent), donc sûr à écrire depuis n'importe quel job.
+          cache-read-only: false
           cache-cleanup: on-success
-          # Requis pour sauvegarder le configuration-cache entre les runs CI.
-          # Sans cette clé, "--configuration-cache" recalcule le task graph à chaque run
-          # (message "no cached configuration is available").
+          # Requis pour que gradle/actions sauvegarde le configuration-cache dans le
+          # Gradle User Home chiffré. Sans cette clé : "no cached configuration available".
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
-          # Permet un partial cache hit entre commits (restaure le cache du commit précédent
-          # si le commit exact n'est pas trouvé). Indispensable pour que main bénéficie
-          # du cache produit par les PRs.
+          # Partial cache hit entre commits (main réutilise le cache d'une PR précédente).
           gradle-home-cache-strict-match: false
-          # Inclure init.d pour mettre en cache les plugins injectés par gradle/actions
           gradle-home-cache-includes: |
             caches
             notifications
             init.d
+            configuration-cache
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
             caches/modules-*/files-*/com.android.tools*
@@ -74,7 +74,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
+          cache-read-only: false
           cache-cleanup: on-success
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           gradle-home-cache-strict-match: false
@@ -82,6 +82,7 @@ jobs:
             caches
             notifications
             init.d
+            configuration-cache
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
             caches/modules-*/files-*/com.android.tools*
@@ -111,3 +112,4 @@ jobs:
             exit 1
           fi
           echo "All jobs passed successfully"
+
