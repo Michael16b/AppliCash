@@ -15,8 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # 4 Go pour le JVM sur les runners GitHub (7 Go dispo au total)
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g -XX:+HeapDumpOnOutOfMemoryError"
+  # Desactive le daemon (conteneur CI ephemere) - les options JVM sont dans gradle.properties
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
 jobs:
   lint:
