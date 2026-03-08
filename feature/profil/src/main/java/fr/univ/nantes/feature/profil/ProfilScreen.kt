@@ -91,7 +91,29 @@ fun ProfileScreen(
             viewModel.clearSuccessMessage()
         }
     }
+
+    LaunchedEffect(state.shouldRedirectLogin) {
+        if (state.shouldRedirectLogin && !state.isLoading) {
+            viewModel.redirectToLogin(onLogout)
+        }
+    }
+
     var currencyMenuExpanded by remember { mutableStateOf(false) }
+
+    if (state.shouldRedirectLogin && !state.isLoading) {
+        // Redirection en cours, on évite d'afficher le contenu profil
+        return
+    }
+
+    if (state.isLoading) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
     androidx.compose.material3.Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -104,18 +126,7 @@ fun ProfileScreen(
             )
         }
     ) { innerPadding ->
-        if (state.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-            return@Scaffold
-        }
-
+        // remove loading guard inside Scaffold since handled above
         Column(
             modifier = Modifier
                 .fillMaxSize()

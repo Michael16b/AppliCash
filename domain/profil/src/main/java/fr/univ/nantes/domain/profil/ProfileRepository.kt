@@ -7,4 +7,5 @@ interface ProfileRepository {
     fun observeCurrencies(): Flow<List<String>>
     suspend fun saveProfile(profile: Profile)
     suspend fun clearProfile()
+    suspend fun isLoggedIn(): Boolean
 }

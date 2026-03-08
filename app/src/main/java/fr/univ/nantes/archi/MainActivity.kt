@@ -34,7 +34,11 @@ import fr.univ.nantes.home.GroupDetail
 import fr.univ.nantes.home.GroupDetailScreen
 import fr.univ.nantes.home.Home
 import fr.univ.nantes.home.HomeScreen
+import kotlinx.coroutines.launch
+import fr.univ.nantes.domain.profil.ProfileUseCase
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
+import androidx.compose.runtime.rememberCoroutineScope
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,6 +57,8 @@ class MainActivity : ComponentActivity() {
 private fun App() {
     val navController = rememberNavController()
     val expenseViewModel: ExpenseViewModel = koinViewModel()
+    val profileUseCase: ProfileUseCase = koinInject()
+    val scope = rememberCoroutineScope()
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         NavHost(
@@ -116,7 +122,16 @@ private fun App() {
                         navController.navigate(GroupDetail(groupId = groupData.id))
                     },
                     onProfileClick = {
-                        navController.navigate(ProfilRoute)
+                        scope.launch {
+                            val loggedIn = runCatching { profileUseCase.isLoggedIn() }.getOrDefault(false)
+                            if (loggedIn) {
+                                navController.navigate(ProfilRoute)
+                            } else {
+                                navController.navigate(Login) {
+                                    popUpTo<Home> { inclusive = true }
+                                }
+                            }
+                        }
                     },
                     modifier = Modifier.fillMaxSize(),
                 )

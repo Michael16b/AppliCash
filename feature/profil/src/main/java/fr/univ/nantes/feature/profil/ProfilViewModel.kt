@@ -20,9 +20,10 @@ data class ProfileUiState(
     val currency: String = DEFAULT_CURRENCY,
     val currencies: List<String> = emptyList(),
     val isExistingProfile: Boolean = false,
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val errors: Map<String, String> = emptyMap(),
-    val saveSuccess: Boolean= false
+    val saveSuccess: Boolean= false,
+    val shouldRedirectLogin: Boolean = false
 )
 
 class ProfilViewModel(
@@ -60,7 +61,7 @@ class ProfilViewModel(
             try {
                 profileUseCase.observeProfile().collect { profile ->
                     if (profile == null) {
-                        _uiState.update { it.copy(isExistingProfile = false, isLoading = false) }
+                        _uiState.update { it.copy(isExistingProfile = false, isLoading = false, shouldRedirectLogin = true) }
                     } else {
                         _uiState.update {
                             it.copy(
@@ -70,14 +71,14 @@ class ProfilViewModel(
                                 currency = profile.currency,
                                 isExistingProfile = true,
                                 isLoading = false,
-                                errors = emptyMap()
+                                errors = emptyMap(),
+                                shouldRedirectLogin = false
                             )
                         }
                     }
                 }
             } catch (e: Exception) {
-                // En cas d'erreur, afficher l'écran vide
-                _uiState.update { it.copy(isExistingProfile = false, isLoading = false) }
+                _uiState.update { it.copy(isExistingProfile = false, isLoading = false, shouldRedirectLogin = true) }
             }
         }
     }
@@ -110,6 +111,14 @@ class ProfilViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    fun redirectToLogin(onLogout: () -> Unit) {
+        viewModelScope.launch {
+            profileUseCase.clear()
+            _uiState.update { it.copy(shouldRedirectLogin = false) }
+            onLogout()
         }
     }
 
