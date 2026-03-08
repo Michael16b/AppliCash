@@ -6,12 +6,12 @@ import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
+import fr.univ.nantes.domain.profil.ProfileUseCase
 
 /**
  * Represents an expense in the group.
@@ -44,7 +44,8 @@ data class ExpenseState(
     val participants: List<String> = emptyList(),
     val expenses: List<Expense> = emptyList(),
     val groups: List<GroupData> = emptyList(),
-    val currentGroupId: Long? = null
+    val currentGroupId: Long? = null,
+    val currentUserName: String? = null
 )
 
 data class Balance(
@@ -66,7 +67,8 @@ data class Reimbursement(
  * functionality to calculate balances and determine optimal reimbursements.
  */
 class ExpenseViewModel(
-    private val repository: ExpenseRepository
+    private val repository: ExpenseRepository,
+    private val profileUseCase: ProfileUseCase
 ) : ViewModel() {
 
     companion object {
@@ -101,6 +103,12 @@ class ExpenseViewModel(
                     )
                 }
                 _state.update { it.copy(groups = groups) }
+            }
+        }
+        viewModelScope.launch {
+            profileUseCase.observeProfile().collect { profile ->
+                // On met à jour l'état avec le prénom (ou on met null s'il n'y a personne)
+                _state.update { it.copy(currentUserName = profile?.firstName) }
             }
         }
     }

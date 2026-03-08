@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -59,7 +60,12 @@ fun GroupScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val groupNameError = stringResource(R.string.error_group_name)
     val membersError = stringResource(R.string.error_members)
-
+    val currentUserName = state.currentUserName
+    LaunchedEffect(currentUserName) {
+        if (!currentUserName.isNullOrBlank() && memberFields.size == 1 && memberFields[0].value.isBlank()) {
+            memberFields[0] = memberFields[0].copy(value = currentUserName)
+        }
+    }
     Scaffold(
         topBar = {
             AppTopBar(

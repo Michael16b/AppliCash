@@ -68,4 +68,5 @@ dependencies {
 
     implementation(project(":core:ui"))
     implementation(project(":data:expense"))
+    implementation(project(":domain:profil"))
 }

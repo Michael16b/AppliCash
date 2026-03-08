@@ -32,7 +32,6 @@ class LoginRepositoryRoomImpl(
         val existing = profileDao.findByEmail(email)
         if (existing != null) throw LoginException.AlreadyExistsException
         val entity = ProfileEntity(
-            id = 0,
             firstName = firstName,
             lastName = lastName,
             email = email,

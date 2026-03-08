@@ -21,7 +21,8 @@ data class ProfileUiState(
     val currencies: List<String> = emptyList(),
     val isExistingProfile: Boolean = false,
     val isLoading: Boolean = false,
-    val errors: Map<String, String> = emptyMap()
+    val errors: Map<String, String> = emptyMap(),
+    val saveSuccess: Boolean= false
 )
 
 class ProfilViewModel(
@@ -89,20 +90,26 @@ class ProfilViewModel(
     fun saveProfile() {
         val current = _uiState.value
         val errors = validate(current)
+
         if (errors.isNotEmpty()) {
             _uiState.update { it.copy(errors = errors) }
             return
         }
         viewModelScope.launch {
-            profileUseCase.save(
-                Profile(
-                    firstName = current.firstName.trim(),
-                    lastName = current.lastName.trim(),
-                    email = current.email.trim(),
-                    currency = current.currency
+            try {
+                profileUseCase.save(
+                    Profile(
+                        firstName = current.firstName.trim(),
+                        lastName = current.lastName.trim(),
+                        email = current.email.trim(),
+                        currency = current.currency,
+                        isLoggedIn = true
+                    )
                 )
-            )
-            _uiState.update { it.copy(isExistingProfile = true, errors = emptyMap()) }
+                _uiState.update { it.copy(isExistingProfile = true, errors = emptyMap(), saveSuccess = true) }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -126,5 +133,9 @@ class ProfilViewModel(
             errors["email"] = "Format d'email invalide"
         }
         return errors
+    }
+
+    fun clearSuccessMessage() {
+        _uiState.update { it.copy(saveSuccess = false) }
     }
 }

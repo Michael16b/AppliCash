@@ -24,4 +24,6 @@ interface ProfileDao {
 
     @Query("DELETE FROM profile")
     suspend fun clear()
+    @Query("SELECT * FROM profile WHERE is_logged_in = 1 LIMIT 1")
+    suspend fun getActiveProfile(): ProfileEntity?
 }

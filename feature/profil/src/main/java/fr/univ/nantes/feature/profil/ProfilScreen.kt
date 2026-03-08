@@ -60,7 +60,9 @@ import fr.univ.nantes.core.ui.Green700
 import fr.univ.nantes.core.ui.Green900
 import fr.univ.nantes.core.ui.GreenBg50
 import org.koin.androidx.compose.koinViewModel
-import fr.univ.nantes.feature.profil.R
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +73,7 @@ fun ProfileScreen(
     onLogout: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     val currencies = state.currencies.ifEmpty {
         listOf(
             stringResource(id = R.string.currency_usd),
@@ -78,12 +81,21 @@ fun ProfileScreen(
             stringResource(id = R.string.currency_jpy),
             stringResource(id = R.string.currency_gbp),
             stringResource(id = R.string.currency_chf)
-        )
+        )}
+
+    val saveSuccessMessage = stringResource(id = R.string.profile_saved_success)
+
+    LaunchedEffect(state.saveSuccess, saveSuccessMessage) {
+        if (state.saveSuccess) {
+            snackbarHostState.showSnackbar(message = saveSuccessMessage)
+            viewModel.clearSuccessMessage()
+        }
     }
     var currencyMenuExpanded by remember { mutableStateOf(false) }
 
     androidx.compose.material3.Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             AppTopBar(
                 title = stringResource(id = R.string.profile_title),
