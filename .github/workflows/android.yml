@@ -35,7 +35,11 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
           cache-cleanup: on-success
-          # Exclut les artefacts volumineux non reutilisables pour reduire la taille du cache
+          # Inclure init.d pour mettre en cache les plugins injectés par gradle/actions
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            init.d
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
             caches/modules-*/files-*/com.android.tools*
@@ -64,11 +68,17 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
           cache-cleanup: on-success
+          # Inclure init.d pour mettre en cache les plugins injectés par gradle/actions
+          # (dont le dependency-graph plugin résolu depuis plugins.gradle.org)
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            init.d
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
             caches/modules-*/files-*/com.android.tools*
             caches/transforms-*/!*.jar
-          dependency-graph: generate-and-submit
+          dependency-graph: ${{ github.event_name == 'push' && 'generate-and-submit' || 'disabled' }}
           build-scan-publish: true
           build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
           build-scan-terms-of-use-agree: "yes"

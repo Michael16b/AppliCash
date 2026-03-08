@@ -37,6 +37,10 @@ jobs:
         with:
           cache-read-only: false
           cache-cleanup: on-success
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            init.d
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
             caches/modules-*/files-*/com.android.tools*
@@ -69,6 +73,10 @@ jobs:
         with:
           cache-read-only: false
           cache-cleanup: on-success
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            init.d
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
             caches/modules-*/files-*/com.android.tools*
