@@ -371,8 +371,4 @@ class ExpenseViewModel(
         }
     }
 
-    /**
-     * Gets the list of all saved groups.
-     */
-    fun getGroups(): List<GroupData> = _state.value.groups
 }

@@ -125,7 +125,7 @@ fun GroupDetailScreen(
         }
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            HeaderSummary(group, currencyFormat, currencyCode)
+            HeaderSummary(group, currencyFormat)
             SecondaryTabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
@@ -159,14 +159,15 @@ fun GroupDetailScreen(
 
             when (selectedTab) {
                 0 -> ExpensesTab(group, currencyFormat, onDeleteExpense)
-                1 -> BalancesTab(group, currencyFormat, currencyCode)
+                1 -> BalancesTab(group, currencyFormat)
             }
         }
     }
 }
 
 @Composable
-private fun HeaderSummary(group: GroupData, currencyFormat: NumberFormat, currencyCode: String) {
+private fun HeaderSummary(group: GroupData, currencyFormat: NumberFormat) {
+    val currencyCode = "EUR"
     val total = group.expenses.sumOf { it.amount }
     val isDarkMode = isSystemInDarkTheme()
     val cardColor = if (isDarkMode) MaterialTheme.colorScheme.surfaceContainerHigh else TealBg50
@@ -312,7 +313,8 @@ private fun ExpenseItem(
 }
 
 @Composable
-private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat, currencyCode: String) {
+private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
+    val currencyCode = "EUR"
     val balances = remember(group) { calculateBalances(group) }
     val reimbursements = remember(balances) { calculateReimbursements(balances) }
 
