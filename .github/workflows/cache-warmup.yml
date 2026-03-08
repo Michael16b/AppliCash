@@ -13,6 +13,9 @@ permissions:
   contents: read
   actions: write
 
+env:
+  GRADLE_COMMON_ARGS: "--build-cache --configuration-cache --parallel --console=plain"
+
 jobs:
   warmup-lint:
     name: Warm-up KtLint cache
@@ -29,23 +32,22 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Cache Gradle wrapper
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/wrapper
-          key: gradle-wrapper-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
           cache-cleanup: on-success
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          gradle-home-cache-excludes: |
+            caches/modules-*/files-*/com.google.android.gms
+            caches/modules-*/files-*/com.android.tools*
+            caches/transforms-*/!*.jar
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Warm-up KtLint
-        run: ./gradlew ktlintCheck --no-daemon --no-configuration-cache --build-cache --parallel --console=plain
+        run: ./gradlew ktlintCheck ${{ env.GRADLE_COMMON_ARGS }}
 
   warmup-build:
     name: Warm-up Build cache
@@ -63,20 +65,19 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Cache Gradle wrapper
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/wrapper
-          key: gradle-wrapper-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
           cache-cleanup: on-success
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          gradle-home-cache-excludes: |
+            caches/modules-*/files-*/com.google.android.gms
+            caches/modules-*/files-*/com.android.tools*
+            caches/transforms-*/!*.jar
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Warm-up Build & Test cache
-        run: ./gradlew assembleDebug testDebugUnitTest --build-cache --configuration-cache --parallel --console=plain
+        run: ./gradlew assembleDebug testDebugUnitTest ${{ env.GRADLE_COMMON_ARGS }}
