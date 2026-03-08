@@ -67,3 +67,20 @@ jobs:
       - name: Build Debug & Unit Tests
         # --no-daemon : methode officielle Gradle pour desactiver le daemon en CI
         run: ./gradlew assembleDebug testDebugUnitTest --no-daemon --build-cache --configuration-cache --parallel --console=plain
+
+  # Job agregateur : c'est LUI qui doit etre declare dans la branch protection rule
+  # Nom du check a mettre dans GitHub : "ci"
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    needs: [ lint, build ]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
+            echo "One or more jobs failed: lint=${{ needs.lint.result }}, build=${{ needs.build.result }}"
+            exit 1
+          fi
+          echo "All jobs passed successfully"
+

@@ -4,8 +4,10 @@ on:
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: [ "Android CI" ]
     branches: [ "main" ]
+    types: [ completed ]
 
 permissions:
   contents: read
@@ -15,6 +17,7 @@ jobs:
   warmup-lint:
     name: Warm-up KtLint cache
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,6 +44,7 @@ jobs:
   warmup-build:
     name: Warm-up Build cache
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
         with:
