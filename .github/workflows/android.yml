@@ -9,14 +9,23 @@ on:
 permissions:
   contents: write
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# Annule les runs en cours sur la même branche si un nouveau push arrive
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
+env:
+  # 4 Go pour le JVM sur les runners GitHub (7 Go dispo au total)
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g -XX:+HeapDumpOnOutOfMemoryError"
+
+jobs:
+  lint:
+    name: KtLint
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: set up JDK 21
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -25,14 +34,34 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          # Écriture du cache activée sur toutes les branches :
-          # - La branche hérite du cache de main au 1er build (fallback automatique)
-          # - Elle écrit ensuite son propre cache pour les builds suivants
           cache-read-only: false
           gradle-home-cache-cleanup: true
-          # Génère le graphe de dépendances pour accélérer la résolution future
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run KtLint
+        # ktlint est incompatible avec le configuration-cache → on le désactive pour ce job
+        run: ./gradlew ktlintCheck --no-configuration-cache --build-cache --parallel --console=plain
+
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          gradle-home-cache-cleanup: true
           dependency-graph: generate-and-submit
-          # Build Scan pour diagnostiquer les performances et voir les cache hits
           build-scan-publish: true
           build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
           build-scan-terms-of-use-agree: "yes"
@@ -40,5 +69,5 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build and Check Code Style
-        run: ./gradlew ktlintCheck build --build-cache --configuration-cache --console=plain
+      - name: Build Debug & Unit Tests
+        run: ./gradlew assembleDebug testDebugUnitTest --build-cache --configuration-cache --parallel --console=plain
