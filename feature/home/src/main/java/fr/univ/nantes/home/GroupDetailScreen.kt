@@ -23,11 +23,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -53,6 +51,12 @@ import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
 import kotlinx.serialization.Serializable
+import kotlinx.coroutines.launch
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.Text
 
 @Serializable
 data class GroupDetail(val groupId: Long)
@@ -62,7 +66,9 @@ fun GroupDetailScreen(
     group: GroupData,
     onBack: () -> Unit,
     onAddExpense: () -> Unit = {},
-    onDeleteExpense: (Long) -> Unit = {}
+    onDeleteExpense: (Long) -> Unit = {},
+    isLoggedIn: Boolean = true,
+    onRequireLogin: () -> Unit = {}
 ) {
     val currencyCode = "EUR"
     val currencyFormat = remember {
@@ -71,6 +77,10 @@ fun GroupDetailScreen(
         }
     }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val loginMessage = stringResource(id = fr.univ.nantes.feature.expense.R.string.login_required_add_expense)
+    val loginAction = stringResource(id = fr.univ.nantes.feature.expense.R.string.login_action)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -82,10 +92,27 @@ fun GroupDetailScreen(
                 onBack = onBack
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             if (selectedTab == 0) {
                 FloatingActionButton(
-                    onClick = onAddExpense,
+                    onClick = {
+                        if (isLoggedIn) {
+                            onAddExpense()
+                        } else {
+                            scope.launch {
+                                val result = snackbarHostState.showSnackbar(
+                                    message = loginMessage,
+                                    actionLabel = loginAction,
+                                    withDismissAction = true,
+                                    duration = SnackbarDuration.Short
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    onRequireLogin()
+                                }
+                            }
+                        }
+                    },
                     containerColor = Teal400
                 ) {
                     Icon(
@@ -99,16 +126,10 @@ fun GroupDetailScreen(
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             HeaderSummary(group, currencyFormat, currencyCode)
-            TabRow(
+            SecondaryTabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
-                indicator = { positions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(positions[selectedTab]),
-                        color = Teal400,
-                        height = 3.dp
-                    )
-                }
+                divider = {}
             ) {
                 Tab(
                     selected = selectedTab == 0,

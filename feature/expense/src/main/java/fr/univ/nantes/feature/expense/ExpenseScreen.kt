@@ -19,13 +19,20 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -43,6 +50,21 @@ fun ExpenseScreen(
     navigateToBalance: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val loginRequiredMessage = stringResource(id = R.string.login_required_add_expense)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(state.isLoggedIn, loginRequiredMessage) {
+        if (!state.isLoggedIn) {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = loginRequiredMessage,
+                    withDismissAction = true
+                )
+            }
+        }
+    }
+
     val currencyCode = stringResource(R.string.currency_code)
     val currencyFormatter = remember(currencyCode) {
         val currency = java.util.Currency.getInstance(currencyCode)
@@ -76,150 +98,178 @@ fun ExpenseScreen(
     var selectedPayer by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = state.groupName,
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text(stringResource(R.string.description)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = amount,
-            onValueChange = { input ->
-                var dotSeen = false
-                var hasDigitBeforeDot = false
-                val filtered = buildString {
-                    for (c in input) {
-                        when {
-                            c.isDigit() -> {
-                                append(c)
-                                if (!dotSeen) hasDigitBeforeDot = true
-                            }
-                            c == '.' && !dotSeen && hasDigitBeforeDot -> {
-                                // Only allow dot if there's at least one digit before it
-                                append(c)
-                                dotSeen = true
-                            }
-                            // ignore other characters and additional dots
-                        }
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                snackbar = { data ->
+                    Snackbar(
+                        modifier = Modifier
+                            .padding(12.dp),
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ) {
+                        Text(data.visuals.message)
                     }
                 }
-                // Only accept if empty (clearing) or has at least one digit
-                if (filtered.isEmpty() || filtered.any { it.isDigit() }) {
-                    amount = filtered
-                }
-            },
-            label = { Text(stringResource(R.string.amount)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
         ) {
-            OutlinedTextField(
-                value = selectedPayer,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text(stringResource(R.string.paid_by)) },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor()
+            Text(
+                text = state.groupName,
+                style = MaterialTheme.typography.headlineMedium
             )
 
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                state.participants.forEach { participant ->
-                    DropdownMenuItem(
-                        text = { Text(participant) },
-                        onClick = {
-                            selectedPayer = participant
-                            expanded = false
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text(stringResource(R.string.description)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = amount,
+                onValueChange = { input ->
+                    var dotSeen = false
+                    var hasDigitBeforeDot = false
+                    val filtered = buildString {
+                        for (c in input) {
+                            when {
+                                c.isDigit() -> {
+                                    append(c)
+                                    if (!dotSeen) hasDigitBeforeDot = true
+                                }
+                                c == '.' && !dotSeen && hasDigitBeforeDot -> {
+                                    // Only allow dot if there's at least one digit before it
+                                    append(c)
+                                    dotSeen = true
+                                }
+                                // ignore other characters and additional dots
+                            }
                         }
-                    )
-                }
-            }
-        }
+                    }
+                    // Only accept if empty (clearing) or has at least one digit
+                    if (filtered.isEmpty() || filtered.any { it.isDigit() }) {
+                        amount = filtered
+                    }
+                },
+                label = { Text(stringResource(R.string.amount)) },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        Button(
-            onClick = {
-                val amountValue = amount.toDoubleOrNull() ?: 0.0
-                viewModel.addExpense(description, amountValue, selectedPayer)
-                description = ""
-                amount = ""
-                selectedPayer = ""
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = description.isNotBlank() && amount.isNotBlank() && selectedPayer.isNotBlank()
-        ) {
-            Text(stringResource(R.string.add_expense))
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = stringResource(R.string.expenses_count, state.expenses.size),
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        LazyColumn(
-            modifier = Modifier.weight(1f)
-        ) {
-            items(state.expenses) { expense ->
-                Card(
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
+                    value = selectedPayer,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(stringResource(R.string.paid_by)) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .menuAnchor()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(expense.description)
-                            Text(
-                                text = stringResource(R.string.paid_by_format, expense.paidBy),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        Text(
-                            text = currencyFormatter.format(expense.amount),
-                            style = MaterialTheme.typography.titleMedium
+                    state.participants.forEach { participant ->
+                        DropdownMenuItem(
+                            text = { Text(participant) },
+                            onClick = {
+                                selectedPayer = participant
+                                expanded = false
+                            }
                         )
                     }
                 }
             }
-        }
 
-        Button(
-            onClick = navigateToBalance,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = state.expenses.isNotEmpty()
-        ) {
-            Text(stringResource(R.string.view_split))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    if (!state.isLoggedIn) {
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = loginRequiredMessage,
+                                withDismissAction = true
+                            )
+                        }
+                        return@Button
+                    }
+                    val amountValue = amount.toDoubleOrNull() ?: 0.0
+                    viewModel.addExpense(description, amountValue, selectedPayer)
+                    description = ""
+                    amount = ""
+                    selectedPayer = ""
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = description.isNotBlank() && amount.isNotBlank() && selectedPayer.isNotBlank()
+            ) {
+                Text(stringResource(R.string.add_expense))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = stringResource(R.string.expenses_count, state.expenses.size),
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            LazyColumn(
+                modifier = Modifier.weight(1f)
+            ) {
+                items(state.expenses) { expense ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(expense.description)
+                                Text(
+                                    text = stringResource(R.string.paid_by_format, expense.paidBy),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Text(
+                                text = currencyFormatter.format(expense.amount),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
+                }
+            }
+
+            Button(
+                onClick = navigateToBalance,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = state.expenses.isNotEmpty()
+            ) {
+                Text(stringResource(R.string.view_split))
+            }
         }
     }
 }

@@ -128,7 +128,7 @@ private fun App() {
                                 navController.navigate(ProfilRoute)
                             } else {
                                 navController.navigate(Login) {
-                                    popUpTo<Home> { inclusive = true }
+                                    popUpTo<Home> { inclusive = false }
                                 }
                             }
                         }
@@ -145,11 +145,26 @@ private fun App() {
                         group = group,
                         onBack = { navController.popBackStack() },
                         onAddExpense = {
-                            expenseViewModel.loadGroup(group.id)
-                            navController.navigate(ExpenseRoute)
+                            scope.launch {
+                                val loggedIn = runCatching { profileUseCase.isLoggedIn() }.getOrDefault(false)
+                                if (loggedIn) {
+                                    expenseViewModel.loadGroup(group.id)
+                                    navController.navigate(ExpenseRoute)
+                                } else {
+                                    navController.navigate(Login) {
+                                        popUpTo<Home> { inclusive = false }
+                                    }
+                                }
+                            }
                         },
                         onDeleteExpense = { expenseId ->
                             expenseViewModel.deleteExpense(expenseId, group.id)
+                        },
+                        isLoggedIn = state.isLoggedIn,
+                        onRequireLogin = {
+                            navController.navigate(Login) {
+                                popUpTo<Home> { inclusive = false }
+                            }
                         }
                     )
                 }

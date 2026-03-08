@@ -45,7 +45,8 @@ data class ExpenseState(
     val expenses: List<Expense> = emptyList(),
     val groups: List<GroupData> = emptyList(),
     val currentGroupId: Long? = null,
-    val currentUserName: String? = null
+    val currentUserName: String? = null,
+    val isLoggedIn: Boolean = false
 )
 
 data class Balance(
@@ -107,8 +108,12 @@ class ExpenseViewModel(
         }
         viewModelScope.launch {
             profileUseCase.observeProfile().collect { profile ->
-                // On met à jour l'état avec le prénom (ou on met null s'il n'y a personne)
-                _state.update { it.copy(currentUserName = profile?.firstName) }
+                _state.update {
+                    it.copy(
+                        currentUserName = profile?.firstName,
+                        isLoggedIn = profile?.isLoggedIn == true
+                    )
+                }
             }
         }
     }
@@ -220,6 +225,8 @@ class ExpenseViewModel(
      * @param paidBy The name of the participant who paid for the expense
      */
     fun addExpense(description: String, amount: Double, paidBy: String) {
+        val loggedIn = _state.value.isLoggedIn
+        if (!loggedIn) return
         if (description.isNotBlank() && amount > 0 && paidBy.isNotBlank() && _state.value.participants.contains(paidBy)) {
             val expense = Expense(description = description, amount = amount, paidBy = paidBy)
             _state.update { it.copy(
