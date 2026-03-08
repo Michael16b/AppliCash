@@ -1,11 +1,11 @@
 name: Cache Warm-up
 
 on:
-  # Tourne chaque nuit à 2h UTC pour que le cache soit prêt le matin
   schedule:
     - cron: '0 2 * * *'
-  # Permet de lancer manuellement (utile pour le tout premier cache)
   workflow_dispatch:
+  push:
+    branches: [ "main" ]
 
 permissions:
   contents: read
@@ -14,8 +14,6 @@ permissions:
 jobs:
   warmup:
     runs-on: ubuntu-latest
-    # Uniquement sur main pour ne pas polluer le cache
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
 
     steps:
       - uses: actions/checkout@v4
@@ -37,11 +35,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Télécharge toutes les dépendances sans compiler
       - name: Download all dependencies
         run: ./gradlew dependencies --configuration releaseRuntimeClasspath --console=plain
 
-      # Lance un vrai build pour peupler le build cache (tâches FROM-CACHE au prochain run)
       - name: Warm-up Build Cache
         run: ./gradlew ktlintCheck build --build-cache --configuration-cache --console=plain
-

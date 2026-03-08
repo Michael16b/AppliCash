@@ -25,8 +25,10 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          # Écriture du cache uniquement sur main, lecture seule sur les PR
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          # Écriture du cache activée sur toutes les branches :
+          # - La branche hérite du cache de main au 1er build (fallback automatique)
+          # - Elle écrit ensuite son propre cache pour les builds suivants
+          cache-read-only: false
           gradle-home-cache-cleanup: true
           # Génère le graphe de dépendances pour accélérer la résolution future
           dependency-graph: generate-and-submit
