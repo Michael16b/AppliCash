@@ -177,7 +177,9 @@ private fun App() {
                             navController.navigate(Login) {
                                 popUpTo<Home> { inclusive = false }
                             }
-                        }
+                        },
+                        userCurrencyCode = state.userCurrencyCode,
+                        convertAmount = { amount, from -> expenseViewModel.convertAmount(amount, from) }
                     )
                 }
             }

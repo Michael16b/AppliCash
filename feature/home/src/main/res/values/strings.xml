@@ -30,4 +30,6 @@
     <string name="hide_expenses_preview">Hide expenses preview</string>
     <string name="balances_hint">Positive balances indicate amounts to receive, negative amounts to pay</string>
     <string name="paid_by_format">paid by %1$s</string>
+    <string name="original_amount">orig. %1$s</string>
+    <string name="per_person_suffix">per person</string>
 </resources>

@@ -12,14 +12,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val DEFAULT_CURRENCY = "EUR - Euro"
+private const val DEFAULT_CURRENCY = "EUR"
 
 data class ProfileUiState(
     val firstName: String = "",
     val lastName: String = "",
     val email: String = "",
     val currency: String = DEFAULT_CURRENCY,
-    val currencies: List<String> = emptyList(),
+    val currencies: List<Pair<String, String>> = emptyList(),
     val isExistingProfile: Boolean = false,
     val isLoading: Boolean = true,
     val errors: Map<String, String> = emptyMap(),
@@ -45,7 +45,8 @@ class ProfilViewModel(
                 profileUseCase.observeCurrencies().collect { currencies ->
                     _uiState.update { state ->
                         val selected = if (state.currency == DEFAULT_CURRENCY && currencies.isNotEmpty()) {
-                            currencies.first()
+                            currencies.firstOrNull { it.first == DEFAULT_CURRENCY }?.first
+                                ?: currencies.first().first
                         } else state.currency
                         state.copy(currencies = currencies, currency = selected)
                     }
@@ -53,7 +54,6 @@ class ProfilViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // En cas d'erreur, utiliser la devise par défaut
                 _uiState.update { it.copy(currencies = emptyList(), currency = DEFAULT_CURRENCY) }
             }
         }
