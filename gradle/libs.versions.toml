@@ -17,6 +17,9 @@ nav_version = "2.9.7"
 ktlint = "14.1.0"
 room = "2.8.4"
 coroutines = "1.10.2"
+material3 = "1.4.0"
+uiGraphics = "1.10.3"
+foundation = "1.10.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -53,6 +56,9 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version = "1.0.1" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphics" }
+androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
