@@ -24,7 +24,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -59,7 +58,8 @@ import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.Green700
-import fr.univ.nantes.core.ui.GreenBg50
+import fr.univ.nantes.core.ui.Red700
+import fr.univ.nantes.core.ui.RedBg50
 import fr.univ.nantes.core.ui.Teal400
 import fr.univ.nantes.core.ui.TealBg50
 import fr.univ.nantes.feature.expense.Balance
@@ -421,24 +421,21 @@ private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
     val isPositive = balance.amount > BALANCE_THRESHOLD
     val isNegative = balance.amount < -BALANCE_THRESHOLD
 
-    val (bgColor, amountColor, labelText, _) = when {
+    val (bgColor, amountColor, labelText) = when {
         isPositive -> BalanceStyle(
             bg = GreenBg50,
             amount = Green700,
-            label = stringResource(R.string.balance_to_receive),
-            iconVec = Icons.Default.Person
+            label = stringResource(R.string.balance_to_receive)
         )
         isNegative -> BalanceStyle(
-            bg = Color(0xFFFFF1F1),
-            amount = Color(0xFFD32F2F),
-            label = stringResource(R.string.balance_to_pay),
-            iconVec = Icons.Default.Person
+            bg = RedBg50,
+            amount = Red700,
+            label = stringResource(R.string.balance_to_pay)
         )
         else -> BalanceStyle(
             bg = TealBg50,
             amount = Teal400,
-            label = stringResource(R.string.balance_settled),
-            iconVec = Icons.Default.Check
+            label = stringResource(R.string.balance_settled)
         )
     }
 
@@ -506,8 +503,7 @@ private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
 private data class BalanceStyle(
     val bg: Color,
     val amount: Color,
-    val label: String,
-    val iconVec: androidx.compose.ui.graphics.vector.ImageVector
+    val label: String
 )
 
 // ── Carte remboursement suggéré ───────────────────────────────────────────────
@@ -530,7 +526,7 @@ private fun ReimbursementRow(reimbursement: Reimbursement, currencyFormat: Numbe
                 text = reimbursement.from,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFFD32F2F),
+                color = Red700,
                 modifier = Modifier.weight(1f)
             )
 
