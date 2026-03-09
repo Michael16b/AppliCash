@@ -29,5 +29,12 @@
     <string name="show_expenses_preview">Show expenses preview</string>
     <string name="hide_expenses_preview">Hide expenses preview</string>
     <string name="balances_hint">Positive balances indicate amounts to receive, negative amounts to pay</string>
+    <string name="balance_to_receive">should receive</string>
+    <string name="balance_to_pay">should reimburse</string>
+    <string name="balance_settled">Balanced</string>
+    <string name="reimbursement_arrow">owes to</string>
+    <string name="all_settled">Everyone is balanced ✓</string>
+    <string name="no_members">No members in this group</string>
+    <string name="login_action">Log in</string>
     <string name="paid_by_format">paid by %1$s</string>
 </resources>
