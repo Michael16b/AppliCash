@@ -57,7 +57,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.AppliCashTheme
-import fr.univ.nantes.core.ui.GreenBg50
 import fr.univ.nantes.core.ui.Green700
 import fr.univ.nantes.core.ui.Red700
 import fr.univ.nantes.core.ui.RedBg50
@@ -701,4 +700,3 @@ private fun BalancesTabSettledPreview() {
         BalancesTab(group = group, currencyFormat = currencyFormat)
     }
 }
-
