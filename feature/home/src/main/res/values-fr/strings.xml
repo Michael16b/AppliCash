@@ -36,5 +36,4 @@
     <string name="reimbursement_arrow">doit payer à</string>
     <string name="all_settled">Tout le monde est à l\'équilibre ✓</string>
     <string name="no_members">Aucun membre dans ce groupe</string>
-    <string name="login_action">Se connecter</string>
 </resources>
