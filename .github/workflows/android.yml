@@ -15,7 +15,7 @@ concurrency:
 
 # Parametres Gradle communs injectes dans tous les jobs via l'env
 env:
-  GRADLE_COMMON_ARGS: "--build-cache --configuration-cache --parallel --console=plain"
+  GRADLE_COMMON_ARGS: "--build-cache --no-configuration-cache --parallel --console=plain"
 
 jobs:
   lint:
@@ -35,9 +35,11 @@ jobs:
         with:
           cache-read-only: false
           cache-cleanup: on-success
-          # Cle de chiffrement requise pour sauvegarder le configuration-cache entre les runs
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
-          # Exclut les artefacts volumineux non reutilisables pour reduire la taille du cache
+          gradle-home-cache-strict-match: false
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            init.d
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
             caches/modules-*/files-*/com.android.tools*
@@ -66,12 +68,16 @@ jobs:
         with:
           cache-read-only: false
           cache-cleanup: on-success
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          gradle-home-cache-strict-match: false
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            init.d
           gradle-home-cache-excludes: |
             caches/modules-*/files-*/com.google.android.gms
             caches/modules-*/files-*/com.android.tools*
             caches/transforms-*/!*.jar
-          dependency-graph: generate-and-submit
+          dependency-graph: ${{ github.event_name == 'push' && 'generate-and-submit' || 'disabled' }}
           build-scan-publish: true
           build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
           build-scan-terms-of-use-agree: "yes"

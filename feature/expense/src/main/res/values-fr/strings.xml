@@ -29,6 +29,8 @@
     <string name="expenses_count">Dépenses (%d)</string>
     <string name="view_split">Voir le partage</string>
     <string name="paid_by_format">Payé par %s</string>
+    <string name="login_required_add_expense">Vous devez être connecté pour ajouter une dépense.</string>
+    <string name="login_action">Se connecter</string>
 
     <!-- BalanceScreen -->
     <string name="total_format">Total: %s</string>

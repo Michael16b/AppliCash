@@ -1,4 +1,3 @@
-
 package fr.univ.nantes.data.profil
 
 import fr.univ.nantes.domain.profil.Profile
@@ -45,6 +44,8 @@ class ProfileRepositoryImpl(
     override suspend fun clearProfile() {
         dao.logout()
     }
+
+    override suspend fun isLoggedIn(): Boolean = dao.loggedInCount() > 0
 
     private fun ProfileEntity.toDomain(): Profile =
         Profile(

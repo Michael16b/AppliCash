@@ -29,6 +29,8 @@
     <string name="expenses_count">Expenses (%d)</string>
     <string name="view_split">View split</string>
     <string name="paid_by_format">Paid by %s</string>
+    <string name="login_required_add_expense">You need to be logged in to add an expense.</string>
+    <string name="login_action">Log in</string>
 
     <!-- BalanceScreen -->
     <string name="total_format">Total: %s</string>

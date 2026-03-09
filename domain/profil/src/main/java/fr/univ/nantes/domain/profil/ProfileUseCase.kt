@@ -5,4 +5,5 @@ class ProfileUseCase(private val repository: ProfileRepository) {
     fun observeCurrencies() = repository.observeCurrencies()
     suspend fun save(profile: Profile) = repository.saveProfile(profile)
     suspend fun clear() = repository.clearProfile()
+    suspend fun isLoggedIn() = repository.isLoggedIn()
 }

@@ -59,6 +59,7 @@ private fun fakeProfileUseCase(): ProfileUseCase {
         override fun observeCurrencies(): Flow<List<String>> = flowOf(listOf("EUR - Euro"))
         override suspend fun saveProfile(profile: Profile) = Unit
         override suspend fun clearProfile() = Unit
+        override suspend fun isLoggedIn(): Boolean = false
     }
     return ProfileUseCase(fakeRepository)
 }

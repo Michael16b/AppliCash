@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.univ.nantes.domain.profil.Profile
 import fr.univ.nantes.domain.profil.ProfileUseCase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,9 +21,10 @@ data class ProfileUiState(
     val currency: String = DEFAULT_CURRENCY,
     val currencies: List<String> = emptyList(),
     val isExistingProfile: Boolean = false,
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val errors: Map<String, String> = emptyMap(),
-    val saveSuccess: Boolean= false
+    val saveSuccess: Boolean = false,
+    val shouldRedirectLogin: Boolean = false
 )
 
 class ProfilViewModel(
@@ -48,7 +50,9 @@ class ProfilViewModel(
                         state.copy(currencies = currencies, currency = selected)
                     }
                 }
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
                 // En cas d'erreur, utiliser la devise par défaut
                 _uiState.update { it.copy(currencies = emptyList(), currency = DEFAULT_CURRENCY) }
             }
@@ -60,7 +64,7 @@ class ProfilViewModel(
             try {
                 profileUseCase.observeProfile().collect { profile ->
                     if (profile == null) {
-                        _uiState.update { it.copy(isExistingProfile = false, isLoading = false) }
+                        _uiState.update { it.copy(isExistingProfile = false, isLoading = false, shouldRedirectLogin = true) }
                     } else {
                         _uiState.update {
                             it.copy(
@@ -70,14 +74,16 @@ class ProfilViewModel(
                                 currency = profile.currency,
                                 isExistingProfile = true,
                                 isLoading = false,
-                                errors = emptyMap()
+                                errors = emptyMap(),
+                                shouldRedirectLogin = false
                             )
                         }
                     }
                 }
-            } catch (e: Exception) {
-                // En cas d'erreur, afficher l'écran vide
-                _uiState.update { it.copy(isExistingProfile = false, isLoading = false) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isExistingProfile = false, isLoading = false, shouldRedirectLogin = true) }
             }
         }
     }
@@ -113,11 +119,23 @@ class ProfilViewModel(
         }
     }
 
+    fun redirectToLogin(onLogout: () -> Unit) {
+        performLogout(resetUiState = false, onLogout = onLogout)
+    }
+
     fun logout(onLogout: () -> Unit) {
+        performLogout(resetUiState = true, onLogout = onLogout)
+    }
+
+    private fun performLogout(resetUiState: Boolean, onLogout: () -> Unit) {
         viewModelScope.launch {
             profileUseCase.clear()
             _uiState.update {
-                ProfileUiState(isExistingProfile = false, isLoading = false)
+                if (resetUiState) {
+                    ProfileUiState(isExistingProfile = false, isLoading = false)
+                } else {
+                    it.copy(shouldRedirectLogin = false)
+                }
             }
             onLogout()
         }
