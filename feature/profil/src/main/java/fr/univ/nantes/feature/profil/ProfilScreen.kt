@@ -23,6 +23,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Email
@@ -211,7 +212,7 @@ fun ProfileScreen(
                         trailingIcon = { Icon(Icons.Outlined.ArrowDropDown, contentDescription = null) },
                         label = { Text(stringResource(id = R.string.profile_preferred_currency)) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
