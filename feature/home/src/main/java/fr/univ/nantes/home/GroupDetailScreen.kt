@@ -438,14 +438,6 @@ private fun BalancesTab(
     val balances = remember(group) { calculateBalances(group) }
     val reimbursements = remember(balances) { calculateReimbursements(balances) }
 
-    // Pre-convert all balances and reimbursements amounts
-    val convertedBalances = remember(balances.size, userCurrencyCode) {
-        mutableMapOf<String, Double?>()
-    }
-    val convertedReimbursements = remember(reimbursements.size, userCurrencyCode) {
-        mutableMapOf<Int, Double?>()
-    }
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),

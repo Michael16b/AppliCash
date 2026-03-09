@@ -75,14 +75,11 @@ fun ProfileScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val currencies = state.currencies.ifEmpty {
-        listOf(
-            stringResource(id = R.string.currency_usd),
-            stringResource(id = R.string.currency_eur),
-            stringResource(id = R.string.currency_jpy),
-            stringResource(id = R.string.currency_gbp),
-            stringResource(id = R.string.currency_chf)
-        )}
+    val currencies = state.currencies
+
+    val selectedCurrencyLabel = currencies.firstOrNull { it.first == state.currency }
+        ?.let { "${it.first} — ${it.second}" }
+        ?: state.currency
 
     val saveSuccessMessage = stringResource(id = R.string.profile_saved_success)
 
@@ -205,7 +202,7 @@ fun ProfileScreen(
                     onExpandedChange = { currencyMenuExpanded = !currencyMenuExpanded }
                 ) {
                     OutlinedTextField(
-                        value = state.currency,
+                        value = selectedCurrencyLabel,
                         onValueChange = {},
                         readOnly = true,
                         leadingIcon = { Icon(Icons.Outlined.Public, contentDescription = null) },
@@ -219,11 +216,11 @@ fun ProfileScreen(
                         expanded = currencyMenuExpanded,
                         onDismissRequest = { currencyMenuExpanded = false }
                     ) {
-                        currencies.forEach { currency ->
+                        currencies.forEach { (code, name) ->
                             DropdownMenuItem(
-                                text = { Text(currency) },
+                                text = { Text("$code — $name") },
                                 onClick = {
-                                    viewModel.onCurrencyChange(currency)
+                                    viewModel.onCurrencyChange(code)
                                     currencyMenuExpanded = false
                                 }
                             )

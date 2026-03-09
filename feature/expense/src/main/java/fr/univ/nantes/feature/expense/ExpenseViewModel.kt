@@ -2,6 +2,7 @@ package fr.univ.nantes.feature.expense
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.univ.nantes.data.currency.CurrencyRepository
 import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,7 +47,8 @@ data class ExpenseState(
     val groups: List<GroupData> = emptyList(),
     val currentGroupId: Long? = null,
     val currentUserName: String? = null,
-    val isLoggedIn: Boolean = false
+    val isLoggedIn: Boolean = false,
+    val userCurrencyCode: String = "EUR"
 )
 
 data class Balance(
@@ -69,7 +71,8 @@ data class Reimbursement(
  */
 class ExpenseViewModel(
     private val repository: ExpenseRepository,
-    private val profileUseCase: ProfileUseCase
+    private val profileUseCase: ProfileUseCase,
+    private val currencyRepository: CurrencyRepository
 ) : ViewModel() {
 
     companion object {
@@ -85,7 +88,7 @@ class ExpenseViewModel(
     val state: StateFlow<ExpenseState> = _state.asStateFlow()
 
     init {
-        // Charger les groupes depuis la base de données
+        // Load groups from the database
         viewModelScope.launch {
             repository.getAllGroupsWithDetails().collect { groupsWithDetails ->
                 val groups = groupsWithDetails.map { groupWithDetails ->
@@ -111,7 +114,8 @@ class ExpenseViewModel(
                 _state.update {
                     it.copy(
                         currentUserName = profile?.firstName,
-                        isLoggedIn = profile?.isLoggedIn == true
+                        isLoggedIn = profile?.isLoggedIn == true,
+                        userCurrencyCode = profile?.currency?.uppercase() ?: "EUR"
                     )
                 }
             }
@@ -139,8 +143,10 @@ class ExpenseViewModel(
         )
 
     /**
-     * Charge un groupe existant depuis Room et met à jour l'état actuel
-     * pour permettre l'ajout de dépenses à ce groupe.
+     * Loads an existing group from Room and updates the current state
+     * to allow adding expenses to that group.
+     *
+     * @param groupId The ID of the group to load
      */
     fun loadGroup(groupId: Long) {
         viewModelScope.launch {
@@ -166,7 +172,7 @@ class ExpenseViewModel(
     }
 
     /**
-     * Retourne l'ID du groupe actuellement chargé
+     * Returns the ID of the currently loaded group, or null if no group is loaded.
      */
     fun getCurrentGroupId(): Long? {
         return _state.value.currentGroupId
@@ -313,6 +319,15 @@ class ExpenseViewModel(
         }
 
         return reimbursements
+    }
+
+    /**
+     * Converts [amount] from [fromCurrency] to the user's preferred currency.
+     * Returns null if the rate is unavailable (no network, no cache).
+     */
+    suspend fun convertAmount(amount: Double, fromCurrency: String): Double? {
+        val targetCurrency = _state.value.userCurrencyCode
+        return currencyRepository.convert(amount, fromCurrency, targetCurrency)
     }
 
     /**

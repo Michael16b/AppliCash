@@ -106,7 +106,7 @@ fun LoginScreen(
                     expanded = currencyMenuExpanded,
                     onExpandedChange = { currencyMenuExpanded = !currencyMenuExpanded }
                 ) {
-                    val currencies = state.currencies.ifEmpty { listOf("EUR" to "Euro") }
+                    val currencies = state.currencies
                     val selectedLabel = currencies.firstOrNull { it.first == state.currency }
                         ?.let { "${it.first} — ${it.second}" } ?: state.currency
                     OutlinedTextField(
