@@ -115,7 +115,13 @@ private fun App() {
             }
             composable<BalanceRoute> {
                 BalanceScreen(
-                    viewModel = expenseViewModel
+                    viewModel = expenseViewModel,
+                    navigateToGroup = {
+                        expenseViewModel.reset()
+                        navController.navigate(Group) {
+                            popUpTo<Group> { inclusive = true }
+                        }
+                    }
                 )
             }
             composable<Home> {
@@ -145,8 +151,7 @@ private fun App() {
             composable<GroupDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<GroupDetail>()
                 val state by expenseViewModel.state.collectAsState()
-                val convertedGroups by expenseViewModel.convertedGroups.collectAsState()
-                val group = convertedGroups.find { it.id == route.groupId }
+                val group = state.groups.find { it.id == route.groupId }
                 if (group != null) {
                     GroupDetailScreen(
                         group = group,
@@ -174,7 +179,7 @@ private fun App() {
                             }
                         },
                         userCurrencyCode = state.userCurrencyCode,
-                        viewModel = expenseViewModel
+                        convertAmount = { amount, from -> expenseViewModel.convertAmount(amount, from) }
                     )
                 }
             }
