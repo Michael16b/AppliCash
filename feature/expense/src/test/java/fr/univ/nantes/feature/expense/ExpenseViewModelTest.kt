@@ -3,6 +3,8 @@ package fr.univ.nantes.feature.expense
 import fr.univ.nantes.data.currency.ICurrencyRepository
 import fr.univ.nantes.domain.profil.Profile
 import fr.univ.nantes.domain.profil.ProfileRepository
+import fr.univ.nantes.data.expense.model.GroupWithDetails
+import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import fr.univ.nantes.domain.profil.ProfileUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
