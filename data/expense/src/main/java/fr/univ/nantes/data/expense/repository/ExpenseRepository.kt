@@ -9,6 +9,29 @@ import fr.univ.nantes.data.expense.entity.ParticipantEntity
 import fr.univ.nantes.data.expense.model.GroupWithDetails
 import kotlinx.coroutines.flow.Flow
 
+// ── Exceptions métier ──────────────────────────────────────────────────────────
+sealed class ExpenseBusinessException(message: String) : Exception(message) {
+    /** RG1 : un groupe doit avoir au minimum 2 membres. */
+    class NotEnoughMembersException :
+        ExpenseBusinessException("Un groupe doit avoir au minimum 2 membres (RG1)")
+
+    /** RG2 : un nom de membre ne peut être vide. */
+    class EmptyMemberNameException :
+        ExpenseBusinessException("Le nom d'un membre ne peut pas être vide (RG2)")
+
+    /** RG3 : les noms de membres doivent être uniques dans un groupe. */
+    class DuplicateMemberNameException(name: String) :
+        ExpenseBusinessException("Le nom '$name' est déjà utilisé dans ce groupe (RG3)")
+
+    /** RG4 : une dépense nécessite un montant > 0. */
+    class InvalidAmountException :
+        ExpenseBusinessException("Le montant d'une dépense doit être supérieur à 0 (RG4)")
+
+    /** RG5 : on ne peut supprimer un membre ayant des dépenses. */
+    class MemberHasExpensesException(name: String) :
+        ExpenseBusinessException("Le membre '$name' ne peut pas être supprimé car il a des dépenses (RG5)")
+}
+
 interface ExpenseRepository {
     fun getAllGroupsWithDetails(): Flow<List<GroupWithDetails>>
     suspend fun getGroupWithDetails(groupId: Long): GroupWithDetails?
@@ -49,21 +72,40 @@ class ExpenseRepositoryImpl(
     }
 
     override suspend fun createGroup(groupName: String, participants: List<String>): Long {
+        // RG1 : au moins 2 membres
+        if (participants.size < 2) throw ExpenseBusinessException.NotEnoughMembersException()
+
+        // RG2 : aucun nom vide
+        participants.forEach { name ->
+            if (name.isBlank()) throw ExpenseBusinessException.EmptyMemberNameException()
+        }
+
+        // RG3 : noms uniques
+        val seen = mutableSetOf<String>()
+        participants.forEach { name ->
+            if (!seen.add(name.trim())) throw ExpenseBusinessException.DuplicateMemberNameException(name)
+        }
+
         val groupId = groupDao.insertGroup(
             ExpenseGroupEntity(groupName = groupName)
         )
-
-        if (participants.isNotEmpty()) {
-            val participantEntities = participants.map { name ->
-                ParticipantEntity(groupId = groupId, name = name)
-            }
-            participantDao.insertParticipants(participantEntities)
+        val participantEntities = participants.map { name ->
+            ParticipantEntity(groupId = groupId, name = name)
         }
-
+        participantDao.insertParticipants(participantEntities)
         return groupId
     }
 
     override suspend fun addParticipantToGroup(groupId: Long, participantName: String) {
+        // RG2 : nom non vide
+        if (participantName.isBlank()) throw ExpenseBusinessException.EmptyMemberNameException()
+
+        // RG3 : nom unique dans le groupe
+        val existing = participantDao.getParticipantsByGroupId(groupId)
+        if (existing.any { it.name == participantName.trim() }) {
+            throw ExpenseBusinessException.DuplicateMemberNameException(participantName)
+        }
+
         participantDao.insertParticipant(
             ParticipantEntity(groupId = groupId, name = participantName)
         )
@@ -77,6 +119,9 @@ class ExpenseRepositoryImpl(
         splitType: Int,
         splitDetails: String
     ) {
+        // RG4 : montant > 0
+        if (amount <= 0.0) throw ExpenseBusinessException.InvalidAmountException()
+
         expenseDao.insertExpense(
             ExpenseEntity(
                 groupId = groupId,
@@ -102,6 +147,11 @@ class ExpenseRepositoryImpl(
     }
 
     override suspend fun removeParticipantFromGroup(groupId: Long, participantName: String) {
+        // RG5 : impossible si le membre a des dépenses
+        val expenses = expenseDao.getExpensesByGroupId(groupId)
+        if (expenses.any { it.paidBy == participantName }) {
+            throw ExpenseBusinessException.MemberHasExpensesException(participantName)
+        }
         participantDao.deleteParticipantByName(groupId, participantName)
     }
 
@@ -111,6 +161,27 @@ class ExpenseRepositoryImpl(
         addParticipants: List<String>,
         removeParticipants: List<String>
     ) {
+        // RG2 : noms des nouveaux membres non vides
+        addParticipants.forEach { name ->
+            if (name.isBlank()) throw ExpenseBusinessException.EmptyMemberNameException()
+        }
+
+        // RG3 : pas de doublon parmi les ajouts
+        val seen = mutableSetOf<String>()
+        addParticipants.forEach { name ->
+            if (!seen.add(name.trim())) throw ExpenseBusinessException.DuplicateMemberNameException(name)
+        }
+
+        // RG5 : vérifier que les membres à supprimer n'ont pas de dépenses
+        if (removeParticipants.isNotEmpty()) {
+            val expenses = expenseDao.getExpensesByGroupId(groupId)
+            removeParticipants.forEach { name ->
+                if (expenses.any { it.paidBy == name }) {
+                    throw ExpenseBusinessException.MemberHasExpensesException(name)
+                }
+            }
+        }
+
         if (newName != null) {
             groupDao.updateGroupName(groupId, newName)
         }
@@ -120,6 +191,4 @@ class ExpenseRepositoryImpl(
             removeNames = removeParticipants
         )
     }
-
 }
-
