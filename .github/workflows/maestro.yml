@@ -62,7 +62,7 @@ jobs:
             - name: Build Debug APK
               run: |
                   ./gradlew assembleDebug \
-                    -Dorg.gradle.jvmargs="-Xmx512m -XX:MaxMetaspaceSize=256m" \
+                    -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g" \
                     ${{ env.GRADLE_COMMON_ARGS }}
 
             # ── Maestro Setup ───────────────────────────────────────────────────────
@@ -93,7 +93,6 @@ jobs:
                   target: google_apis
                   profile: pixel_3a
                   avd-name: maestro_test_device
-                  # Reduced RAM to try to fit in the small Oracle instance
                   ram-size: 1536M
                   heap-size: 256M
                   emulator-boot-timeout: 300
