@@ -1,4 +1,4 @@
-name: Maestro E2E Tests (Self-Hosted Oracle AMD)
+name: Maestro E2E Tests (Oracle AMD Self-Hosted)
 
 on:
     push:
@@ -36,15 +36,19 @@ jobs:
                   java-version: '21'
                   distribution: 'temurin'
 
-            # ── FORCE GRADLE TOOLCHAIN OVERRIDE ──────────────────────────────────────
-            - name: Force Gradle to use Temurin JDK
+            # ── KILL TOOLCHAIN CONSTRAINTS ──────────────────────────────────────────
+            # We remove the file that forces a JetBrains JDK and force Temurin instead.
+            # This fixes the "Cannot find a Java installation matching JetBrains" error.
+            - name: Force JDK and Remove JetBrains constraint
               run: |
+                  rm -f gradle/gradle-daemon-jvm.properties
                   echo "org.gradle.java.home=${{ steps.setup-java.outputs.path }}" >> gradle.properties
                   echo "org.gradle.java.installations.auto-download=false" >> gradle.properties
                   echo "org.gradle.java.installations.auto-detect=false" >> gradle.properties
+                  echo "--- Resulting gradle.properties ---"
                   cat gradle.properties
 
-            # ── Gradle Setup & Cache ────────────────────────────────────────────────
+            # ── Gradle Setup ────────────────────────────────────────────────────────
             - name: Setup Gradle
               uses: gradle/actions/setup-gradle@v4
               with:
@@ -54,9 +58,12 @@ jobs:
             - name: Grant execute permission for gradlew
               run: chmod +x gradlew
 
-            # ── Build APK ───────────────────────────────────────────────────
+            # ── Build APK (with low memory limit for Oracle Micro instance) ─────────
             - name: Build Debug APK
-              run: ./gradlew assembleDebug ${{ env.GRADLE_COMMON_ARGS }}
+              run: |
+                  ./gradlew assembleDebug \
+                    -Dorg.gradle.jvmargs="-Xmx512m -XX:MaxMetaspaceSize=256m" \
+                    ${{ env.GRADLE_COMMON_ARGS }}
 
             # ── Maestro Setup ───────────────────────────────────────────────────────
             - name: Install Maestro CLI
@@ -64,36 +71,58 @@ jobs:
                   curl -Ls "https://get.maestro.mobile.dev" | bash
                   echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
-            # ── KVM & Dependencies ──────────────────────────────────────────────────
-            - name: Enable KVM
+            # ── KVM & System Dependencies ───────────────────────────────────────────
+            - name: Enable KVM and Install Deps
               run: |
                   sudo usermod -aG kvm $USER
                   echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
                     | sudo tee /etc/udev/rules.d/99-kvm4all.rules
                   sudo udevadm control --reload-rules
                   sudo udevadm trigger --name-match=kvm
-                  sudo apt-get update -qq
-                  sudo apt-get install -y --no-install-recommends libpulse0 libasound2-plugins libgl1 libx11-6
 
-            # ── Start Android Emulator & Run E2E Tests ──────────────────────────────
+                  sudo apt-get update -qq
+                  sudo apt-get install -y --no-install-recommends \
+                    libpulse0 libasound2-plugins libgl1 libx11-6
+
+            # ── Start Android Emulator & Run Tests ──────────────────────────────────
             - name: Start Android Emulator and run Maestro
               uses: reactivecircus/android-emulator-runner@v2
               with:
                   api-level: 29
-                  # Since you are on AMD, we use x86_64
                   arch: x86_64
                   target: google_apis
                   profile: pixel_3a
                   avd-name: maestro_test_device
-                  # WARNING: 1GB RAM instances will likely fail here
-                  ram-size: 2048M
+                  # Reduced RAM to try to fit in the small Oracle instance
+                  ram-size: 1536M
                   heap-size: 256M
-                  emulator-boot-timeout: 120
+                  emulator-boot-timeout: 300
                   emulator-options: >-
                       -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader_indirect
                   disable-animations: true
                   script: |
                       adb install -r app/build/outputs/apk/debug/app-debug.apk
                       mkdir -p .maestro/results
+
                       for scenario in .maestro/*.yaml; do
-                        timeout 300 maestro test "$scenario" --
+                        echo "Running $scenario..."
+                        timeout 300 maestro test "$scenario" \
+                          --format junit \
+                          --output ".maestro/results/$(basename "$scenario" .yaml)_results.xml" \
+                          --no-ansi || true
+                      done
+
+            # ── Artifacts & Reports ─────────────────────────────────────────────────
+            - name: Upload Results
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: maestro-results
+                  path: .maestro/results/
+
+            - name: Publish Test Results
+              if: always()
+              uses: mikepenz/action-junit-report@v4
+              with:
+                  report_paths: ".maestro/results/*.xml"
+                  check_name: "Maestro E2E Results"
