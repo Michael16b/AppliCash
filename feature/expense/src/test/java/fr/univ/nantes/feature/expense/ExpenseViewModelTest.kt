@@ -68,6 +68,7 @@ private fun fakeProfileUseCase(): ProfileUseCase {
 private fun fakeCurrencyRepository(): ICurrencyRepository = object : ICurrencyRepository {
     override suspend fun getRate(from: String, to: String): Double = 1.0
     override suspend fun convert(amount: Double, from: String, to: String): Double = amount
+    override suspend fun getCacheAgeMinutes(base: String): Long? = null
 }
 
 

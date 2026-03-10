@@ -36,6 +36,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,9 +58,8 @@ import fr.univ.nantes.feature.expense.ExpenseEvent
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.GroupData
 import java.text.NumberFormat
-import kotlinx.serialization.Serializable
-import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.serialization.Serializable
 
 @Composable
 fun HomeScreen(
@@ -194,8 +194,8 @@ fun GroupCard(
             NumberFormat.getCurrencyInstance()
         } else {
             val nativeLocale = java.util.Locale.getAvailableLocales().firstOrNull { loc ->
-                loc.country.isNotEmpty()
-                    && runCatching {
+                loc.country.isNotEmpty() &&
+                    runCatching {
                         java.util.Currency.getInstance(loc) == currency
                     }.getOrDefault(false)
             } ?: java.util.Locale.getDefault()
