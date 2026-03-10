@@ -194,6 +194,7 @@ fun GroupDetailScreen(
                     group = group,
                     originalFormat = originalFormat,
                     userFormat = userFormat,
+                    userCurrencyCode = userCurrencyCode,
                     showConversion = showConversion,
                     convertAmount = convertAmount,
                     onDeleteExpense = onDeleteExpense
@@ -221,10 +222,10 @@ private fun HeaderSummary(
     convertAmount: suspend (Double, String) -> Double?
 ) {
     val total = group.expenses.sumOf { it.amount }
-    var convertedTotal by remember { mutableStateOf<Double?>(null) }
+    var convertedTotal by remember(total, userCurrencyCode) { mutableStateOf<Double?>(null) }
 
     LaunchedEffect(total, userCurrencyCode) {
-        convertedTotal = if (showConversion) convertAmount(total, EXPENSE_CURRENCY) else total
+        convertedTotal = if (showConversion) convertAmount(total, EXPENSE_CURRENCY) else null
     }
 
     val isDarkMode = isSystemInDarkTheme()
@@ -282,6 +283,7 @@ private fun ExpensesTab(
     group: GroupData,
     originalFormat: NumberFormat,
     userFormat: NumberFormat,
+    userCurrencyCode: String,
     showConversion: Boolean,
     convertAmount: suspend (Double, String) -> Double?,
     onDeleteExpense: (Long) -> Unit
@@ -308,6 +310,7 @@ private fun ExpensesTab(
                 group = group,
                 originalFormat = originalFormat,
                 userFormat = userFormat,
+                userCurrencyCode = userCurrencyCode,
                 showConversion = showConversion,
                 convertAmount = convertAmount,
                 onDeleteExpense = onDeleteExpense
@@ -322,21 +325,27 @@ private fun ExpenseItem(
     group: GroupData,
     originalFormat: NumberFormat,
     userFormat: NumberFormat,
+    userCurrencyCode: String,
     showConversion: Boolean,
     convertAmount: suspend (Double, String) -> Double?,
     onDeleteExpense: (Long) -> Unit
 ) {
     val sharePerPerson = if (group.participants.isNotEmpty()) {
         expense.amount / group.participants.size
-    } else 0.0
+    } else {
+        0.0
+    }
 
-    var convertedAmount by remember(expense.id) { mutableStateOf<Double?>(null) }
-    var convertedShare by remember(expense.id) { mutableStateOf<Double?>(null) }
+    var convertedAmount by remember(expense.id, userCurrencyCode) { mutableStateOf<Double?>(null) }
+    var convertedShare by remember(expense.id, userCurrencyCode) { mutableStateOf<Double?>(null) }
 
-    LaunchedEffect(expense.amount, showConversion) {
+    LaunchedEffect(expense.amount, showConversion, userCurrencyCode) {
         if (showConversion) {
             convertedAmount = convertAmount(expense.amount, EXPENSE_CURRENCY)
             convertedShare = convertAmount(sharePerPerson, EXPENSE_CURRENCY)
+        } else {
+            convertedAmount = null
+            convertedShare = null
         }
     }
 
@@ -415,8 +424,11 @@ private fun ExpenseItem(
                     stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson))
                 }
                 Text(
-                    text = if (showConversion && convertedShare != null) displayShare
-                           else stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson)),
+                    text = if (showConversion && convertedShare != null) {
+                        displayShare
+                    } else {
+                        stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson))
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -464,8 +476,8 @@ private fun BalancesTab(
                 var convertedBalance by remember(balance.participant, userCurrencyCode) {
                     mutableStateOf<Double?>(null)
                 }
-                LaunchedEffect(balance.amount, showConversion) {
-                    convertedBalance = if (showConversion) convertAmount(balance.amount, EXPENSE_CURRENCY) else balance.amount
+                LaunchedEffect(balance.amount, showConversion, userCurrencyCode) {
+                    convertedBalance = if (showConversion) convertAmount(balance.amount, EXPENSE_CURRENCY) else null
                 }
 
                 val positive = balance.amount >= 0
@@ -556,8 +568,8 @@ private fun BalancesTab(
                 var convertedRmbAmount by remember(item.from + item.to, userCurrencyCode) {
                     mutableStateOf<Double?>(null)
                 }
-                LaunchedEffect(item.amount, showConversion) {
-                    convertedRmbAmount = if (showConversion) convertAmount(item.amount, EXPENSE_CURRENCY) else item.amount
+                LaunchedEffect(item.amount, showConversion, userCurrencyCode) {
+                    convertedRmbAmount = if (showConversion) convertAmount(item.amount, EXPENSE_CURRENCY) else null
                 }
                 Card(
                     modifier = Modifier.fillMaxWidth(),

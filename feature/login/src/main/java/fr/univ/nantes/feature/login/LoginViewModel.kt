@@ -45,7 +45,9 @@ class LoginViewModel(
                         val selected = if (state.currency == DEFAULT_CURRENCY && list.isNotEmpty()) {
                             list.firstOrNull { it.first == DEFAULT_CURRENCY }?.first
                                 ?: list.first().first
-                        } else state.currency
+                        } else {
+                            state.currency
+                        }
                         state.copy(currencies = list, currency = selected)
                     }
                 }

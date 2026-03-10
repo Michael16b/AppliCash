@@ -6,6 +6,7 @@ import fr.univ.nantes.data.currency.api.FrankfurterApi
 import fr.univ.nantes.data.currency.db.ExchangeRateDatabase
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -20,6 +21,11 @@ val currencyDataModule = module {
                     ignoreUnknownKeys = true
                     coerceInputValues = true
                 })
+            }
+            install(HttpTimeout) {
+                requestTimeoutMillis = 10_000
+                connectTimeoutMillis = 10_000
+                socketTimeoutMillis = 10_000
             }
         }
     }
@@ -40,4 +46,3 @@ val currencyDataModule = module {
 
     single { CurrencyRepository(get(), get()) }
 }
-
