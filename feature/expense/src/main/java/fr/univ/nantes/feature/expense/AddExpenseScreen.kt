@@ -1,4 +1,4 @@
-﻿package fr.univ.nantes.feature.expense
+package fr.univ.nantes.feature.expense
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -45,11 +45,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -328,24 +326,27 @@ fun AddExpenseScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             colors = fieldColors
                         )
-                        ExposedDropdownMenuBox(
-                            expanded = currencyExpanded,
-                            onExpandedChange = { currencyExpanded = !currencyExpanded },
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        Box(modifier = Modifier.weight(1f)) {
                             OutlinedTextField(
                                 value = selectedCurrency,
                                 onValueChange = {},
                                 readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = currencyExpanded) },
+                                trailingIcon = {
+                                    Icon(
+                                        imageVector = if (currencyExpanded) Icons.Outlined.Remove else Icons.Outlined.Add,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
                                 modifier = Modifier
-                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                                    .fillMaxWidth(),
+                                    .fillMaxWidth()
+                                    .clickable { currencyExpanded = !currencyExpanded },
                                 shape = fieldShape,
                                 singleLine = true,
-                                colors = fieldColors
+                                colors = fieldColors,
+                                enabled = false
                             )
-                            ExposedDropdownMenu(
+                            DropdownMenu(
                                 expanded = currencyExpanded,
                                 onDismissRequest = { currencyExpanded = false }
                             ) {
@@ -450,21 +451,25 @@ fun AddExpenseScreen(
                     }
                     Box(modifier = Modifier.weight(1f)) {
                         SectionCard(icon = Icons.Outlined.Person, title = stringResource(R.string.paid_by_label)) {
-                            ExposedDropdownMenuBox(
-                                expanded = payerExpanded,
-                                onExpandedChange = { payerExpanded = !payerExpanded }
-                            ) {
+                            Box(modifier = Modifier.fillMaxWidth()) {
                                 OutlinedTextField(
                                     value = selectedPayer,
                                     onValueChange = {},
                                     readOnly = true,
-                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = payerExpanded) },
+                                    trailingIcon = {
+                                        Icon(
+                                            imageVector = if (payerExpanded) Icons.Outlined.Remove else Icons.Outlined.Add,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    },
                                     modifier = Modifier
-                                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                                        .fillMaxWidth(),
+                                        .fillMaxWidth()
+                                        .clickable { payerExpanded = !payerExpanded },
                                     shape = fieldShape,
                                     singleLine = true,
                                     colors = fieldColors,
+                                    enabled = false,
                                     leadingIcon = {
                                         if (selectedPayer.isNotBlank()) {
                                             val idx = participants.indexOf(selectedPayer).coerceAtLeast(0)
@@ -476,7 +481,7 @@ fun AddExpenseScreen(
                                         }
                                     }
                                 )
-                                ExposedDropdownMenu(
+                                DropdownMenu(
                                     expanded = payerExpanded,
                                     onDismissRequest = { payerExpanded = false }
                                 ) {
