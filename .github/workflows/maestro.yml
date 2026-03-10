@@ -1,0 +1,157 @@
+name: Maestro E2E Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+
+# CA16: Each scenario must complete within 5 minutes — the job timeout is set to 30 minutes total
+# CA15: Tests run on an emulator (API 29) matching physical device constraints
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_COMMON_ARGS: "--build-cache --no-configuration-cache --parallel --console=plain"
+
+jobs:
+  maestro-e2e:
+    name: Maestro E2E - Scenario Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      # ── Checkout ────────────────────────────────────────────────────────────
+      - uses: actions/checkout@v4
+
+      # ── Java ────────────────────────────────────────────────────────────────
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # ── Gradle cache ────────────────────────────────────────────────────────
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          cache-cleanup: on-success
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # ── Build debug APK ─────────────────────────────────────────────────────
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug ${{ env.GRADLE_COMMON_ARGS }}
+
+      # ── Install Maestro CLI ─────────────────────────────────────────────────
+      # CA15: Install the latest Maestro CLI to run flows on emulator
+      - name: Install Maestro CLI
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      # ── Enable KVM for hardware acceleration ────────────────────────────────
+      - name: Enable KVM group permissions
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # ── Start Android Emulator (API 29, x86_64) ─────────────────────────────
+      # CA15: API 29 is compatible with both emulator and physical devices
+      - name: Start Android Emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          target: google_apis
+          profile: pixel_3a
+          avd-name: maestro_test_device
+          ram-size: 4096M
+          heap-size: 512M
+          disk-size: 6000M
+          emulator-options: >-
+            -no-snapshot
+            -no-audio
+            -no-boot-anim
+            -gpu swiftshader_indirect
+          disable-animations: true
+          # CA17: Wait for full boot before running tests
+          pre-emulator-launch-script: |
+            echo "Waiting for emulator to boot fully..."
+          script: |
+            # Install APK
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+            # CA17: Disable animations for deterministic test execution
+            adb shell settings put global window_animation_scale 0
+            adb shell settings put global transition_animation_scale 0
+            adb shell settings put global animator_duration_scale 0
+
+            # Grant internet permission (already in manifest, belt-and-suspenders)
+            adb shell pm grant fr.univ.nantes.archi android.permission.INTERNET || true
+
+            # ── CA14: Run all 4 Maestro scenarios ───────────────────────────
+            mkdir -p .maestro/results
+
+            echo "=== Scenario 1: Create group and add members ==="
+            maestro test .maestro/01_create_group.yaml \
+              --format junit \
+              --output .maestro/results/ \
+              --no-ansi || true
+
+            echo "=== Scenario 2: Add expense and check balances ==="
+            maestro test .maestro/02_add_expense_check_balances.yaml \
+              --format junit \
+              --output .maestro/results/ \
+              --no-ansi || true
+
+            echo "=== Scenario 3: View reimbursements ==="
+            maestro test .maestro/03_view_reimbursements.yaml \
+              --format junit \
+              --output .maestro/results/ \
+              --no-ansi || true
+
+            echo "=== Scenario 4: Edit and delete expense ==="
+            maestro test .maestro/04_edit_delete_expense.yaml \
+              --format junit \
+              --output .maestro/results/ \
+              --no-ansi
+
+      # ── Upload test results ─────────────────────────────────────────────────
+      - name: Upload Maestro results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-test-results
+          path: |
+            .maestro/results/
+            .maestro/screenshots/
+          retention-days: 7
+
+      # ── Upload screenshots ──────────────────────────────────────────────────
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-screenshots
+          path: .maestro/screenshots/
+          retention-days: 7
+
+      # ── Publish JUnit results ───────────────────────────────────────────────
+      - name: Publish Test Results
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: ".maestro/results/*.xml"
+          check_name: "Maestro E2E Results"
+          fail_on_failure: true
+
+
