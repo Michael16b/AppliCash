@@ -144,6 +144,7 @@ fun AddExpenseScreen(
     val selectedParticipants = remember { mutableStateListOf<String>() }
     val participantShares = remember { mutableStateMapOf<String, Int>() }
     val participantAmounts = remember { mutableStateMapOf<String, String>() }
+    val lockedAmounts = remember { mutableStateMapOf<String, Boolean>() }
 
     LaunchedEffect(participants) {
         if (selectedPayer.isEmpty() && participants.isNotEmpty()) {
@@ -161,6 +162,14 @@ fun AddExpenseScreen(
         }
         participantShares.keys.retainAll(newParticipants)
         participantAmounts.keys.retainAll(newParticipants)
+        lockedAmounts.keys.retainAll(newParticipants)
+    }
+
+    LaunchedEffect(selectedSplitType) {
+        if (selectedSplitType == 2) {
+            lockedAmounts.clear()
+            participantAmounts.keys.forEach { participantAmounts[it] = "" }
+        }
     }
 
     val amountValue = amount.toDoubleOrNull() ?: 0.0
@@ -708,6 +717,7 @@ fun AddExpenseScreen(
                         if (amountValue > 0 && selectedParticipants.isNotEmpty()) {
                             TextButton(
                                 onClick = {
+                                    lockedAmounts.clear()
                                     selectedParticipants.forEach { p ->
                                         participantAmounts[p] = "%.2f".format(equalShare)
                                     }
@@ -753,14 +763,24 @@ fun AddExpenseScreen(
                                                 }
                                             }
                                             if (filtered.isEmpty() || filtered.any { it.isDigit() }) {
-                                                participantAmounts[participant] = filtered
-                                                val entered = filtered.toDoubleOrNull() ?: 0.0
-                                                val others = selectedParticipants.filter { it != participant }
-                                                if (others.isNotEmpty()) {
-                                                    val remaining = (amountValue - entered).coerceAtLeast(0.0)
-                                                    val share = remaining / others.size
-                                                    others.forEach { other ->
-                                                        participantAmounts[other] = "%.2f".format(share)
+                                                if (filtered.isEmpty()) {
+                                                    lockedAmounts.remove(participant)
+                                                    participantAmounts[participant] = ""
+                                                } else {
+                                                    lockedAmounts[participant] = true
+                                                    participantAmounts[participant] = filtered
+
+                                                    val lockedTotal = selectedParticipants
+                                                        .filter { lockedAmounts[it] == true }
+                                                        .sumOf { participantAmounts[it]?.toDoubleOrNull() ?: 0.0 }
+                                                    val freeParticipants = selectedParticipants
+                                                        .filter { lockedAmounts[it] != true }
+                                                    val remainingForFree = (amountValue - lockedTotal).coerceAtLeast(0.0)
+                                                    if (freeParticipants.isNotEmpty()) {
+                                                        val share = remainingForFree / freeParticipants.size
+                                                        freeParticipants.forEach { other ->
+                                                            participantAmounts[other] = "%.2f".format(share)
+                                                        }
                                                     }
                                                 }
                                             }
