@@ -12,6 +12,7 @@
     <string name="add_participant">Ajouter un participant</string>
     <string name="add_participant_description">Ajouter un membre</string>
     <string name="add_member">Ajouter un membre</string>
+    <string name="edit_members">Modifier les membres</string>
     <string name="remove_participant_description">Supprimer le membre</string>
     <string name="remove_member_description">Supprimer le membre</string>
     <string name="continue_button">Continuer</string>

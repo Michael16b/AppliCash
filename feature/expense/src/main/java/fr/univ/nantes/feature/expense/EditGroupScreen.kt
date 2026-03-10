@@ -107,7 +107,6 @@ fun EditGroupScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp, vertical = 16.dp),
         ) {
-            // --- Nom du groupe ---
             Text(
                 text = stringResource(R.string.group_name_label),
                 style = MaterialTheme.typography.titleMedium,
@@ -136,6 +135,7 @@ fun EditGroupScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
                     focusedBorderColor = Green500,
+                    focusedLabelColor = Green500,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
                     cursorColor = Green500
@@ -144,7 +144,6 @@ fun EditGroupScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // --- Membres ---
             Text(
                 text = stringResource(R.string.members_label),
                 style = MaterialTheme.typography.titleMedium,
@@ -157,7 +156,6 @@ fun EditGroupScreen(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                // --- Champs des membres ---
                 memberFields.forEachIndexed { index, member ->
                     key(member.id) {
                         Row(
@@ -221,7 +219,6 @@ fun EditGroupScreen(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // --- Message d'erreur ---
                 if (errorMessage != null) {
                     Text(
                         text = errorMessage!!,
@@ -231,7 +228,6 @@ fun EditGroupScreen(
                     )
                 }
 
-                // --- Bouton Ajouter un membre ---
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable {
@@ -248,7 +244,7 @@ fun EditGroupScreen(
                     Spacer(modifier = Modifier.width(6.dp))
 
                     Text(
-                        text = stringResource(R.string.add_member),
+                        text = stringResource(R.string.edit_members),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Green500,
                         fontWeight = FontWeight.Medium
@@ -257,11 +253,9 @@ fun EditGroupScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- Bouton Enregistrer ---
                 Button(
                     onClick = {
                         val members = memberFields.filter { it.value.isNotBlank() }
-                        // Normaliser les noms : trim et vérifier les doublons
                         val normalizedMembers = members.map { it.copy(value = it.value.trim()) }
                         val uniqueNames = normalizedMembers.map { it.value }.distinct()
 
@@ -269,7 +263,6 @@ fun EditGroupScreen(
                             groupName.isBlank() -> errorMessage = groupNameError
                             normalizedMembers.size < 2 -> errorMessage = membersError
                             uniqueNames.size < normalizedMembers.size -> {
-                                // Doublons détectés
                                 errorMessage = duplicateMembersError
                             }
                             else -> {
@@ -277,13 +270,11 @@ fun EditGroupScreen(
                                 val membersToAdd = uniqueNames.filter { it !in existingMembers }
                                 val membersToRemove = existingMembers.filter { it !in uniqueNames }
 
-                                // Vérifier si des membres à supprimer ont des dépenses
                                 val blockedRemovals = membersToRemove.filter { removedMember ->
                                     group.expenses.any { it.paidBy == removedMember }
                                 }
 
                                 if (blockedRemovals.isNotEmpty()) {
-                                    // Ré-ajouter les membres bloqués dans la liste UI
                                     blockedRemovals.forEach { blockedMember ->
                                         if (memberFields.none { it.value == blockedMember && it.isExisting }) {
                                             memberFields.add(

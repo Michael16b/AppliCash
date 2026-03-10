@@ -12,6 +12,7 @@
     <string name="add_participant">Add member</string>
     <string name="add_participant_description">Add member</string>
     <string name="add_member">Add Member</string>
+    <string name="edit_members">Edit Members</string>
     <string name="remove_participant_description">Remove member</string>
     <string name="remove_member_description">Remove member</string>
     <string name="continue_button">Continue</string>
