@@ -339,7 +339,9 @@ private fun ExpenseItem(
 ) {
     val sharePerPerson = if (group.participants.isNotEmpty()) {
         expense.amount / group.participants.size
-    } else 0.0
+    } else {
+        0.0
+    }
 
     var convertedAmount by remember(expense.id) { mutableStateOf<Double?>(null) }
     var convertedShare by remember(expense.id) { mutableStateOf<Double?>(null) }

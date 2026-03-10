@@ -53,11 +53,11 @@ import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.Teal400
 import fr.univ.nantes.core.ui.TealBg50
+import fr.univ.nantes.feature.expense.ExpenseEvent
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.GroupData
 import java.text.NumberFormat
 import kotlinx.serialization.Serializable
-import fr.univ.nantes.feature.expense.ExpenseEvent
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.flow.collectLatest
 
@@ -194,9 +194,10 @@ fun GroupCard(
             NumberFormat.getCurrencyInstance()
         } else {
             val nativeLocale = java.util.Locale.getAvailableLocales().firstOrNull { loc ->
-                loc.country.isNotEmpty() && runCatching {
-                    java.util.Currency.getInstance(loc) == currency
-                }.getOrDefault(false)
+                loc.country.isNotEmpty()
+                    && runCatching {
+                        java.util.Currency.getInstance(loc) == currency
+                    }.getOrDefault(false)
             } ?: java.util.Locale.getDefault()
             NumberFormat.getCurrencyInstance(nativeLocale).apply { this.currency = currency }
         }
