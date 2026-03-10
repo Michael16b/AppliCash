@@ -1,24 +1,33 @@
 package fr.univ.nantes.home
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,10 +52,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.AppliCashTheme
+import fr.univ.nantes.core.ui.Green700
+import fr.univ.nantes.core.ui.GreenBg50
+import fr.univ.nantes.core.ui.Red700
+import fr.univ.nantes.core.ui.RedBg50
 import fr.univ.nantes.core.ui.Teal400
 import fr.univ.nantes.core.ui.TealBg50
 import fr.univ.nantes.feature.expense.Balance
@@ -71,10 +85,9 @@ fun GroupDetailScreen(
     isLoggedIn: Boolean = true,
     onRequireLogin: () -> Unit = {}
 ) {
-    val currencyCode = "EUR"
     val currencyFormat = remember {
         NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-            currency = Currency.getInstance(currencyCode)
+            currency = Currency.getInstance("EUR")
         }
     }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -322,14 +335,25 @@ private fun ExpenseItem(
 
 @Composable
 private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
-    val currencyCode = "EUR"
     val balances = remember(group) { calculateBalances(group) }
     val reimbursements = remember(balances) { calculateReimbursements(balances) }
 
+    if (group.participants.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text = stringResource(R.string.no_members),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+        return
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
             Text(
@@ -339,6 +363,7 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
+
         if (balances.isEmpty()) {
             item {
                 Text(
@@ -349,106 +374,225 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
             }
         } else {
             items(balances) { balance ->
-                val positive = balance.amount >= 0
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = balance.participant,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = if (positive) {
-                                "+${currencyFormat.format(balance.amount)}"
-                            } else {
-                                "-${currencyFormat.format(-balance.amount)}"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (positive) Teal400 else MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
+                BalanceMemberRow(balance, currencyFormat)
             }
+
             item {
                 Text(
                     text = stringResource(R.string.balances_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = stringResource(R.string.currency_label, currencyCode),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Teal400
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)
                 )
             }
         }
+
+        item {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+        }
+
         item {
             Text(
                 text = stringResource(R.string.suggested_reimbursements),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(top = 4.dp)
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
+
         if (reimbursements.isEmpty()) {
-            item {
-                Text(
-                    text = stringResource(R.string.no_reimbursements),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            item { AllSettledBanner() }
         } else {
             items(reimbursements) { item ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                ReimbursementRow(item, currencyFormat)
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(8.dp)) }
+    }
+}
+
+@Composable
+private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
+    val isPositive = balance.amount > BALANCE_THRESHOLD
+    val isNegative = balance.amount < -BALANCE_THRESHOLD
+
+    val (bgColor, amountColor, labelText) = when {
+        isPositive -> BalanceStyle(
+            bg = GreenBg50,
+            amount = Green700,
+            label = stringResource(R.string.balance_to_receive)
+        )
+        isNegative -> BalanceStyle(
+            bg = RedBg50,
+            amount = Red700,
+            label = stringResource(R.string.balance_to_pay)
+        )
+        else -> BalanceStyle(
+            bg = TealBg50,
+            amount = Teal400,
+            label = stringResource(R.string.balance_settled)
+        )
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        shape = RoundedCornerShape(10.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .background(amountColor.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = balance.participant.take(1).uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = amountColor
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = balance.participant,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = labelText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = amountColor.copy(alpha = 0.8f)
+                )
+            }
+
+            val sign = when {
+                isPositive -> "+"
+                isNegative -> "-"
+                else -> ""
+            }
+            val displayAmount = if (isNegative) -balance.amount else balance.amount
+            Text(
+                text = sign + currencyFormat.format(displayAmount),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = amountColor
+            )
+        }
+    }
+}
+
+private data class BalanceStyle(
+    val bg: Color,
+    val amount: Color,
+    val label: String
+)
+
+@Composable
+private fun ReimbursementRow(reimbursement: Reimbursement, currencyFormat: NumberFormat) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(10.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = reimbursement.from,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = Red700,
+                modifier = Modifier.weight(1f)
+            )
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = stringResource(R.string.reimbursement_arrow),
+                    tint = Teal400,
+                    modifier = Modifier.size(18.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .background(TealBg50, RoundedCornerShape(20.dp))
+                        .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = item.from,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = TealBg50),
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Text(
-                                text = currencyFormat.format(item.amount),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Teal400,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                        Text(
-                            text = item.to,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    Text(
+                        text = currencyFormat.format(reimbursement.amount),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Teal400
+                    )
                 }
             }
+
+            Text(
+                text = reimbursement.to,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = Green700,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AllSettledBanner() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = GreenBg50),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(Green700.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = Green700,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = stringResource(R.string.all_settled),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = Green700
+            )
         }
     }
 }
@@ -501,5 +645,46 @@ private fun GroupDetailPreview() {
     )
     AppliCashTheme {
         GroupDetailScreen(group = group, onBack = {})
+    }
+}
+
+@Preview(showBackground = true, name = "Onglet Soldes - Dettes en cours")
+@Composable
+private fun BalancesTabPreview() {
+    val group = GroupData(
+        id = 2,
+        groupName = "Week-end ski",
+        participants = listOf("Julie", "Marc", "Sophie"),
+        expenses = listOf(
+            Expense(1, "Location chalet", 300.0, "Marc"),
+            Expense(2, "Forfait ski", 150.0, "Julie"),
+            Expense(3, "Courses", 60.0, "Sophie")
+        )
+    )
+    val currencyFormat = NumberFormat.getCurrencyInstance(Locale.FRANCE).apply {
+        currency = Currency.getInstance("EUR")
+    }
+    AppliCashTheme {
+        BalancesTab(group = group, currencyFormat = currencyFormat)
+    }
+}
+
+@Preview(showBackground = true, name = "Onglet Soldes - Tout réglé")
+@Composable
+private fun BalancesTabSettledPreview() {
+    val group = GroupData(
+        id = 3,
+        groupName = "Dîner d'équipe",
+        participants = listOf("Alice", "Bob"),
+        expenses = listOf(
+            Expense(1, "Restaurant", 60.0, "Alice"),
+            Expense(2, "Dessert", 60.0, "Bob")
+        )
+    )
+    val currencyFormat = NumberFormat.getCurrencyInstance(Locale.FRANCE).apply {
+        currency = Currency.getInstance("EUR")
+    }
+    AppliCashTheme {
+        BalancesTab(group = group, currencyFormat = currencyFormat)
     }
 }
