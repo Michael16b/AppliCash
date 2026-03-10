@@ -22,6 +22,8 @@ import androidx.navigation.toRoute
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.feature.expense.BalanceRoute
 import fr.univ.nantes.feature.expense.BalanceScreen
+import fr.univ.nantes.feature.expense.EditGroup
+import fr.univ.nantes.feature.expense.EditGroupScreen
 import fr.univ.nantes.feature.expense.ExpenseRoute
 import fr.univ.nantes.feature.expense.ExpenseScreen
 import fr.univ.nantes.feature.expense.ExpenseViewModel
@@ -172,6 +174,9 @@ private fun App() {
                         onDeleteExpense = { expenseId ->
                             expenseViewModel.deleteExpense(expenseId, group.id)
                         },
+                        onEditGroup = {
+                            navController.navigate(EditGroup(groupId = group.id))
+                        },
                         isLoggedIn = state.isLoggedIn,
                         onRequireLogin = {
                             navController.navigate(Login) {
@@ -180,6 +185,14 @@ private fun App() {
                         }
                     )
                 }
+            }
+            composable<EditGroup> { backStackEntry ->
+                val route = backStackEntry.toRoute<EditGroup>()
+                EditGroupScreen(
+                    groupId = route.groupId,
+                    viewModel = expenseViewModel,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable<ProfilRoute> {
                 ProfileScreen(

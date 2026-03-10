@@ -369,4 +369,36 @@ class ExpenseViewModel(
         }
     }
 
+    /**
+     * Updates the name of an existing group in the database.
+     */
+    fun updateGroupName(groupId: Long, newName: String) {
+        viewModelScope.launch {
+            repository.updateGroupName(groupId, newName)
+            if (_state.value.currentGroupId == groupId) {
+                _state.update { it.copy(groupName = newName) }
+            }
+        }
+    }
+
+    /**
+     * Adds a participant to an existing group in the database.
+     */
+    fun addParticipantToGroup(groupId: Long, participantName: String) {
+        viewModelScope.launch {
+            repository.addParticipantToGroup(groupId, participantName)
+            loadGroup(groupId)
+        }
+    }
+
+    /**
+     * Removes a participant from an existing group in the database.
+     */
+    fun removeParticipantFromGroup(groupId: Long, participantName: String) {
+        viewModelScope.launch {
+            repository.removeParticipantFromGroup(groupId, participantName)
+            loadGroup(groupId)
+        }
+    }
+
 }
