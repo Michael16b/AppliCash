@@ -27,7 +27,7 @@ import org.junit.Test
  */
 class ExpenseCalculatorTest {
 
-    private val DELTA = 0.001
+    private val delta = 0.001
 
     // ── calculateBalances — equal split ───────────────────────────────────────
 
@@ -44,7 +44,7 @@ class ExpenseCalculatorTest {
             listOf("Alice", "Bob", "Charlie")
         )
         assertEquals(3, result.size)
-        result.forEach { assertEquals(0.0, it.amount, DELTA) }
+        result.forEach { assertEquals(0.0, it.amount, delta) }
     }
 
     @Test
@@ -63,9 +63,9 @@ class ExpenseCalculatorTest {
         val bob = result.first { it.participant == "Bob" }
         val charlie = result.first { it.participant == "Charlie" }
 
-        assertEquals(30.0, alice.amount, DELTA)
-        assertEquals(0.0, bob.amount, DELTA)
-        assertEquals(-30.0, charlie.amount, DELTA)
+        assertEquals(30.0, alice.amount, delta)
+        assertEquals(0.0, bob.amount, delta)
+        assertEquals(-30.0, charlie.amount, delta)
     }
 
     @Test
@@ -79,8 +79,8 @@ class ExpenseCalculatorTest {
         // Alice paid 100, share = 50 → Alice +50 (credit), Bob -50 (debt)
         assertTrue("Alice should have a positive balance", alice.amount > 0)
         assertTrue("Bob should have a negative balance", bob.amount < 0)
-        assertEquals(50.0, alice.amount, DELTA)
-        assertEquals(-50.0, bob.amount, DELTA)
+        assertEquals(50.0, alice.amount, delta)
+        assertEquals(-50.0, bob.amount, delta)
     }
 
     @Test
@@ -90,7 +90,7 @@ class ExpenseCalculatorTest {
 
         // Total = 40, share = 40, Alice paid 40 → balance 0
         assertEquals(1, result.size)
-        assertEquals(0.0, result[0].amount, DELTA)
+        assertEquals(0.0, result[0].amount, delta)
     }
 
     @Test
@@ -100,7 +100,7 @@ class ExpenseCalculatorTest {
         val result = ExpenseCalculator.calculateBalances(expenses, listOf("Alice", "Bob", "Charlie"))
 
         val sum = result.sumOf { it.amount }
-        assertEquals(0.0, sum, DELTA)
+        assertEquals(0.0, sum, delta)
 
         val alice = result.first { it.participant == "Alice" }
         assertTrue("Alice should have positive balance", alice.amount > 0)
@@ -113,7 +113,7 @@ class ExpenseCalculatorTest {
             Expense(description = "Part 2", amount = 50.0, paidBy = "Bob")
         )
         val result = ExpenseCalculator.calculateBalances(expenses, listOf("Alice", "Bob"))
-        result.forEach { assertEquals(0.0, it.amount, DELTA) }
+        result.forEach { assertEquals(0.0, it.amount, delta) }
     }
 
     @Test
@@ -125,7 +125,7 @@ class ExpenseCalculatorTest {
         )
         val result = ExpenseCalculator.calculateBalances(expenses, listOf("Alice", "Bob", "Charlie"))
         val sum = result.sumOf { it.amount }
-        assertEquals(0.0, sum, DELTA)
+        assertEquals(0.0, sum, delta)
     }
 
     // ── calculateBalancesWithSplit — custom split ──────────────────────────────
@@ -159,7 +159,8 @@ class ExpenseCalculatorTest {
             )
         )
         val result = ExpenseCalculator.calculateBalancesWithSplit(
-            expenses, listOf("Alice", "Bob", "Charlie")
+            expenses,
+            listOf("Alice", "Bob", "Charlie")
         )
 
         // Alice paid 90, owes 30 → net +60
@@ -169,20 +170,21 @@ class ExpenseCalculatorTest {
         val bob = result.first { it.participant == "Bob" }
         val charlie = result.first { it.participant == "Charlie" }
 
-        assertEquals(60.0, alice.amount, DELTA)
-        assertEquals(-30.0, bob.amount, DELTA)
-        assertEquals(-30.0, charlie.amount, DELTA)
+        assertEquals(60.0, alice.amount, delta)
+        assertEquals(-30.0, bob.amount, delta)
+        assertEquals(-30.0, charlie.amount, delta)
     }
 
     @Test
     fun `BR8 - calculateBalancesWithSplit falls back to equal split when splitDetails is empty`() {
         val expenses = listOf(Expense(description = "Taxi", amount = 60.0, paidBy = "Alice"))
         val result = ExpenseCalculator.calculateBalancesWithSplit(
-            expenses, listOf("Alice", "Bob", "Charlie")
+            expenses,
+            listOf("Alice", "Bob", "Charlie")
         )
 
         val alice = result.first { it.participant == "Alice" }
-        assertEquals(40.0, alice.amount, DELTA) // paid 60, owes 20 → +40
+        assertEquals(40.0, alice.amount, delta) // paid 60, owes 20 → +40
     }
 
     @Test
@@ -230,7 +232,7 @@ class ExpenseCalculatorTest {
         assertEquals(1, result.size)
         assertEquals("Bob", result[0].from)
         assertEquals("Alice", result[0].to)
-        assertEquals(50.0, result[0].amount, DELTA)
+        assertEquals(50.0, result[0].amount, delta)
     }
 
     @Test
@@ -256,18 +258,18 @@ class ExpenseCalculatorTest {
         val result = ExpenseCalculator.calculateReimbursements(balances)
 
         val totalReimbursed = result.sumOf { it.amount }
-        assertEquals(60.0, totalReimbursed, DELTA)
+        assertEquals(60.0, totalReimbursed, delta)
     }
 
     @Test
     fun `BR7 - calculateReimbursements from is always the debtor, to is always the creditor`() {
         val balances = listOf(
-            Balance("Alice", 50.0),  // creditor
-            Balance("Bob", -50.0)    // debtor
+            Balance("Alice", 50.0), // creditor
+            Balance("Bob", -50.0) // debtor
         )
         val result = ExpenseCalculator.calculateReimbursements(balances)
-        assertEquals("Bob", result[0].from)   // debtor pays
-        assertEquals("Alice", result[0].to)   // creditor receives
+        assertEquals("Bob", result[0].from) // debtor pays
+        assertEquals("Alice", result[0].to) // creditor receives
     }
 
     @Test
@@ -300,7 +302,7 @@ class ExpenseCalculatorTest {
         val balanceMap = balances.associateBy { it.participant }
         paidByDebtor.forEach { (debtor, paid) ->
             val debt = -(balanceMap[debtor]?.amount ?: 0.0)
-            assertEquals(debt, paid, DELTA)
+            assertEquals(debt, paid, delta)
         }
     }
 
@@ -309,7 +311,7 @@ class ExpenseCalculatorTest {
     @Test
     fun `BR9 - convertAmount returns amount multiplied by rate`() {
         val result = ExpenseCalculator.convertAmount(100.0, 1.08)
-        assertEquals(108.0, result!!, DELTA)
+        assertEquals(108.0, result!!, delta)
     }
 
     @Test
@@ -326,13 +328,13 @@ class ExpenseCalculatorTest {
     fun `BR9 - convertAmount handles fractional rates correctly`() {
         // 100 EUR at 0.86 GBP/EUR = 86 GBP
         val result = ExpenseCalculator.convertAmount(100.0, 0.86)
-        assertEquals(86.0, result!!, DELTA)
+        assertEquals(86.0, result!!, delta)
     }
 
     @Test
     fun `BR9 - convertAmount with rate 1 0 returns same amount`() {
         val result = ExpenseCalculator.convertAmount(250.0, 1.0)
-        assertEquals(250.0, result!!, DELTA)
+        assertEquals(250.0, result!!, delta)
     }
 
     // ── CA5: edge cases ───────────────────────────────────────────────────────
@@ -341,7 +343,7 @@ class ExpenseCalculatorTest {
     fun `CA5 - calculateBalances with zero-amount expense keeps balances at zero`() {
         val expenses = listOf(Expense(description = "Free item", amount = 0.0, paidBy = "Alice"))
         val result = ExpenseCalculator.calculateBalances(expenses, listOf("Alice", "Bob"))
-        result.forEach { assertEquals(0.0, it.amount, DELTA) }
+        result.forEach { assertEquals(0.0, it.amount, delta) }
     }
 
     @Test
@@ -372,4 +374,3 @@ class ExpenseCalculatorTest {
         assertTrue("Charlie should owe money", charlie.amount < 0)
     }
 }
-

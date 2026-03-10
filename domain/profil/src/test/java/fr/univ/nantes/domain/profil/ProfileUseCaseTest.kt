@@ -129,4 +129,3 @@ class ProfileUseCaseTest {
         assertFalse(useCase.isLoggedIn())
     }
 }
-

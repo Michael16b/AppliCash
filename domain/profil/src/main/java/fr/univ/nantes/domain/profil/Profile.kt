@@ -5,5 +5,5 @@ data class Profile(
     val lastName: String,
     val email: String,
     val currency: String,
-    val isLoggedIn: Boolean = false,
+    val isLoggedIn: Boolean = false
 )

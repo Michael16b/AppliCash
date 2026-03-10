@@ -12,4 +12,3 @@ package fr.univ.nantes.domain.profil
  * - "usd" -> "USD"
  */
 fun String.normalizeCurrencyCode(): String = this.trim().split(" ", "-").first().uppercase().take(3)
-

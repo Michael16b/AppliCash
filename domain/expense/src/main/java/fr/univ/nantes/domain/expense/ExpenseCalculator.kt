@@ -185,4 +185,3 @@ object ExpenseCalculator {
         return amount * rate
     }
 }
-

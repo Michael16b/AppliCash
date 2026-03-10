@@ -81,4 +81,3 @@ class CurrencyExtensionsTest {
         assertEquals("EU", "eu".normalizeCurrencyCode())
     }
 }
-
