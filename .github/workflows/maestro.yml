@@ -101,8 +101,22 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # ── Install emulator system dependencies ──────────────────────────────────
+      # libpulse0 is required by the Android emulator even with -no-audio flag.
+      # Without it the emulator process crashes immediately with:
+      #   error while loading shared libraries: libpulse.so.0: cannot open shared object file
+      - name: Install emulator dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libpulse0 \
+            libasound2-plugins \
+            libgl1 \
+            libx11-6
+
       # ── Start Android Emulator and run Maestro scenarios ──────────────────────
       # CA15: API 29 is compatible with both emulator and physical devices
+      # CA16: Each scenario is wrapped with `timeout 5m` to enforce the 5-minute limit
       - name: Start Android Emulator and run E2E tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -114,11 +128,15 @@ jobs:
           ram-size: 4096M
           heap-size: 512M
           disk-size: 6000M
+          # boot-timeout: abort emulator startup after 60 seconds (CA16 requirement)
+          emulator-boot-timeout: 60
           emulator-options: >-
             -no-snapshot
             -no-audio
             -no-boot-anim
             -gpu swiftshader_indirect
+            -no-window
+            -noaudio
           disable-animations: true
           script: |
             # Install APK
@@ -133,28 +151,29 @@ jobs:
             adb shell pm grant fr.univ.nantes.archi android.permission.INTERNET || true
 
             # CA14: Run all 4 Maestro scenarios
+            # CA16: Each scenario is limited to 5 minutes via `timeout`
             mkdir -p .maestro/results .maestro/screenshots
 
             echo "=== Scenario 1: Create group and add members ==="
-            maestro test .maestro/01_create_group.yaml \
+            timeout 300 maestro test .maestro/01_create_group.yaml \
               --format junit \
               --output .maestro/results/01_results.xml \
               --no-ansi || true
 
             echo "=== Scenario 2: Add expense and check balances ==="
-            maestro test .maestro/02_add_expense_check_balances.yaml \
+            timeout 300 maestro test .maestro/02_add_expense_check_balances.yaml \
               --format junit \
               --output .maestro/results/02_results.xml \
               --no-ansi || true
 
             echo "=== Scenario 3: View reimbursements ==="
-            maestro test .maestro/03_view_reimbursements.yaml \
+            timeout 300 maestro test .maestro/03_view_reimbursements.yaml \
               --format junit \
               --output .maestro/results/03_results.xml \
               --no-ansi || true
 
             echo "=== Scenario 4: Edit and delete expense ==="
-            maestro test .maestro/04_edit_delete_expense.yaml \
+            timeout 300 maestro test .maestro/04_edit_delete_expense.yaml \
               --format junit \
               --output .maestro/results/04_results.xml \
               --no-ansi || true
