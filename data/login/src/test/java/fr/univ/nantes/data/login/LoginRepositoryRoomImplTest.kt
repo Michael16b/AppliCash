@@ -18,16 +18,16 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 /**
- * Tests unitaires de LoginRepositoryRoomImpl.
- * Utilise un mock de ProfileDao et le vrai PasswordHasher (PBKDF2)
- * car c'est une crypto standard sans dépendance Android.
+ * Unit tests for LoginRepositoryRoomImpl.
+ * Uses a mocked ProfileDao and the real PasswordHasher (PBKDF2),
+ * since it is a standard crypto utility with no Android dependency.
  */
 class LoginRepositoryRoomImplTest {
 
     private lateinit var profileDao: ProfileDao
     private lateinit var repository: LoginRepositoryRoomImpl
 
-    // Entité de base réutilisable
+    // Base entity for reuse
     private val validEmail = "alice@mail.com"
     private val validPassword = "SecurePass1!"
     private lateinit var hashedPassword: String
@@ -52,7 +52,7 @@ class LoginRepositoryRoomImplTest {
     // ── authenticate ──────────────────────────────────────────────────────────
 
     @Test
-    fun `authenticate avec credentials valides retourne l utilisateur`() = runTest {
+    fun `authenticate with valid credentials returns the user`() = runTest {
         whenever(profileDao.findByEmail(validEmail)).thenReturn(baseProfile)
 
         val user = repository.authenticate(validEmail, validPassword)
@@ -63,7 +63,7 @@ class LoginRepositoryRoomImplTest {
     }
 
     @Test
-    fun `authenticate appelle logout puis upsert avec isLoggedIn=true`() = runTest {
+    fun `authenticate calls logout then upsert with isLoggedIn set to true`() = runTest {
         whenever(profileDao.findByEmail(validEmail)).thenReturn(baseProfile)
         val captor = argumentCaptor<ProfileEntity>()
 
@@ -75,12 +75,12 @@ class LoginRepositoryRoomImplTest {
     }
 
     @Test
-    fun `authenticate avec email inconnu leve NotExistingException`() = runTest {
+    fun `authenticate with unknown email throws NotExistingException`() = runTest {
         whenever(profileDao.findByEmail("unknown@mail.com")).thenReturn(null)
 
         try {
             repository.authenticate("unknown@mail.com", validPassword)
-            fail("NotExistingException attendue")
+            fail("NotExistingException expected")
         } catch (e: LoginException.NotExistingException) {
             assertNotNull(e)
         }
@@ -88,12 +88,12 @@ class LoginRepositoryRoomImplTest {
     }
 
     @Test
-    fun `authenticate avec mauvais mot de passe leve WrongPasswordException`() = runTest {
+    fun `authenticate with wrong password throws WrongPasswordException`() = runTest {
         whenever(profileDao.findByEmail(validEmail)).thenReturn(baseProfile)
 
         try {
-            repository.authenticate(validEmail, "mauvaisMotDePasse")
-            fail("WrongPasswordException attendue")
+            repository.authenticate(validEmail, "wrongPassword")
+            fail("WrongPasswordException expected")
         } catch (e: LoginException.WrongPasswordException) {
             assertNotNull(e)
         }
@@ -101,7 +101,7 @@ class LoginRepositoryRoomImplTest {
     }
 
     @Test
-    fun `authenticate username est le firstName si non vide`() = runTest {
+    fun `authenticate username is firstName when firstName is not blank`() = runTest {
         whenever(profileDao.findByEmail(validEmail)).thenReturn(baseProfile)
 
         val user = repository.authenticate(validEmail, validPassword)
@@ -110,7 +110,7 @@ class LoginRepositoryRoomImplTest {
     }
 
     @Test
-    fun `authenticate username est l email si firstName est vide`() = runTest {
+    fun `authenticate username is email when firstName is blank`() = runTest {
         val profileWithBlankName = baseProfile.copy(firstName = "")
         whenever(profileDao.findByEmail(validEmail)).thenReturn(profileWithBlankName)
 
@@ -122,7 +122,7 @@ class LoginRepositoryRoomImplTest {
     // ── createUser ────────────────────────────────────────────────────────────
 
     @Test
-    fun `createUser avec nouvel email cree l utilisateur`() = runTest {
+    fun `createUser with a new email creates the user`() = runTest {
         whenever(profileDao.findByEmail("new@mail.com")).thenReturn(null)
 
         val user = repository.createUser("Bob", "Martin", "new@mail.com", "pass123", "USD")
@@ -133,7 +133,7 @@ class LoginRepositoryRoomImplTest {
     }
 
     @Test
-    fun `createUser appelle logout puis upsert avec isLoggedIn=true`() = runTest {
+    fun `createUser calls logout then upsert with isLoggedIn set to true`() = runTest {
         whenever(profileDao.findByEmail("new@mail.com")).thenReturn(null)
         val captor = argumentCaptor<ProfileEntity>()
 
@@ -148,7 +148,7 @@ class LoginRepositoryRoomImplTest {
     }
 
     @Test
-    fun `createUser hache le mot de passe avant de l enregistrer`() = runTest {
+    fun `createUser hashes the password before saving`() = runTest {
         whenever(profileDao.findByEmail("new@mail.com")).thenReturn(null)
         val captor = argumentCaptor<ProfileEntity>()
 
@@ -156,18 +156,18 @@ class LoginRepositoryRoomImplTest {
 
         verify(profileDao).upsert(captor.capture())
         val savedPassword = captor.firstValue.password
-        // Le mot de passe doit être haché (non stocké en clair)
-        assert(savedPassword != "pass123") { "Le mot de passe ne doit pas être stocké en clair" }
-        assert(PasswordHasher.verifyPassword("pass123", savedPassword)) { "Le hash doit être vérifiable" }
+        // Password must not be stored in plain text
+        assert(savedPassword != "pass123") { "Password must not be stored in plain text" }
+        assert(PasswordHasher.verifyPassword("pass123", savedPassword)) { "Hash must be verifiable" }
     }
 
     @Test
-    fun `createUser avec email existant leve AlreadyExistsException`() = runTest {
+    fun `createUser with existing email throws AlreadyExistsException`() = runTest {
         whenever(profileDao.findByEmail(validEmail)).thenReturn(baseProfile)
 
         try {
             repository.createUser("Alice", "Dupont", validEmail, "pass", "EUR")
-            fail("AlreadyExistsException attendue")
+            fail("AlreadyExistsException expected")
         } catch (e: LoginException.AlreadyExistsException) {
             assertNotNull(e)
         }
@@ -176,7 +176,7 @@ class LoginRepositoryRoomImplTest {
     }
 
     @Test
-    fun `createUser username est le firstName si non vide`() = runTest {
+    fun `createUser username is firstName when firstName is not blank`() = runTest {
         whenever(profileDao.findByEmail("bob@mail.com")).thenReturn(null)
 
         val user = repository.createUser("Bob", "Martin", "bob@mail.com", "pass", "EUR")
@@ -185,7 +185,7 @@ class LoginRepositoryRoomImplTest {
     }
 
     @Test
-    fun `createUser username est l email si firstName est vide`() = runTest {
+    fun `createUser username is email when firstName is blank`() = runTest {
         whenever(profileDao.findByEmail("bob@mail.com")).thenReturn(null)
 
         val user = repository.createUser("", "Martin", "bob@mail.com", "pass", "EUR")

@@ -12,8 +12,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 /**
- * Tests unitaires du DAO ParticipantDao.
- * RG3 : l'index UNIQUE (groupId, name) est représenté ici par un mock qui simule l'exception.
+ * Unit tests for ParticipantDao.
+ * BR3: the UNIQUE index (groupId, name) is represented here by a mock that simulates the exception.
  */
 class ParticipantDaoTest {
 
@@ -25,7 +25,7 @@ class ParticipantDaoTest {
     }
 
     @Test
-    fun `insertParticipant retourne un id positif`() = runTest {
+    fun `insertParticipant returns a positive id`() = runTest {
         whenever(dao.insertParticipant(any())).thenReturn(1L)
 
         val id = dao.insertParticipant(ParticipantEntity(groupId = 1L, name = "Alice"))
@@ -34,7 +34,7 @@ class ParticipantDaoTest {
     }
 
     @Test
-    fun `insertParticipants insere tous les participants`() = runTest {
+    fun `insertParticipants inserts all participants`() = runTest {
         val participants = listOf(
             ParticipantEntity(groupId = 1L, name = "Alice"),
             ParticipantEntity(groupId = 1L, name = "Bob"),
@@ -47,7 +47,7 @@ class ParticipantDaoTest {
     }
 
     @Test
-    fun `getParticipantsByGroupId retourne la liste des participants`() = runTest {
+    fun `getParticipantsByGroupId returns the participants list`() = runTest {
         val expected = listOf(
             ParticipantEntity(id = 1, groupId = 1L, name = "Alice"),
             ParticipantEntity(id = 2, groupId = 1L, name = "Bob")
@@ -62,7 +62,7 @@ class ParticipantDaoTest {
     }
 
     @Test
-    fun `getParticipantsByGroupId retourne une liste vide si aucun participant`() = runTest {
+    fun `getParticipantsByGroupId returns empty list when no participants exist`() = runTest {
         whenever(dao.getParticipantsByGroupId(99L)).thenReturn(emptyList())
 
         val result = dao.getParticipantsByGroupId(99L)
@@ -71,34 +71,34 @@ class ParticipantDaoTest {
     }
 
     @Test
-    fun `deleteParticipantByName appelle la methode avec les bons parametres`() = runTest {
+    fun `deleteParticipantByName calls the method with the correct parameters`() = runTest {
         dao.deleteParticipantByName(1L, "Alice")
         verify(dao).deleteParticipantByName(1L, "Alice")
     }
 
     @Test
-    fun `deleteParticipant appelle la methode avec le bon id`() = runTest {
+    fun `deleteParticipant calls the method with the correct id`() = runTest {
         dao.deleteParticipant(5L)
         verify(dao).deleteParticipant(5L)
     }
 
     @Test
-    fun `RG3 - insertParticipant avec nom en doublon leve une exception de contrainte simulee`() = runTest {
+    fun `BR3 - insertParticipant with duplicate name throws a simulated constraint exception`() = runTest {
         val duplicate = ParticipantEntity(groupId = 1L, name = "Alice")
-        // Simule la violation de la contrainte UNIQUE (groupId, name) de la base SQLite
+        // Simulates the UNIQUE constraint violation on (groupId, name)
         whenever(dao.insertParticipant(duplicate))
             .thenThrow(RuntimeException("UNIQUE constraint failed: participants.groupId, participants.name"))
 
         try {
             dao.insertParticipant(duplicate)
-            org.junit.Assert.fail("Une RuntimeException de contrainte était attendue")
+            org.junit.Assert.fail("A RuntimeException was expected")
         } catch (e: RuntimeException) {
             assertTrue(e.message?.contains("UNIQUE") == true)
         }
     }
 
     @Test
-    fun `updateParticipants ajoute et supprime les bons participants`() = runTest {
+    fun `updateParticipants adds and removes the correct participants`() = runTest {
         val toAdd = listOf(ParticipantEntity(groupId = 1L, name = "Charlie"))
         val toRemove = listOf("Alice")
 
@@ -107,7 +107,3 @@ class ParticipantDaoTest {
         verify(dao).updateParticipants(1L, toAdd, toRemove)
     }
 }
-
-
-
-

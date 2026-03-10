@@ -13,8 +13,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 /**
- * Tests unitaires du DAO ExpenseGroupDao via mocks.
- * Les comportements réels SQLite sont testés via les tests d'instrumentation (Room).
+ * Unit tests for ExpenseGroupDao using mocks.
+ * Real SQLite behaviour is covered by instrumented tests (Room).
  */
 class ExpenseGroupDaoTest {
 
@@ -26,17 +26,17 @@ class ExpenseGroupDaoTest {
     }
 
     @Test
-    fun `insertGroup retourne un id positif`() = runTest {
+    fun `insertGroup returns a positive id`() = runTest {
         whenever(dao.insertGroup(any())).thenReturn(1L)
 
-        val id = dao.insertGroup(ExpenseGroupEntity(groupName = "Vacances"))
+        val id = dao.insertGroup(ExpenseGroupEntity(groupName = "Holidays"))
 
         assertEquals(1L, id)
     }
 
     @Test
-    fun `insertGroup est appele avec la bonne entite`() = runTest {
-        val entity = ExpenseGroupEntity(groupName = "Voyage")
+    fun `insertGroup is called with the correct entity`() = runTest {
+        val entity = ExpenseGroupEntity(groupName = "Trip")
         whenever(dao.insertGroup(entity)).thenReturn(2L)
 
         dao.insertGroup(entity)
@@ -45,19 +45,19 @@ class ExpenseGroupDaoTest {
     }
 
     @Test
-    fun `deleteGroup appelle la methode avec le bon id`() = runTest {
+    fun `deleteGroup calls the method with the correct id`() = runTest {
         dao.deleteGroup(3L)
         verify(dao).deleteGroup(3L)
     }
 
     @Test
-    fun `updateGroupName appelle la methode avec les bons parametres`() = runTest {
-        dao.updateGroupName(1L, "Nouveau Nom")
-        verify(dao).updateGroupName(1L, "Nouveau Nom")
+    fun `updateGroupName calls the method with the correct parameters`() = runTest {
+        dao.updateGroupName(1L, "New Name")
+        verify(dao).updateGroupName(1L, "New Name")
     }
 
     @Test
-    fun `getGroupById retourne null quand le groupe n existe pas`() = runTest {
+    fun `getGroupById returns null when group does not exist`() = runTest {
         whenever(dao.getGroupById(99L)).thenReturn(null)
 
         val result = dao.getGroupById(99L)
@@ -66,7 +66,7 @@ class ExpenseGroupDaoTest {
     }
 
     @Test
-    fun `getGroupById retourne l entite quand le groupe existe`() = runTest {
+    fun `getGroupById returns the entity when group exists`() = runTest {
         val entity = ExpenseGroupEntity(id = 1L, groupName = "Test")
         whenever(dao.getGroupById(1L)).thenReturn(entity)
 
@@ -76,7 +76,7 @@ class ExpenseGroupDaoTest {
     }
 
     @Test
-    fun `getGroupWithDetails retourne null quand groupe inexistant`() = runTest {
+    fun `getGroupWithDetails returns null when group does not exist`() = runTest {
         whenever(dao.getGroupWithDetails(99L)).thenReturn(null)
 
         val result = dao.getGroupWithDetails(99L)
@@ -85,15 +85,14 @@ class ExpenseGroupDaoTest {
     }
 
     @Test
-    fun `getGroupWithDetails retourne le groupe avec details`() = runTest {
-        val group = ExpenseGroupEntity(id = 1L, groupName = "Amis")
+    fun `getGroupWithDetails returns the group with its details`() = runTest {
+        val group = ExpenseGroupEntity(id = 1L, groupName = "Friends")
         val details = GroupWithDetails(group = group, participants = emptyList(), expenses = emptyList())
         whenever(dao.getGroupWithDetails(1L)).thenReturn(details)
 
         val result = dao.getGroupWithDetails(1L)
 
         assertEquals(details, result)
-        assertEquals("Amis", result?.group?.groupName)
+        assertEquals("Friends", result?.group?.groupName)
     }
 }
-

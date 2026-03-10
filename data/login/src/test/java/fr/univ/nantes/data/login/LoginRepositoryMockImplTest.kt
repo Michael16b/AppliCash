@@ -9,8 +9,8 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Tests unitaires de LoginRepositoryMockImpl (boîte blanche, sans mock).
- * Vérifie toutes les branches : succès, NotExistingException, WrongPasswordException,
+ * Unit tests for LoginRepositoryMockImpl (white-box, no mocks required).
+ * Covers all branches: success, NotExistingException, WrongPasswordException,
  * AlreadyExistsException.
  */
 class LoginRepositoryMockImplTest {
@@ -25,7 +25,7 @@ class LoginRepositoryMockImplTest {
     // ── authenticate ──────────────────────────────────────────────────────────
 
     @Test
-    fun `authenticate avec credentials valides retourne l utilisateur`() = runTest {
+    fun `authenticate with valid credentials returns the user`() = runTest {
         val user = repository.authenticate("admin@admin", "admin")
 
         assertNotNull(user)
@@ -34,30 +34,30 @@ class LoginRepositoryMockImplTest {
     }
 
     @Test
-    fun `authenticate avec email inconnu leve NotExistingException`() = runTest {
+    fun `authenticate with unknown email throws NotExistingException`() = runTest {
         try {
             repository.authenticate("unknown@mail.com", "admin")
-            fail("NotExistingException attendue")
+            fail("NotExistingException expected")
         } catch (e: LoginException.NotExistingException) {
             assertNotNull(e)
         }
     }
 
     @Test
-    fun `authenticate avec mauvais mot de passe leve WrongPasswordException`() = runTest {
+    fun `authenticate with wrong password throws WrongPasswordException`() = runTest {
         try {
             repository.authenticate("admin@admin", "wrongpassword")
-            fail("WrongPasswordException attendue")
+            fail("WrongPasswordException expected")
         } catch (e: LoginException.WrongPasswordException) {
             assertNotNull(e)
         }
     }
 
     @Test
-    fun `authenticate avec email et mot de passe vides leve NotExistingException`() = runTest {
+    fun `authenticate with empty email and password throws NotExistingException`() = runTest {
         try {
             repository.authenticate("", "")
-            fail("NotExistingException attendue")
+            fail("NotExistingException expected")
         } catch (e: LoginException.NotExistingException) {
             assertNotNull(e)
         }
@@ -66,7 +66,7 @@ class LoginRepositoryMockImplTest {
     // ── createUser ────────────────────────────────────────────────────────────
 
     @Test
-    fun `createUser avec nouvel email retourne l utilisateur`() = runTest {
+    fun `createUser with a new email returns the user`() = runTest {
         val user = repository.createUser("Jean", "Dupont", "jean@mail.com", "pass123", "EUR")
 
         assertNotNull(user)
@@ -75,27 +75,26 @@ class LoginRepositoryMockImplTest {
     }
 
     @Test
-    fun `createUser avec email admin existant leve AlreadyExistsException`() = runTest {
+    fun `createUser with the existing admin email throws AlreadyExistsException`() = runTest {
         try {
             repository.createUser("Admin", "User", "admin@admin", "pass", "EUR")
-            fail("AlreadyExistsException attendue")
+            fail("AlreadyExistsException expected")
         } catch (e: LoginException.AlreadyExistsException) {
             assertNotNull(e)
         }
     }
 
     @Test
-    fun `createUser avec firstName vide utilise l email comme username`() = runTest {
+    fun `createUser with blank firstName uses email as username`() = runTest {
         val user = repository.createUser("", "Dupont", "test@mail.com", "pass", "EUR")
 
         assertEquals("test@mail.com", user.username)
     }
 
     @Test
-    fun `createUser avec firstName non vide utilise le firstName comme username`() = runTest {
+    fun `createUser with non-blank firstName uses firstName as username`() = runTest {
         val user = repository.createUser("Marie", "Martin", "marie@mail.com", "pass", "USD")
 
         assertEquals("Marie", user.username)
     }
 }
-

@@ -19,12 +19,12 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 /**
- * Tests unitaires de CurrencyRepository.
- * Stratégie cache-first TTL 1h :
- *   - cache valide → pas d'appel réseau
- *   - cache expiré → appel réseau + mise en cache
- *   - erreur réseau + cache stale → fallback sur le cache
- *   - erreur réseau + pas de cache → null
+ * Unit tests for CurrencyRepository.
+ * Cache-first strategy with a 1-hour TTL:
+ *   - valid cache  → no network call
+ *   - expired cache → network call + cache update
+ *   - network error + stale cache → fallback to stale cache
+ *   - network error + no cache → null
  */
 class CurrencyRepositoryTest {
 
@@ -32,7 +32,7 @@ class CurrencyRepositoryTest {
     private lateinit var dao: ExchangeRateDao
     private lateinit var repository: CurrencyRepository
 
-    // TTL = 1h = 3_600_000 ms
+    // TTL = 1 h = 3_600_000 ms
     private val TTL_MS = 60 * 60 * 1000L
     private val now = System.currentTimeMillis()
 
@@ -43,10 +43,10 @@ class CurrencyRepositoryTest {
         repository = CurrencyRepository(api, dao)
     }
 
-    // ── Même devise ────────────────────────────────────────────────────────────
+    // ── Same currency ──────────────────────────────────────────────────────────
 
     @Test
-    fun `getRate retourne 1 0 quand les deux devises sont identiques`() = runTest {
+    fun `getRate returns 1 0 when both currencies are identical`() = runTest {
         val result = repository.getRate("EUR", "EUR")
         assertEquals(1.0, result)
         verify(api, never()).getLatestRates(any())
@@ -54,18 +54,18 @@ class CurrencyRepositoryTest {
     }
 
     @Test
-    fun `getRate est insensible a la casse pour la meme devise`() = runTest {
-        // "eur" et "EUR" sont normalisés → from == to → retourne 1.0 sans appel DAO ni API
+    fun `getRate is case-insensitive for the same currency`() = runTest {
+        // Both normalised to the same string → from == to → returns 1.0 without any DAO/API call
         val result = repository.getRate("eur", "eur")
         assertEquals(1.0, result)
         verify(api, never()).getLatestRates(any())
     }
 
-    // ── Cache valide (< 1h) ───────────────────────────────────────────────────
+    // ── Valid cache (< 1 h) ───────────────────────────────────────────────────
 
     @Test
-    fun `getRate retourne le taux du cache quand le cache est valide`() = runTest {
-        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (TTL_MS / 2)) // cache de 30 min
+    fun `getRate returns the cached rate when cache is valid`() = runTest {
+        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (TTL_MS / 2)) // 30-min-old cache
         whenever(dao.getRate("EUR", "USD")).thenReturn(1.08)
 
         val result = repository.getRate("EUR", "USD")
@@ -75,8 +75,8 @@ class CurrencyRepositoryTest {
     }
 
     @Test
-    fun `getRate n appelle pas l API quand le cache est valide`() = runTest {
-        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - 1000L) // cache très frais
+    fun `getRate does not call the API when cache is valid`() = runTest {
+        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - 1000L) // very fresh cache
         whenever(dao.getRate("EUR", "GBP")).thenReturn(0.86)
 
         repository.getRate("EUR", "GBP")
@@ -84,11 +84,11 @@ class CurrencyRepositoryTest {
         verify(api, never()).getLatestRates(any())
     }
 
-    // ── Cache expiré (> 1h) → appel réseau ───────────────────────────────────
+    // ── Expired cache (> 1 h) → network call ─────────────────────────────────
 
     @Test
-    fun `getRate appelle l API quand le cache est expire`() = runTest {
-        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (TTL_MS * 2)) // cache de 2h → expiré
+    fun `getRate calls the API when cache is expired`() = runTest {
+        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (TTL_MS * 2)) // 2-h-old cache → expired
         val response = FrankfurterResponse(
             base = "EUR",
             date = "2026-03-10",
@@ -103,8 +103,8 @@ class CurrencyRepositoryTest {
     }
 
     @Test
-    fun `getRate persiste les taux recus depuis l API`() = runTest {
-        whenever(dao.getLastFetchTime("EUR")).thenReturn(null) // pas de cache
+    fun `getRate persists the rates received from the API`() = runTest {
+        whenever(dao.getLastFetchTime("EUR")).thenReturn(null) // no cache
         val response = FrankfurterResponse(
             base = "EUR",
             date = "2026-03-10",
@@ -121,7 +121,7 @@ class CurrencyRepositoryTest {
     }
 
     @Test
-    fun `getRate supprime les entrees plus vieilles que 24h lors d un fetch`() = runTest {
+    fun `getRate deletes entries older than 24 h when fetching`() = runTest {
         whenever(dao.getLastFetchTime("EUR")).thenReturn(null)
         val response = FrankfurterResponse("EUR", "2026-03-10", mapOf("USD" to 1.08))
         whenever(api.getLatestRates("EUR")).thenReturn(response)
@@ -132,22 +132,21 @@ class CurrencyRepositoryTest {
     }
 
     @Test
-    fun `getRate retourne null quand la devise cible n est pas dans la reponse API`() = runTest {
+    fun `getRate returns null when target currency is not in the API response`() = runTest {
         whenever(dao.getLastFetchTime("EUR")).thenReturn(null)
         val response = FrankfurterResponse("EUR", "2026-03-10", mapOf("USD" to 1.08))
         whenever(api.getLatestRates("EUR")).thenReturn(response)
 
-        val result = repository.getRate("EUR", "JPY") // JPY absent de la réponse
+        val result = repository.getRate("EUR", "JPY") // JPY absent from response
 
         assertNull(result)
     }
 
-    // ── Erreur réseau + fallback cache stale ──────────────────────────────────
+    // ── Network error + stale cache fallback ──────────────────────────────────
 
     @Test
-    fun `getRate retourne le cache stale quand le reseau echoue`() = runTest {
-        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (TTL_MS * 3)) // expiré
-        // RuntimeException car suspend fun ne déclare pas IOException (checked)
+    fun `getRate returns stale cache when network fails`() = runTest {
+        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (TTL_MS * 3)) // expired
         whenever(api.getLatestRates("EUR")).thenThrow(RuntimeException("No network"))
         whenever(dao.getRate("EUR", "USD")).thenReturn(1.07) // stale cache
 
@@ -157,7 +156,7 @@ class CurrencyRepositoryTest {
     }
 
     @Test
-    fun `getRate retourne null quand reseau echoue et pas de cache stale`() = runTest {
+    fun `getRate returns null when network fails and no stale cache exists`() = runTest {
         whenever(dao.getLastFetchTime("EUR")).thenReturn(null)
         whenever(api.getLatestRates("EUR")).thenThrow(RuntimeException("No network"))
         whenever(dao.getRate("EUR", "USD")).thenReturn(null)
@@ -170,7 +169,7 @@ class CurrencyRepositoryTest {
     // ── convert ───────────────────────────────────────────────────────────────
 
     @Test
-    fun `convert retourne le montant converti avec le bon taux`() = runTest {
+    fun `convert returns the converted amount using the correct rate`() = runTest {
         whenever(dao.getLastFetchTime("EUR")).thenReturn(now - 1000L)
         whenever(dao.getRate("EUR", "USD")).thenReturn(1.08)
 
@@ -180,7 +179,7 @@ class CurrencyRepositoryTest {
     }
 
     @Test
-    fun `convert retourne null quand le taux est indisponible`() = runTest {
+    fun `convert returns null when the rate is unavailable`() = runTest {
         whenever(dao.getLastFetchTime("EUR")).thenReturn(null)
         whenever(api.getLatestRates("EUR")).thenThrow(RuntimeException("No network"))
         whenever(dao.getRate("EUR", "USD")).thenReturn(null)
@@ -191,7 +190,7 @@ class CurrencyRepositoryTest {
     }
 
     @Test
-    fun `convert retourne le montant identique pour meme devise`() = runTest {
+    fun `convert returns the same amount for identical currencies`() = runTest {
         val result = repository.convert(200.0, "USD", "USD")
         assertEquals(200.0, result!!, 0.001)
     }
@@ -199,7 +198,7 @@ class CurrencyRepositoryTest {
     // ── getCacheAgeMinutes ────────────────────────────────────────────────────
 
     @Test
-    fun `getCacheAgeMinutes retourne null si pas de cache`() = runTest {
+    fun `getCacheAgeMinutes returns null when no cache exists`() = runTest {
         whenever(dao.getLastFetchTime("EUR")).thenReturn(null)
 
         val result = repository.getCacheAgeMinutes("EUR")
@@ -208,21 +207,21 @@ class CurrencyRepositoryTest {
     }
 
     @Test
-    fun `getCacheAgeMinutes retourne l age approximatif en minutes`() = runTest {
+    fun `getCacheAgeMinutes returns the approximate age in minutes`() = runTest {
         val thirtyMinutesAgo = now - (30 * 60 * 1000L)
         whenever(dao.getLastFetchTime("EUR")).thenReturn(thirtyMinutesAgo)
 
         val result = repository.getCacheAgeMinutes("EUR")
 
         assertNotNull(result)
-        assertTrue(result!! in 29L..31L) // tolérance ±1 min
+        assertTrue(result!! in 29L..31L) // ±1 min tolerance
     }
 
     // ── getAvailableCurrencies ────────────────────────────────────────────────
 
     @Test
-    fun `getAvailableCurrencies retourne les devises disponibles du cache`() = runTest {
-        // Cache valide pour éviter l'appel API
+    fun `getAvailableCurrencies returns the cached currency list`() = runTest {
+        // Use a valid cache to avoid triggering an unmocked API call
         whenever(dao.getLastFetchTime("EUR")).thenReturn(now - 1000L)
         whenever(dao.getRate("EUR", "EUR")).thenReturn(1.0)
         whenever(dao.getAvailableCurrencies("EUR")).thenReturn(listOf("GBP", "JPY", "USD"))
@@ -233,7 +232,7 @@ class CurrencyRepositoryTest {
     }
 
     @Test
-    fun `getAvailableCurrencies normalise la devise en majuscules`() = runTest {
+    fun `getAvailableCurrencies normalises the currency code to uppercase`() = runTest {
         whenever(dao.getLastFetchTime("EUR")).thenReturn(now - 1000L)
         whenever(dao.getRate("EUR", "EUR")).thenReturn(1.0)
         whenever(dao.getAvailableCurrencies("EUR")).thenReturn(listOf("USD"))
@@ -243,8 +242,3 @@ class CurrencyRepositoryTest {
         verify(dao).getAvailableCurrencies("EUR")
     }
 }
-
-
-
-
-
