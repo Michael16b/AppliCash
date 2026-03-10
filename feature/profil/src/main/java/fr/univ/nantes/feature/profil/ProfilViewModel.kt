@@ -47,7 +47,9 @@ class ProfilViewModel(
                         val selected = if (state.currency == DEFAULT_CURRENCY && currencies.isNotEmpty()) {
                             currencies.firstOrNull { it.first == DEFAULT_CURRENCY }?.first
                                 ?: currencies.first().first
-                        } else state.currency
+                        } else {
+                            state.currency
+                        }
                         state.copy(currencies = currencies, currency = selected)
                     }
                 }

@@ -99,9 +99,14 @@ import kotlinx.serialization.Serializable
 data class AddExpenseRoute(val groupId: Long)
 
 private val avatarColors = listOf(
-    Color(0xFF6366F1), Color(0xFFF59E0B), Color(0xFFEF4444),
-    Color(0xFF8B5CF6), Color(0xFF06B6D4), Color(0xFFEC4899),
-    Color(0xFF14B8A6), Color(0xFFF97316)
+    Color(0xFF6366F1),
+    Color(0xFFF59E0B),
+    Color(0xFFEF4444),
+    Color(0xFF8B5CF6),
+    Color(0xFF06B6D4),
+    Color(0xFFEC4899),
+    Color(0xFF14B8A6),
+    Color(0xFFF97316)
 )
 private val quickAmounts = listOf(5.0, 10.0, 20.0, 50.0, 100.0)
 
@@ -115,8 +120,10 @@ fun AddExpenseScreen(
     val participants = state.participants
 
     val fallbackCurrencies = remember {
-        listOf("EUR", "USD", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY", "INR", "BRL",
-               "RUB", "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "TRY", "ZAR", "KRW")
+        listOf(
+            "EUR", "USD", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY", "INR", "BRL",
+            "RUB", "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "TRY", "ZAR", "KRW"
+        )
     }
     val availableCurrencies = state.availableCurrencies.ifEmpty { fallbackCurrencies }
 
@@ -301,8 +308,14 @@ fun AddExpenseScreen(
                                 val filtered = buildString {
                                     for (c in input) {
                                         when {
-                                            c.isDigit() -> { append(c); if (!dotSeen) hasDigitBeforeDot = true }
-                                            c == '.' && !dotSeen && hasDigitBeforeDot -> { append(c); dotSeen = true }
+                                            c.isDigit() -> {
+                                                append(c)
+                                                if (!dotSeen) hasDigitBeforeDot = true
+                                            }
+                                            c == '.' && !dotSeen && hasDigitBeforeDot -> {
+                                                append(c)
+                                                dotSeen = true
+                                            }
                                         }
                                     }
                                 }
@@ -359,7 +372,10 @@ fun AddExpenseScreen(
                                                 }
                                             }
                                         },
-                                        onClick = { selectedCurrency = currency; currencyExpanded = false }
+                                        onClick = {
+                                            selectedCurrency = currency
+                                            currencyExpanded = false
+                                        }
                                     )
                                 }
                             }
@@ -375,19 +391,27 @@ fun AddExpenseScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clickable { amount = preset.toInt().toString() },
-                                color = if (amount == preset.toInt().toString()) GreenBg50
-                                        else MaterialTheme.colorScheme.surfaceVariant,
+                                color = if (amount == preset.toInt().toString()) {
+                                    GreenBg50
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                },
                                 shape = RoundedCornerShape(8.dp),
-                                border = if (amount == preset.toInt().toString())
+                                border = if (amount == preset.toInt().toString()) {
                                     androidx.compose.foundation.BorderStroke(1.dp, Green500)
-                                else null
+                                } else {
+                                    null
+                                }
                             ) {
                                 Text(
                                     text = preset.toInt().toString(),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (amount == preset.toInt().toString()) Green500
-                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (amount == preset.toInt().toString()) {
+                                        Green500
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.padding(vertical = 6.dp)
                                 )
@@ -485,7 +509,10 @@ fun AddExpenseScreen(
                                                     }
                                                 }
                                             },
-                                            onClick = { selectedPayer = participant; payerExpanded = false }
+                                            onClick = {
+                                                selectedPayer = participant
+                                                payerExpanded = false
+                                            }
                                         )
                                     }
                                 }
@@ -514,12 +541,15 @@ fun AddExpenseScreen(
                                         .weight(1f)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(
-                                            if (isSelected) Brush.horizontalGradient(
-                                                listOf(Color(0xFF10B981), Color(0xFF0D9488))
-                                            )
-                                            else Brush.horizontalGradient(
-                                                listOf(Color.Transparent, Color.Transparent)
-                                            )
+                                            if (isSelected) {
+                                                Brush.horizontalGradient(
+                                                    listOf(Color(0xFF10B981), Color(0xFF0D9488))
+                                                )
+                                            } else {
+                                                Brush.horizontalGradient(
+                                                    listOf(Color.Transparent, Color.Transparent)
+                                                )
+                                            }
                                         )
                                         .clickable { selectedSplitType = index }
                                         .padding(vertical = 8.dp, horizontal = 2.dp),
@@ -529,8 +559,11 @@ fun AddExpenseScreen(
                                         text = label,
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isSelected) Color.White
-                                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = if (isSelected) {
+                                            Color.White
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
                                         textAlign = TextAlign.Center
                                     )
                                 }
@@ -550,8 +583,11 @@ fun AddExpenseScreen(
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(if (isChecked) GreenBg50 else Color.Transparent)
                                     .clickable {
-                                        if (isChecked) selectedParticipants.remove(participant)
-                                        else if (participant !in selectedParticipants) selectedParticipants.add(participant)
+                                        if (isChecked) {
+                                            selectedParticipants.remove(participant)
+                                        } else if (participant !in selectedParticipants) {
+                                            selectedParticipants.add(participant)
+                                        }
                                     }
                                     .padding(horizontal = 8.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -595,7 +631,10 @@ fun AddExpenseScreen(
                         }
                     }
                     TextButton(
-                        onClick = { selectedParticipants.clear(); selectedParticipants.addAll(participants) },
+                        onClick = {
+                            selectedParticipants.clear()
+                            selectedParticipants.addAll(participants)
+                        },
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         Text(stringResource(R.string.select_all), color = Green500, fontWeight = FontWeight.SemiBold)
@@ -707,8 +746,11 @@ fun AddExpenseScreen(
                         participantAmounts[it]?.toDoubleOrNull() ?: 0.0
                     }
                     val remaining = amountValue - totalAssigned
-                    val equalShare = if (selectedParticipants.isNotEmpty())
-                        amountValue / selectedParticipants.size else 0.0
+                    val equalShare = if (selectedParticipants.isNotEmpty()) {
+                        amountValue / selectedParticipants.size
+                    } else {
+                        0.0
+                    }
 
                     SectionCard(
                         icon = Icons.Outlined.Splitscreen,
@@ -750,15 +792,19 @@ fun AddExpenseScreen(
                                     OutlinedTextField(
                                         value = participantAmounts[participant] ?: "",
                                         onValueChange = { newValue ->
-                                            var dotSeen = false; var hasDigitBeforeDot = false
+                                            var dotSeen = false
+                                            var hasDigitBeforeDot = false
                                             val filtered = buildString {
-                                                for (c in newValue) when {
-                                                    c.isDigit() -> {
-                                                        append(c)
-                                                        if (!dotSeen) hasDigitBeforeDot = true
-                                                    }
-                                                    c == '.' && !dotSeen && hasDigitBeforeDot -> {
-                                                        append(c); dotSeen = true
+                                                for (c in newValue) {
+                                                    when {
+                                                        c.isDigit() -> {
+                                                            append(c)
+                                                            if (!dotSeen) hasDigitBeforeDot = true
+                                                        }
+                                                        c == '.' && !dotSeen && hasDigitBeforeDot -> {
+                                                            append(c)
+                                                            dotSeen = true
+                                                        }
                                                     }
                                                 }
                                             }
@@ -822,21 +868,29 @@ fun AddExpenseScreen(
                                     Text(
                                         text = stringResource(R.string.remaining_to_split),
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = if (kotlin.math.abs(remaining) > 0.01)
-                                            MaterialTheme.colorScheme.error else Teal600
+                                        color = if (kotlin.math.abs(remaining) > 0.01) {
+                                            MaterialTheme.colorScheme.error
+                                        } else {
+                                            Teal600
+                                        }
                                     )
                                     Surface(
-                                        color = if (kotlin.math.abs(remaining) > 0.01)
+                                        color = if (kotlin.math.abs(remaining) > 0.01) {
                                             MaterialTheme.colorScheme.errorContainer
-                                        else GreenBg50,
+                                        } else {
+                                            GreenBg50
+                                        },
                                         shape = RoundedCornerShape(6.dp)
                                     ) {
                                         Text(
                                             text = "$selectedCurrency ${"%.2f".format(remaining)}",
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (kotlin.math.abs(remaining) > 0.01)
-                                                MaterialTheme.colorScheme.error else Teal600,
+                                            color = if (kotlin.math.abs(remaining) > 0.01) {
+                                                MaterialTheme.colorScheme.error
+                                            } else {
+                                                Teal600
+                                            },
                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                         )
                                     }
@@ -878,7 +932,8 @@ fun AddExpenseScreen(
                                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             border = androidx.compose.foundation.BorderStroke(
-                                1.dp, MaterialTheme.colorScheme.outlineVariant
+                                1.dp,
+                                MaterialTheme.colorScheme.outlineVariant
                             ),
                             elevation = ButtonDefaults.buttonElevation(0.dp)
                         ) {
@@ -925,8 +980,11 @@ fun AddExpenseScreen(
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isFormValid) Green500
-                                         else MaterialTheme.colorScheme.outlineVariant,
+                        containerColor = if (isFormValid) {
+                            Green500
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant
+                        },
                         contentColor = Color.White
                     ),
                     elevation = ButtonDefaults.buttonElevation(
@@ -1066,8 +1124,12 @@ private fun AddExpenseScreenPreview() {
     }
 }
 
-@Preview(name = "Add Expense – Dark", showBackground = true, showSystemUi = true,
-    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Preview(
+    name = "Add Expense – Dark",
+    showBackground = true,
+    showSystemUi = true,
+    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES
+)
 @Composable
 private fun AddExpenseScreenDarkPreview() {
     AppliCashTheme(darkTheme = true) {
@@ -1220,8 +1282,10 @@ private fun AddExpenseScreenContent(
                         value = title,
                         onValueChange = {},
                         placeholder = {
-                            Text(stringResource(R.string.expense_title_placeholder),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                stringResource(R.string.expense_title_placeholder),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = fieldShape,
@@ -1263,18 +1327,27 @@ private fun AddExpenseScreenContent(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clickable {},
-                                color = if (amount == preset.toInt().toString()) GreenBg50
-                                        else MaterialTheme.colorScheme.surfaceVariant,
+                                color = if (amount == preset.toInt().toString()) {
+                                    GreenBg50
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                },
                                 shape = RoundedCornerShape(8.dp),
-                                border = if (amount == preset.toInt().toString())
-                                    androidx.compose.foundation.BorderStroke(1.dp, Green500) else null
+                                border = if (amount == preset.toInt().toString()) {
+                                    androidx.compose.foundation.BorderStroke(1.dp, Green500)
+                                } else {
+                                    null
+                                }
                             ) {
                                 Text(
                                     text = preset.toInt().toString(),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (amount == preset.toInt().toString()) Green500
-                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (amount == preset.toInt().toString()) {
+                                        Green500
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.padding(vertical = 6.dp)
                                 )
@@ -1346,8 +1419,11 @@ private fun AddExpenseScreenContent(
                                         .weight(1f)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(
-                                            if (isSelected) Brush.horizontalGradient(listOf(Color(0xFF10B981), Color(0xFF0D9488)))
-                                            else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                                            if (isSelected) {
+                                                Brush.horizontalGradient(listOf(Color(0xFF10B981), Color(0xFF0D9488)))
+                                            } else {
+                                                Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                                            }
                                         )
                                         .padding(vertical = 8.dp, horizontal = 2.dp),
                                     contentAlignment = Alignment.Center
