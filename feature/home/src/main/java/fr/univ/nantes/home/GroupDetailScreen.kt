@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.Green700
+import fr.univ.nantes.core.ui.GreenBg50
 import fr.univ.nantes.core.ui.Red700
 import fr.univ.nantes.core.ui.RedBg50
 import fr.univ.nantes.core.ui.Teal400
@@ -84,10 +85,9 @@ fun GroupDetailScreen(
     isLoggedIn: Boolean = true,
     onRequireLogin: () -> Unit = {}
 ) {
-    val currencyCode = "EUR"
     val currencyFormat = remember {
         NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-            currency = Currency.getInstance(currencyCode)
+            currency = Currency.getInstance("EUR")
         }
     }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -355,7 +355,6 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // ── Section : Soldes des membres ──────────────────────────────────────
         item {
             Text(
                 text = stringResource(R.string.balances_title),
@@ -388,12 +387,10 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
             }
         }
 
-        // ── Séparateur ────────────────────────────────────────────────────────
         item {
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
         }
 
-        // ── Section : Remboursements suggérés ─────────────────────────────────
         item {
             Text(
                 text = stringResource(R.string.suggested_reimbursements),
@@ -415,7 +412,6 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
     }
 }
 
-// ── Carte solde d'un membre ───────────────────────────────────────────────────
 @Composable
 private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
     val isPositive = balance.amount > BALANCE_THRESHOLD
@@ -451,7 +447,6 @@ private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar initiale
             Box(
                 modifier = Modifier
                     .size(38.dp)
@@ -468,7 +463,6 @@ private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Nom + label
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = balance.participant,
@@ -483,7 +477,6 @@ private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
                 )
             }
 
-            // Montant avec signe
             val sign = when {
                 isPositive -> "+"
                 isNegative -> "-"
@@ -506,7 +499,6 @@ private data class BalanceStyle(
     val label: String
 )
 
-// ── Carte remboursement suggéré ───────────────────────────────────────────────
 @Composable
 private fun ReimbursementRow(reimbursement: Reimbursement, currencyFormat: NumberFormat) {
     Card(
@@ -521,7 +513,6 @@ private fun ReimbursementRow(reimbursement: Reimbursement, currencyFormat: Numbe
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Débiteur
             Text(
                 text = reimbursement.from,
                 style = MaterialTheme.typography.bodyLarge,
@@ -530,7 +521,6 @@ private fun ReimbursementRow(reimbursement: Reimbursement, currencyFormat: Numbe
                 modifier = Modifier.weight(1f)
             )
 
-            // Flèche + montant au centre
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(horizontal = 8.dp)
@@ -556,7 +546,6 @@ private fun ReimbursementRow(reimbursement: Reimbursement, currencyFormat: Numbe
                 }
             }
 
-            // Créditeur
             Text(
                 text = reimbursement.to,
                 style = MaterialTheme.typography.bodyLarge,
@@ -569,7 +558,6 @@ private fun ReimbursementRow(reimbursement: Reimbursement, currencyFormat: Numbe
     }
 }
 
-// ── Bannière "Tout est réglé" ─────────────────────────────────────────────────
 @Composable
 private fun AllSettledBanner() {
     Card(
