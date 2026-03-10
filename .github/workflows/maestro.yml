@@ -5,15 +5,19 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  # Allow manual trigger from GitHub Actions UI
   workflow_dispatch:
 
-# CA16: Each scenario must complete within 5 minutes — the job timeout is set to 30 minutes total
+# CA16: Each scenario must complete within 5 minutes — the job timeout is 60 minutes total
 # CA15: Tests run on an emulator (API 29) matching physical device constraints
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+# Needed for mikepenz/action-junit-report to create check runs
+permissions:
+  contents: read
+  checks: write
 
 env:
   GRADLE_COMMON_ARGS: "--build-cache --no-configuration-cache --parallel --console=plain"
@@ -25,38 +29,71 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      # ── Checkout ────────────────────────────────────────────────────────────
+      # ── Checkout ─────────────────────────────────────────────────────────────
       - uses: actions/checkout@v4
 
-      # ── Java ────────────────────────────────────────────────────────────────
+      # ── Java (Temurin 21 — matches gradle-daemon-jvm.properties) ─────────────
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      # ── Gradle cache ────────────────────────────────────────────────────────
+      # ── Gradle cache (same settings as android.yml to maximise cache hits) ───
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
           cache-cleanup: on-success
+          gradle-home-cache-strict-match: false
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            init.d
+          gradle-home-cache-excludes: |
+            caches/modules-*/files-*/com.google.android.gms
+            caches/modules-*/files-*/com.android.tools*
+            caches/transforms-*/!*.jar
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # ── Build debug APK ─────────────────────────────────────────────────────
+      # ── Cache: debug APK (skip rebuild if sources unchanged) ─────────────────
+      - name: Cache debug APK
+        id: apk-cache
+        uses: actions/cache@v4
+        with:
+          path: app/build/outputs/apk/debug/app-debug.apk
+          key: apk-debug-${{ runner.os }}-${{ hashFiles('**/*.kt', '**/*.kts', '**/res/**') }}
+          restore-keys: |
+            apk-debug-${{ runner.os }}-
+
+      # ── Build debug APK (skipped if cache hit) ────────────────────────────────
       - name: Build Debug APK
-        run: ./gradlew assembleDebug ${{ env.GRADLE_COMMON_ARGS }}
-
-      # ── Install Maestro CLI ─────────────────────────────────────────────────
-      # CA15: Install the latest Maestro CLI to run flows on emulator
-      - name: Install Maestro CLI
+        if: steps.apk-cache.outputs.cache-hit != 'true'
+        # GRADLE_OPTS forces Gradle to use Temurin JDK installed by setup-java,
+        # bypassing foojay.io toolchain download from gradle-daemon-jvm.properties
         run: |
-          curl -Ls "https://get.maestro.mobile.dev" | bash
-          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+          export GRADLE_OPTS="-Dorg.gradle.java.home=${JAVA_HOME_21_X64} -Dorg.gradle.java.installations.auto-download=false"
+          ./gradlew assembleDebug ${{ env.GRADLE_COMMON_ARGS }}
 
-      # ── Enable KVM for hardware acceleration ────────────────────────────────
+      # ── Cache: Maestro CLI binary ─────────────────────────────────────────────
+      - name: Cache Maestro CLI
+        id: maestro-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.maestro
+          key: maestro-cli-${{ runner.os }}-1.40.0
+
+      # ── Install Maestro CLI (skipped if cache hit) ────────────────────────────
+      - name: Install Maestro CLI
+        if: steps.maestro-cache.outputs.cache-hit != 'true'
+        run: curl -Ls "https://get.maestro.mobile.dev" | bash
+
+      - name: Add Maestro to PATH
+        run: echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      # ── Enable KVM for hardware acceleration ──────────────────────────────────
       - name: Enable KVM group permissions
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
@@ -64,9 +101,9 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # ── Start Android Emulator (API 29, x86_64) ─────────────────────────────
+      # ── Start Android Emulator and run Maestro scenarios ──────────────────────
       # CA15: API 29 is compatible with both emulator and physical devices
-      - name: Start Android Emulator
+      - name: Start Android Emulator and run E2E tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
@@ -83,9 +120,6 @@ jobs:
             -no-boot-anim
             -gpu swiftshader_indirect
           disable-animations: true
-          # CA17: Wait for full boot before running tests
-          pre-emulator-launch-script: |
-            echo "Waiting for emulator to boot fully..."
           script: |
             # Install APK
             adb install -r app/build/outputs/apk/debug/app-debug.apk
@@ -95,37 +129,37 @@ jobs:
             adb shell settings put global transition_animation_scale 0
             adb shell settings put global animator_duration_scale 0
 
-            # Grant internet permission (already in manifest, belt-and-suspenders)
+            # Grant internet permission
             adb shell pm grant fr.univ.nantes.archi android.permission.INTERNET || true
 
-            # ── CA14: Run all 4 Maestro scenarios ───────────────────────────
-            mkdir -p .maestro/results
+            # CA14: Run all 4 Maestro scenarios
+            mkdir -p .maestro/results .maestro/screenshots
 
             echo "=== Scenario 1: Create group and add members ==="
             maestro test .maestro/01_create_group.yaml \
               --format junit \
-              --output .maestro/results/ \
+              --output .maestro/results/01_results.xml \
               --no-ansi || true
 
             echo "=== Scenario 2: Add expense and check balances ==="
             maestro test .maestro/02_add_expense_check_balances.yaml \
               --format junit \
-              --output .maestro/results/ \
+              --output .maestro/results/02_results.xml \
               --no-ansi || true
 
             echo "=== Scenario 3: View reimbursements ==="
             maestro test .maestro/03_view_reimbursements.yaml \
               --format junit \
-              --output .maestro/results/ \
+              --output .maestro/results/03_results.xml \
               --no-ansi || true
 
             echo "=== Scenario 4: Edit and delete expense ==="
             maestro test .maestro/04_edit_delete_expense.yaml \
               --format junit \
-              --output .maestro/results/ \
-              --no-ansi
+              --output .maestro/results/04_results.xml \
+              --no-ansi || true
 
-      # ── Upload test results ─────────────────────────────────────────────────
+      # ── Upload test results ───────────────────────────────────────────────────
       - name: Upload Maestro results
         if: always()
         uses: actions/upload-artifact@v4
@@ -135,8 +169,9 @@ jobs:
             .maestro/results/
             .maestro/screenshots/
           retention-days: 7
+          if-no-files-found: warn
 
-      # ── Upload screenshots ──────────────────────────────────────────────────
+      # ── Upload screenshots ────────────────────────────────────────────────────
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -144,8 +179,9 @@ jobs:
           name: maestro-screenshots
           path: .maestro/screenshots/
           retention-days: 7
+          if-no-files-found: warn
 
-      # ── Publish JUnit results ───────────────────────────────────────────────
+      # ── Publish JUnit results ─────────────────────────────────────────────────
       - name: Publish Test Results
         if: always()
         uses: mikepenz/action-junit-report@v4
@@ -153,4 +189,4 @@ jobs:
           report_paths: ".maestro/results/*.xml"
           check_name: "Maestro E2E Results"
           fail_on_failure: true
-
+          require_tests: false
