@@ -38,22 +38,22 @@
     <string name="login_action">Log in</string>
 
     <!-- AddExpenseScreen -->
-    <string name="new_expense_title">Add expense</string>
-    <string name="expense_title_label">Expense title</string>
-    <string name="expense_title_placeholder">Ex: Restaurant, Movie …</string>
-    <string name="amount_label">Amount</string>
-    <string name="expense_date_label">Expense date</string>
-    <string name="select_date">Select date</string>
-    <string name="paid_by_label">Paid by</string>
-    <string name="split_type_label">Split type</string>
-    <string name="split_equally">Equally</string>
-    <string name="split_by_share">By share</string>
-    <string name="split_by_amount">By amount</string>
+    <string name="new_expense_title">Nouvelle dépense</string>
+    <string name="expense_title_label">Titre de la dépense</string>
+    <string name="expense_title_placeholder">Ex: Restaurant, Essence…</string>
+    <string name="amount_label">Montant</string>
+    <string name="expense_date_label">Date de la dépense</string>
+    <string name="select_date">Sélectionner une date</string>
+    <string name="paid_by_label">Payé par</string>
+    <string name="split_type_label">Type de partage</string>
+    <string name="split_equally">Équitablement</string>
+    <string name="split_by_share">Par part</string>
+    <string name="split_by_amount">Par montant</string>
     <string name="participants_label">Participants</string>
-    <string name="select_all">Select everyone</string>
-    <string name="add_expense_button">Add expense</string>
-    <string name="confirm">Confirm</string>
-    <string name="cancel">Cancel</string>
+    <string name="select_all">Sélectionner tout le monde</string>
+    <string name="add_expense_button">Ajouter la dépense</string>
+    <string name="confirm">Confirmer</string>
+    <string name="cancel">Annuler</string>
 
     <!-- BalanceScreen -->
     <string name="total_format">Total: %s</string>

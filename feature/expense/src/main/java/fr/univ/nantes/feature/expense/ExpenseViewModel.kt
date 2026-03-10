@@ -524,7 +524,9 @@ class ExpenseViewModel(
                         groupId = groupId,
                         description = expense.description,
                         amount = expense.amount,
-                        paidBy = expense.paidBy
+                        paidBy = expense.paidBy,
+                        splitType = expense.splitType,
+                        splitDetails = serializeSplitDetails(expense.splitDetails)
                     )
                 }
 
