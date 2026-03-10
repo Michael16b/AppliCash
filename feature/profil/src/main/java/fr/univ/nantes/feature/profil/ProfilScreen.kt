@@ -278,6 +278,7 @@ fun ProfileScreenContent(
                                 .heightIn(max = 240.dp)
                                 .verticalScroll(rememberScrollState())
                         ) {
+                        LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
                             if (filteredCurrencies.isEmpty()) {
                                 Text(
                                     text = stringResource(id = R.string.profile_currency_no_result),
