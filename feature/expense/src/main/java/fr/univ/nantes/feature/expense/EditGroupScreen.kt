@@ -1,6 +1,7 @@
 package fr.univ.nantes.feature.expense
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -81,8 +83,11 @@ fun EditGroupScreen(
     }
 
     if (group == null) {
-        LaunchedEffect(Unit) {
-            onBack()
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Green500)
         }
         return
     }
@@ -268,31 +273,31 @@ fun EditGroupScreen(
                                 errorMessage = duplicateMembersError
                             }
                             else -> {
-                                errorMessage = null
-
-                                // Mettre à jour le nom du groupe si changé
-                                if (groupName != group.groupName) {
-                                    viewModel.updateGroupName(groupId, groupName)
-                                }
-
-                                // Gérer les participants
                                 val existingMembers = group.participants
-                                val newMembers = uniqueNames
+                                val membersToAdd = uniqueNames.filter { it !in existingMembers }
+                                val membersToRemove = existingMembers.filter { it !in uniqueNames }
 
-                                // Ajouter les nouveaux membres
-                                newMembers.filter { it !in existingMembers }.forEach { newMember ->
-                                    viewModel.addParticipantToGroup(groupId, newMember)
+                                // Vérifier si des membres à supprimer ont des dépenses
+                                val blockedRemovals = membersToRemove.filter { removedMember ->
+                                    group.expenses.any { it.paidBy == removedMember }
                                 }
 
-                                // Supprimer les membres retirés (sauf si ils ont des dépenses)
-                                existingMembers.filter { it !in newMembers }.forEach { removedMember ->
-                                    val hasExpenses = group.expenses.any { it.paidBy == removedMember }
-                                    if (!hasExpenses) {
-                                        viewModel.removeParticipantFromGroup(groupId, removedMember)
+                                if (blockedRemovals.isNotEmpty()) {
+                                    // Ré-ajouter les membres bloqués dans la liste UI
+                                    blockedRemovals.forEach { blockedMember ->
+                                        if (memberFields.none { it.value == blockedMember && it.isExisting }) {
+                                            memberFields.add(
+                                                EditMemberField(id = nextId.value++, value = blockedMember, isExisting = true)
+                                            )
+                                        }
                                     }
+                                    errorMessage = cannotRemoveMemberError
+                                } else {
+                                    errorMessage = null
+                                    val newName = if (groupName != group.groupName) groupName else null
+                                    viewModel.updateGroup(groupId, newName, membersToAdd, membersToRemove)
+                                    onBack()
                                 }
-
-                                onBack()
                             }
                         }
                     },

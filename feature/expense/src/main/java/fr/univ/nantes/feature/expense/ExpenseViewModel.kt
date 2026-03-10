@@ -415,4 +415,22 @@ class ExpenseViewModel(
         }
     }
 
+    /**
+     * Applies all group edits (name change, added/removed participants) in a single batch,
+     * then refreshes the current group state once to avoid redundant DB reads.
+     */
+    fun updateGroup(
+        groupId: Long,
+        newName: String?,
+        addParticipants: List<String>,
+        removeParticipants: List<String>
+    ) {
+        viewModelScope.launch {
+            repository.updateGroup(groupId, newName, addParticipants, removeParticipants)
+            if (newName != null && _state.value.currentGroupId == groupId) {
+                _state.update { it.copy(groupName = newName) }
+            }
+        }
+    }
+
 }
