@@ -27,5 +27,8 @@ interface ExpenseGroupDao {
 
     @Query("SELECT * FROM expense_groups WHERE id = :groupId")
     suspend fun getGroupById(groupId: Long): ExpenseGroupEntity?
+
+    @Query("UPDATE expense_groups SET groupName = :groupName WHERE id = :groupId")
+    suspend fun updateGroupName(groupId: Long, groupName: String)
 }
 

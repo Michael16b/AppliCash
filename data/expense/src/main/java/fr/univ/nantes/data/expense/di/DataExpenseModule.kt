@@ -13,7 +13,7 @@ val dataExpenseModule = module {
             androidContext(),
             AppDatabase::class.java,
             "expense_database"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
 
     single { get<AppDatabase>().expenseGroupDao() }

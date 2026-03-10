@@ -40,4 +40,5 @@
     <string name="paid_by_format">paid by %1$s</string>
     <string name="original_amount">orig. %1$s</string>
     <string name="per_person_suffix">per person</string>
+    <string name="edit_group">Edit Group</string>
 </resources>
