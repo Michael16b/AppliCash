@@ -64,10 +64,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.Green500
-import kotlinx.serialization.Serializable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class AddExpenseRoute(val groupId: Long)
