@@ -451,7 +451,7 @@ private fun ExpenseItem(
                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = "$participant · ${currencyFormat.format(participantAmount)}",
+                                text = "$participant · ${originalFormat.format(participantAmount)}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.SemiBold
@@ -460,8 +460,11 @@ private fun ExpenseItem(
                     }
                 }
             } else if (expense.splitType == 0) {
-                val sharePerPerson = if (group.participants.isNotEmpty())
-                    expense.amount / group.participants.size else 0.0
+                val sharePerPerson = if (group.participants.isNotEmpty()) {
+                    expense.amount / group.participants.size
+                } else {
+                    0.0
+                }
                 Box(
                     modifier = Modifier
                         .padding(top = 6.dp)
@@ -469,28 +472,29 @@ private fun ExpenseItem(
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "${currencyFormat.format(sharePerPerson)}/pers. · ${group.participants.joinToString()}",
+                        text = "${originalFormat.format(sharePerPerson)}/pers. · ${group.participants.joinToString()}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-            Card(
-                modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                ),
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Text(
-                    text = if (showConversion && convertedShare != null) {
-                        "${userFormat.format(convertedShare)} ${stringResource(R.string.per_person_suffix)} (${originalFormat.format(sharePerPerson)})"
-                    } else {
-                        stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson))
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                )
+                Card(
+                    modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                    ),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = if (showConversion && convertedShare != null) {
+                            "${userFormat.format(convertedShare)} ${stringResource(R.string.per_person_suffix)} (${originalFormat.format(sharePerPerson)})"
+                        } else {
+                            stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson))
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    )
+                }
             }
         }
     }

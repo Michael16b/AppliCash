@@ -111,7 +111,7 @@ class ExpenseViewModel(
                 jsonObject.keys().asSequence().associate { key ->
                     key to jsonObject.getDouble(key)
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 emptyMap()
             }
         }
@@ -127,6 +127,8 @@ class ExpenseViewModel(
             }
             return jsonObject.toString()
         }
+
+        /**
          * The currency in which expenses are stored in the database.
          * All stored amounts are in this currency and will be converted to the user's preferred currency for display.
          */
@@ -308,16 +310,12 @@ class ExpenseViewModel(
                         participants = groupWithDetails.participants.map { participant -> participant.name },
                         expenses = groupWithDetails.expenses.map {
                             Expense(
-                                id = expense.id,
-                                description = expense.description,
-                                amount = expense.amount,
-                                paidBy = expense.paidBy,
-                                splitType = expense.splitType,
-                                splitDetails = parseSplitDetails(expense.splitDetails)
                                 id = it.id,
                                 description = it.description,
                                 amount = it.amount,
-                                paidBy = it.paidBy
+                                paidBy = it.paidBy,
+                                splitType = it.splitType,
+                                splitDetails = parseSplitDetails(it.splitDetails)
                             )
                         },
                         currentGroupId = groupId
