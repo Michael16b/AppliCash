@@ -12,6 +12,7 @@
     <string name="add_participant">Ajouter un participant</string>
     <string name="add_participant_description">Ajouter un membre</string>
     <string name="add_member">Ajouter un membre</string>
+    <string name="edit_members">Modifier les membres</string>
     <string name="remove_participant_description">Supprimer le membre</string>
     <string name="remove_member_description">Supprimer le membre</string>
     <string name="continue_button">Continuer</string>
@@ -19,6 +20,10 @@
     <string name="participants_count">Membres (%d)</string>
     <string name="error_group_name">Veuillez entrer un nom de groupe</string>
     <string name="error_members">Ajoutez au moins 2 membres</string>
+    <string name="edit_group">Modifier le groupe</string>
+    <string name="save_changes">Enregistrer les modifications</string>
+    <string name="error_cannot_remove_member_with_expenses">Impossible de supprimer un membre ayant des dépenses</string>
+    <string name="error_duplicate_members">Des noms de membres dupliqués détectés. Veuillez utiliser des noms uniques.</string>
 
     <!-- ExpenseScreen -->
     <string name="description">Description</string>

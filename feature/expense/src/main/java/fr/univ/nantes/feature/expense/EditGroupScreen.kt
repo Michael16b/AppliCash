@@ -1,6 +1,7 @@
 package fr.univ.nantes.feature.expense
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,34 +47,57 @@ import fr.univ.nantes.core.ui.Green500
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object Group
+data class EditGroup(val groupId: Long)
 
-private data class MemberField(val id: Int, val value: String)
+private data class EditMemberField(val id: Int, val value: String, val isExisting: Boolean = false)
 
 @Composable
-fun GroupScreen(
+fun EditGroupScreen(
+    groupId: Long,
     viewModel: ExpenseViewModel,
-    navigateToHome: () -> Unit = {},
+    onBack: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
-    val nextId = remember { mutableStateOf(1) }
-    val memberFields = remember { mutableStateListOf(MemberField(id = 0, value = "")) }
+    val group = state.groups.find { it.id == groupId }
+
+    var groupName by remember { mutableStateOf("") }
+    val nextId = remember { mutableStateOf(0) }
+    val memberFields = remember { mutableStateListOf<EditMemberField>() }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val groupNameError = stringResource(R.string.error_group_name)
     val membersError = stringResource(R.string.error_members)
+    val cannotRemoveMemberError = stringResource(R.string.error_cannot_remove_member_with_expenses)
     val duplicateMembersError = stringResource(R.string.error_duplicate_members)
-    val currentUserName = state.currentUserName
-    LaunchedEffect(currentUserName) {
-        if (!currentUserName.isNullOrBlank() && memberFields.size == 1 && memberFields[0].value.isBlank()) {
-            memberFields[0] = memberFields[0].copy(value = currentUserName)
+
+    // Charger les données du groupe
+    LaunchedEffect(group) {
+        if (group != null && memberFields.isEmpty()) {
+            groupName = group.groupName
+            memberFields.addAll(
+                group.participants.mapIndexed { index, name ->
+                    EditMemberField(id = index, value = name, isExisting = true)
+                }
+            )
+            nextId.value = group.participants.size
         }
     }
+
+    if (group == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Green500)
+        }
+        return
+    }
+
     Scaffold(
         topBar = {
             AppTopBar(
-                title = stringResource(R.string.new_group),
+                title = stringResource(R.string.edit_group),
                 showBack = true,
-                onBack = navigateToHome
+                onBack = onBack
             )
         }
     ) { innerPadding ->
@@ -82,7 +107,6 @@ fun GroupScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp, vertical = 16.dp),
         ) {
-            // --- Nom du groupe ---
             Text(
                 text = stringResource(R.string.group_name_label),
                 style = MaterialTheme.typography.titleMedium,
@@ -91,9 +115,9 @@ fun GroupScreen(
             )
 
             OutlinedTextField(
-                value = state.groupName,
+                value = groupName,
                 onValueChange = {
-                    viewModel.setGroupName(it)
+                    groupName = it
                     errorMessage = null
                 },
                 label = {
@@ -111,6 +135,7 @@ fun GroupScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
                     focusedBorderColor = Green500,
+                    focusedLabelColor = Green500,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
                     cursorColor = Green500
@@ -119,7 +144,6 @@ fun GroupScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // --- Membres ---
             Text(
                 text = stringResource(R.string.members_label),
                 style = MaterialTheme.typography.titleMedium,
@@ -132,7 +156,6 @@ fun GroupScreen(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                // --- Champs des membres ---
                 memberFields.forEachIndexed { index, member ->
                     key(member.id) {
                         Row(
@@ -156,18 +179,31 @@ fun GroupScreen(
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(10.dp),
                                 singleLine = true,
+                                enabled = !member.isExisting,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
                                     focusedBorderColor = Green500,
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedContainerColor = Color.Transparent,
-                                    cursorColor = Green500
+                                    cursorColor = Green500,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface
                                 )
                             )
 
-                            if (memberFields.size > 1) {
+                            if (memberFields.size > 2) {
                                 IconButton(
-                                    onClick = { memberFields.removeAt(index) },
+                                    onClick = {
+                                        val memberName = member.value
+                                        val hasExpenses = group.expenses.any { it.paidBy == memberName }
+                                        if (hasExpenses && member.isExisting) {
+                                            errorMessage = cannotRemoveMemberError
+                                        } else {
+                                            memberFields.removeAt(index)
+                                            errorMessage = null
+                                        }
+                                    },
                                     modifier = Modifier.size(40.dp)
                                 ) {
                                     Icon(
@@ -183,7 +219,6 @@ fun GroupScreen(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // --- Message d'erreur ---
                 if (errorMessage != null) {
                     Text(
                         text = errorMessage!!,
@@ -193,11 +228,10 @@ fun GroupScreen(
                     )
                 }
 
-                // --- Bouton Ajouter un membre ---
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable {
-                        memberFields.add(MemberField(id = nextId.value++, value = ""))
+                        memberFields.add(EditMemberField(id = nextId.value++, value = "", isExisting = false))
                     }
                 ) {
                     Icon(
@@ -210,7 +244,7 @@ fun GroupScreen(
                     Spacer(modifier = Modifier.width(6.dp))
 
                     Text(
-                        text = stringResource(R.string.add_member),
+                        text = stringResource(R.string.edit_members),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Green500,
                         fontWeight = FontWeight.Medium
@@ -219,26 +253,42 @@ fun GroupScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- Bouton Créer groupe ---
                 Button(
                     onClick = {
                         val members = memberFields.filter { it.value.isNotBlank() }
-                        // Normaliser les noms : trim et vérifier les doublons
                         val normalizedMembers = members.map { it.copy(value = it.value.trim()) }
                         val uniqueNames = normalizedMembers.map { it.value }.distinct()
 
                         when {
-                            state.groupName.isBlank() -> errorMessage = groupNameError
+                            groupName.isBlank() -> errorMessage = groupNameError
                             normalizedMembers.size < 2 -> errorMessage = membersError
                             uniqueNames.size < normalizedMembers.size -> {
-                                // Doublons détectés
                                 errorMessage = duplicateMembersError
                             }
                             else -> {
-                                errorMessage = null
-                                uniqueNames.forEach { viewModel.addParticipant(it) }
-                                viewModel.saveGroup()
-                                navigateToHome()
+                                val existingMembers = group.participants
+                                val membersToAdd = uniqueNames.filter { it !in existingMembers }
+                                val membersToRemove = existingMembers.filter { it !in uniqueNames }
+
+                                val blockedRemovals = membersToRemove.filter { removedMember ->
+                                    group.expenses.any { it.paidBy == removedMember }
+                                }
+
+                                if (blockedRemovals.isNotEmpty()) {
+                                    blockedRemovals.forEach { blockedMember ->
+                                        if (memberFields.none { it.value == blockedMember && it.isExisting }) {
+                                            memberFields.add(
+                                                EditMemberField(id = nextId.value++, value = blockedMember, isExisting = true)
+                                            )
+                                        }
+                                    }
+                                    errorMessage = cannotRemoveMemberError
+                                } else {
+                                    errorMessage = null
+                                    val newName = if (groupName != group.groupName) groupName else null
+                                    viewModel.updateGroup(groupId, newName, membersToAdd, membersToRemove)
+                                    onBack()
+                                }
                             }
                         }
                     },
@@ -250,7 +300,7 @@ fun GroupScreen(
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.create_group_button),
+                        text = stringResource(R.string.save_changes),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(vertical = 4.dp)
@@ -260,3 +310,7 @@ fun GroupScreen(
         }
     }
 }
+
+
+
+

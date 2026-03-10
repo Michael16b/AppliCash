@@ -15,7 +15,7 @@ import fr.univ.nantes.data.expense.entity.ParticipantEntity
         ParticipantEntity::class,
         ExpenseEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

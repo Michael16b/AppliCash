@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import fr.univ.nantes.data.expense.entity.ParticipantEntity
 
 @Dao
@@ -19,5 +20,20 @@ interface ParticipantDao {
 
     @Query("DELETE FROM participants WHERE id = :participantId")
     suspend fun deleteParticipant(participantId: Long)
+
+    @Query("DELETE FROM participants WHERE groupId = :groupId AND name = :participantName")
+    suspend fun deleteParticipantByName(groupId: Long, participantName: String)
+
+    @Transaction
+    suspend fun updateParticipants(
+        groupId: Long,
+        addParticipants: List<ParticipantEntity>,
+        removeNames: List<String>
+    ) {
+        if (addParticipants.isNotEmpty()) {
+            insertParticipants(addParticipants)
+        }
+        removeNames.forEach { deleteParticipantByName(groupId, it) }
+    }
 }
 
