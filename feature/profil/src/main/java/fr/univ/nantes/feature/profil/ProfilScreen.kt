@@ -253,7 +253,7 @@ fun ProfileScreenContent(
                             .fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         )
                     )
                     ExposedDropdownMenu(
@@ -373,14 +373,18 @@ private fun InfoBanner(preferredCurrency: String) {
         ) {
             Icon(Icons.Outlined.Public, contentDescription = null, tint = Green700)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(stringResource(id = R.string.profile_automatic_conversion), fontWeight = FontWeight.SemiBold, color = Green900)
                 Text(
-                    stringResource(id = R.string.profile_preferred_currency_info, preferredCurrency),
+                    text = stringResource(id = R.string.profile_automatic_conversion),
+                    fontWeight = FontWeight.SemiBold,
+                    color = Green900
+                )
+                Text(
+                    text = stringResource(id = R.string.profile_preferred_currency_info, preferredCurrency),
                     style = MaterialTheme.typography.bodySmall,
                     color = Green900
                 )
                 Text(
-                    stringResource(id = R.string.profile_conversion_calculation_info),
+                    text = stringResource(id = R.string.profile_conversion_calculation_info),
                     style = MaterialTheme.typography.bodySmall,
                     color = Green900
                 )
