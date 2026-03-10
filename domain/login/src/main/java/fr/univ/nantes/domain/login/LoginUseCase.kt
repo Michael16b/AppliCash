@@ -1,15 +1,15 @@
 package fr.univ.nantes.domain.login
 
 class LoginUseCase(
-    private val loginRepository: LoginRepository,
+    private val loginRepository: LoginRepository
 ) {
     @Throws(
         LoginException.WrongPasswordException::class,
-        LoginException.NotExistingException::class,
+        LoginException.NotExistingException::class
     )
     suspend fun authenticateUser(
         email: String,
-        password: String,
+        password: String
     ): User = loginRepository.authenticate(email, password)
 
     @Throws(LoginException.AlreadyExistsException::class)
