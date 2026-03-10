@@ -34,10 +34,19 @@ jobs:
 
       # ── Java (Temurin 21 — matches gradle-daemon-jvm.properties) ─────────────
       - name: Set up JDK 21
+        id: setup-java
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
+
+      # ── Override GRADLE_OPTS so Gradle uses the Temurin JDK from setup-java ──
+      # gradle-daemon-jvm.properties requests a JetBrains JDK which is not present
+      # on self-hosted runners and cannot be auto-provisioned.
+      # Setting org.gradle.java.home bypasses the toolchain lookup entirely.
+      - name: Set GRADLE_OPTS to use Temurin JDK
+        run: |
+          echo "GRADLE_OPTS=-Dorg.gradle.java.home=${{ steps.setup-java.outputs.path }} -Dorg.gradle.java.installations.auto-download=false" >> $GITHUB_ENV
 
       # ── Gradle cache (same settings as android.yml to maximise cache hits) ───
       - name: Setup Gradle
@@ -71,11 +80,7 @@ jobs:
       # ── Build debug APK (skipped if cache hit) ────────────────────────────────
       - name: Build Debug APK
         if: steps.apk-cache.outputs.cache-hit != 'true'
-        # GRADLE_OPTS forces Gradle to use Temurin JDK installed by setup-java,
-        # bypassing foojay.io toolchain download from gradle-daemon-jvm.properties
-        run: |
-          export GRADLE_OPTS="-Dorg.gradle.java.home=${JAVA_HOME_21_X64} -Dorg.gradle.java.installations.auto-download=false"
-          ./gradlew assembleDebug ${{ env.GRADLE_COMMON_ARGS }}
+        run: ./gradlew assembleDebug ${{ env.GRADLE_COMMON_ARGS }}
 
       # ── Cache: Maestro CLI binary ─────────────────────────────────────────────
       - name: Cache Maestro CLI
