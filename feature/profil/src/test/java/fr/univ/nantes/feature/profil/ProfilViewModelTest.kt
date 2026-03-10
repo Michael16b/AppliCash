@@ -63,7 +63,7 @@ class ProfilViewModelTest {
         lastName = "Dupont",
         email = "alice@mail.com",
         currency = "EUR",
-        isLoggedIn = true,
+        isLoggedIn = true
     )
 
     @Before
@@ -341,6 +341,3 @@ class ProfilViewModelTest {
         assertFalse(viewModel.uiState.value.shouldRedirectLogin)
     }
 }
-
-
-

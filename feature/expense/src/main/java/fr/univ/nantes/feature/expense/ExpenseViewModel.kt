@@ -4,24 +4,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.univ.nantes.data.currency.ICurrencyRepository
 import fr.univ.nantes.data.expense.repository.ExpenseRepository
+import fr.univ.nantes.domain.profil.ProfileUseCase
+import fr.univ.nantes.domain.profil.normalizeCurrencyCode
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import fr.univ.nantes.domain.profil.ProfileUseCase
 import org.json.JSONObject
-import fr.univ.nantes.domain.profil.normalizeCurrencyCode
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Represents an expense in the group.
@@ -399,9 +399,11 @@ class ExpenseViewModel(
     fun addParticipant(name: String) {
         val trimmedName = name.trim()
         if (trimmedName.isNotBlank() && !_state.value.participants.contains(trimmedName)) {
-            _state.update { it.copy(
-                participants = it.participants + trimmedName
-            ) }
+            _state.update {
+                it.copy(
+                    participants = it.participants + trimmedName
+                )
+            }
         }
     }
 
@@ -414,10 +416,12 @@ class ExpenseViewModel(
      * @param name The name of the participant to remove
      */
     fun removeParticipant(name: String) {
-        _state.update { it.copy(
-            participants = it.participants - name,
-            expenses = it.expenses.filter { expense -> expense.paidBy != name }
-        ) }
+        _state.update {
+            it.copy(
+                participants = it.participants - name,
+                expenses = it.expenses.filter { expense -> expense.paidBy != name }
+            )
+        }
     }
 
     /**
@@ -488,8 +492,7 @@ class ExpenseViewModel(
      * Calculates balances using the raw (non-converted) state values.
      * Used by unit tests.
      */
-    fun calculateBalances(): List<Balance> =
-        calculateBalancesFrom(_state.value.expenses, _state.value.participants)
+    fun calculateBalances(): List<Balance> = calculateBalancesFrom(_state.value.expenses, _state.value.participants)
 
     /**
      * Calculates optimal reimbursements from the given [balances].
@@ -527,9 +530,7 @@ class ExpenseViewModel(
      * Calculates reimbursements using the raw (non-converted) state values.
      * Used by unit tests.
      */
-    fun calculateReimbursements(): List<Reimbursement> =
-        calculateReimbursementsFrom(calculateBalances())
-
+    fun calculateReimbursements(): List<Reimbursement> = calculateReimbursementsFrom(calculateBalances())
 
     /**
      * Resets the ViewModel to its initial state.
@@ -575,12 +576,14 @@ class ExpenseViewModel(
                     )
                 }
 
-                _state.update { it.copy(
-                    groupName = "",
-                    participants = emptyList(),
-                    expenses = emptyList(),
-                    currentGroupId = null
-                ) }
+                _state.update {
+                    it.copy(
+                        groupName = "",
+                        participants = emptyList(),
+                        expenses = emptyList(),
+                        currentGroupId = null
+                    )
+                }
             }
         }
     }
@@ -657,5 +660,4 @@ class ExpenseViewModel(
             }
         }
     }
-
 }

@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -31,20 +33,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.serialization.Serializable
+import fr.univ.nantes.core.ui.Green700
+import fr.univ.nantes.core.ui.GreenBg50
+import fr.univ.nantes.core.ui.TealBg50
 import java.text.NumberFormat
 import java.util.Locale
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import fr.univ.nantes.core.ui.Green700
-import fr.univ.nantes.core.ui.TealBg50
-import fr.univ.nantes.core.ui.GreenBg50
+import kotlinx.serialization.Serializable
 
 @Serializable
 data object BalanceRoute
-
 
 @Composable
 fun MemberBalanceCard(balance: Balance, formatter: NumberFormat) {
@@ -169,7 +168,11 @@ fun BalanceContent(
             "CAD" -> Locale.CANADA
             else -> Locale.getAvailableLocales().find { locale ->
                 locale.country.isNotEmpty() &&
-                try { java.util.Currency.getInstance(locale).currencyCode == userCurrencyCode } catch (_: Exception) { false }
+                    try {
+                        java.util.Currency.getInstance(locale).currencyCode == userCurrencyCode
+                    } catch (_: Exception) {
+                        false
+                    }
             } ?: Locale.getDefault()
         }
         NumberFormat.getCurrencyInstance(locale).apply {
@@ -231,7 +234,6 @@ fun BalanceContent(
         }
     }
 }
-
 
 @Preview(showBackground = true, name = "Dettes en cours")
 @Composable

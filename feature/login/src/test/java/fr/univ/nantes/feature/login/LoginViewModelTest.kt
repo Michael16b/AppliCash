@@ -68,7 +68,7 @@ class LoginViewModelTest {
 
     // Fake ProfileRepository that returns an empty currencies flow by default
     private fun buildProfileUseCase(
-        currencies: List<Pair<String, String>> = listOf("EUR" to "Euro", "USD" to "US Dollar"),
+        currencies: List<Pair<String, String>> = listOf("EUR" to "Euro", "USD" to "US Dollar")
     ): ProfileUseCase {
         val repo = object : ProfileRepository {
             override fun observeProfile(): Flow<Profile?> = flowOf(null)
@@ -323,7 +323,7 @@ class LoginViewModelTest {
         viewModel.setFirstName("Alice")
         viewModel.setLastName("Dupont")
         whenever(
-            loginUseCase.registerUser("Alice", "Dupont", "alice@mail.com", "password", "EUR"),
+            loginUseCase.registerUser("Alice", "Dupont", "alice@mail.com", "password", "EUR")
         ).thenReturn(validUser)
 
         var receivedUsername: String? = null
@@ -369,4 +369,3 @@ class LoginViewModelTest {
         assertNull(viewModel.uiState.value.errorMessage)
     }
 }
-

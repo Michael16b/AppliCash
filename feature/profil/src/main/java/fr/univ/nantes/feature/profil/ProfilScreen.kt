@@ -21,13 +21,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Email
@@ -35,15 +28,25 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,17 +61,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.AppTopBar
+import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.Green500
-import fr.univ.nantes.core.ui.Teal600
 import fr.univ.nantes.core.ui.Green700
 import fr.univ.nantes.core.ui.Green900
 import fr.univ.nantes.core.ui.GreenBg50
+import fr.univ.nantes.core.ui.Teal600
 import org.koin.androidx.compose.koinViewModel
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.LaunchedEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -204,10 +204,13 @@ fun ProfileScreen(
             ProfileSectionCard(title = stringResource(id = R.string.profile_preferences)) {
                 var currencySearch by remember { mutableStateOf("") }
                 val filteredCurrencies = remember(currencies, currencySearch) {
-                    if (currencySearch.isBlank()) currencies
-                    else currencies.filter { (code, name) ->
-                        code.contains(currencySearch, ignoreCase = true) ||
-                        name.contains(currencySearch, ignoreCase = true)
+                    if (currencySearch.isBlank()) {
+                        currencies
+                    } else {
+                        currencies.filter { (code, name) ->
+                            code.contains(currencySearch, ignoreCase = true) ||
+                                name.contains(currencySearch, ignoreCase = true)
+                        }
                     }
                 }
 

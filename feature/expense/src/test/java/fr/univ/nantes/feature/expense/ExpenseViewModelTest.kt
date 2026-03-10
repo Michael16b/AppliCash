@@ -288,7 +288,7 @@ class ExpenseViewModelTest {
             groupId = 5L,
             newName = "Renamed",
             addParticipants = listOf("Charlie"),
-            removeParticipants = listOf("Dave"),
+            removeParticipants = listOf("Dave")
         )
         mainDispatcher.scheduler.advanceUntilIdle()
         assertEquals(5L, fakeRepository.lastUpdateGroupId)
@@ -303,7 +303,7 @@ class ExpenseViewModelTest {
             groupId = 5L,
             newName = null,
             addParticipants = listOf("Charlie"),
-            removeParticipants = emptyList(),
+            removeParticipants = emptyList()
         )
         mainDispatcher.scheduler.advanceUntilIdle()
         assertNull(fakeRepository.lastUpdateNewName)

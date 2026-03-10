@@ -61,8 +61,7 @@ class ExpenseViewModelAdditionalTest {
         profileFlow.value = profile
         val repo = object : ProfileRepository {
             override fun observeProfile(): Flow<Profile?> = profileFlow
-            override fun observeCurrencies(): Flow<List<Pair<String, String>>> =
-                flowOf(listOf("EUR" to "Euro"))
+            override fun observeCurrencies(): Flow<List<Pair<String, String>>> = flowOf(listOf("EUR" to "Euro"))
             override suspend fun saveProfile(profile: Profile) = Unit
             override suspend fun clearProfile() = Unit
             override suspend fun isLoggedIn(): Boolean = profileFlow.value != null
@@ -84,7 +83,7 @@ class ExpenseViewModelAdditionalTest {
         viewModel = ExpenseViewModel(
             fakeRepository,
             buildProfileUseCase(),
-            buildCurrencyRepository(),
+            buildCurrencyRepository()
         )
     }
 
@@ -119,7 +118,7 @@ class ExpenseViewModelAdditionalTest {
             lastName = "Dupont",
             email = "alice@mail.com",
             currency = "EUR",
-            isLoggedIn = true,
+            isLoggedIn = true
         )
         advanceUntilIdle()
         assertTrue(viewModel.state.value.isLoggedIn)
@@ -132,7 +131,7 @@ class ExpenseViewModelAdditionalTest {
             lastName = "Dupont",
             email = "alice@mail.com",
             currency = "USD",
-            isLoggedIn = true,
+            isLoggedIn = true
         )
         advanceUntilIdle()
         assertEquals("USD", viewModel.state.value.userCurrencyCode)
@@ -145,7 +144,7 @@ class ExpenseViewModelAdditionalTest {
             lastName = "Dupont",
             email = "alice@mail.com",
             currency = "EUR",
-            isLoggedIn = true,
+            isLoggedIn = true
         )
         advanceUntilIdle()
         assertEquals("Alice", viewModel.state.value.currentUserName)
@@ -368,7 +367,7 @@ class FakeExpenseRepository : ExpenseRepository {
         amount: Double,
         paidBy: String,
         splitType: Int,
-        splitDetails: String,
+        splitDetails: String
     ) = Unit
 
     override suspend fun deleteGroup(groupId: Long) = Unit
@@ -389,7 +388,7 @@ class FakeExpenseRepository : ExpenseRepository {
         groupId: Long,
         newName: String?,
         addParticipants: List<String>,
-        removeParticipants: List<String>,
+        removeParticipants: List<String>
     ) {
         lastUpdateGroupId = groupId
         lastUpdateNewName = newName
@@ -397,6 +396,3 @@ class FakeExpenseRepository : ExpenseRepository {
         lastUpdateRemoveParticipants = removeParticipants
     }
 }
-
-
-
