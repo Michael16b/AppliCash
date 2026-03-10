@@ -482,6 +482,15 @@ class ExpenseViewModel(
     }
 
     /**
+     * Converts [amount] from currency [from] to the user's preferred currency.
+     * Returns null if the exchange rate is unavailable.
+     */
+    suspend fun convertAmount(amount: Double, from: String): Double? {
+        val targetCurrency = _state.value.userCurrencyCode
+        return currencyRepository.convert(amount, from, targetCurrency)
+    }
+
+    /**
      * Deletes an expense by id from the repository and reloads the given group.
      */
     fun deleteExpense(expenseId: Long, groupId: Long) {
