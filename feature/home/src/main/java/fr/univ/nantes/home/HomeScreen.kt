@@ -32,8 +32,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,10 +54,11 @@ import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.Teal400
 import fr.univ.nantes.core.ui.TealBg50
+import fr.univ.nantes.feature.expense.ExpenseEvent
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.GroupData
 import java.text.NumberFormat
-import java.util.Locale
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -65,7 +69,19 @@ fun HomeScreen(
     onGroupClick: (GroupData) -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
-    val groups = viewModel?.state?.collectAsState()?.value?.groups ?: emptyList()
+    val groups = viewModel?.convertedGroups?.collectAsState()?.value ?: emptyList()
+    val userCurrencyCode = viewModel?.state?.collectAsState()?.value?.userCurrencyCode ?: "EUR"
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(viewModel) {
+        viewModel?.events?.collectLatest { event ->
+            when (event) {
+                is ExpenseEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+            }
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -85,6 +101,7 @@ fun HomeScreen(
                 }
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddGroupClick,
@@ -108,6 +125,7 @@ fun HomeScreen(
         } else {
             GroupsList(
                 groups = groups,
+                userCurrencyCode = userCurrencyCode,
                 onGroupClick = onGroupClick,
                 modifier = Modifier
                     .fillMaxSize()
@@ -141,7 +159,8 @@ fun EmptyGroupsState(modifier: Modifier = Modifier) {
 fun GroupsList(
     groups: List<GroupData>,
     onGroupClick: (GroupData) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    userCurrencyCode: String = "EUR"
 ) {
     LazyColumn(
         modifier = modifier,
@@ -151,6 +170,7 @@ fun GroupsList(
         items(groups, key = { it.id }) { group ->
             GroupCard(
                 group = group,
+                userCurrencyCode = userCurrencyCode,
                 onClick = { onGroupClick(group) }
             )
         }
@@ -161,15 +181,25 @@ fun GroupsList(
 fun GroupCard(
     group: GroupData,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    userCurrencyCode: String = "EUR"
 ) {
     val totalAmount = group.expenses.sumOf { it.amount }
     val isDarkMode = isSystemInDarkTheme()
     val cardColor = if (isDarkMode) MaterialTheme.colorScheme.surfaceContainerHigh else Color.White
     var expanded by rememberSaveable { mutableStateOf(false) }
-    val currencyFormat = remember {
-        NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-            currency = java.util.Currency.getInstance("EUR")
+    val currencyFormat = remember(userCurrencyCode) {
+        val currency = runCatching { java.util.Currency.getInstance(userCurrencyCode) }.getOrNull()
+        if (currency == null) {
+            NumberFormat.getCurrencyInstance()
+        } else {
+            val nativeLocale = java.util.Locale.getAvailableLocales().firstOrNull { loc ->
+                loc.country.isNotEmpty() &&
+                    runCatching {
+                        java.util.Currency.getInstance(loc) == currency
+                    }.getOrDefault(false)
+            } ?: java.util.Locale.getDefault()
+            NumberFormat.getCurrencyInstance(nativeLocale).apply { this.currency = currency }
         }
     }
 

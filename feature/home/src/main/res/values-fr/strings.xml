@@ -17,7 +17,7 @@
     <string name="suggested_reimbursements">Remboursements suggérés</string>
     <string name="no_expenses">Aucune dépense pour l\'instant</string>
     <string name="no_reimbursements">Aucun remboursement nécessaire</string>
-    <string name="paid_by">Payé par</string>
+    <string name="paid_by">Payé par %1$s</string>
     <string name="paid_by_format">Payé par %1$s</string>
     <string name="participants_list">Participants : %1$s</string>
     <string name="participants_list_short">Pour %1$s</string>
@@ -27,9 +27,13 @@
     <string name="add_expense">Ajouter une dépense</string>
     <string name="delete_expense">Supprimer la dépense</string>
     <string name="currency_label">Dans votre devise (%1$s)</string>
+    <string name="currency_converted_label">Converti depuis %1$s → %2$s</string>
+    <string name="cache_age_info">Taux de change datant de %1$d min (hors connexion)</string>
     <string name="show_expenses_preview">Voir l\'aperçu des dépenses</string>
     <string name="hide_expenses_preview">Cacher l\'aperçu des dépenses</string>
     <string name="balances_hint">Les soldes positifs indiquent les montants à recevoir, les négatifs les montants à payer</string>
+    <string name="original_amount">orig. %1$s</string>
+    <string name="per_person_suffix">par personne</string>
     <string name="balance_to_receive">doit recevoir</string>
     <string name="balance_to_pay">doit rembourser</string>
     <string name="balance_settled">Équilibré</string>

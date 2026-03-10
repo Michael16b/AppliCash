@@ -70,4 +70,5 @@ dependencies {
     implementation(project(":feature:profil"))
     implementation(project(":data:profil"))
     implementation(project(":domain:profil"))
+    implementation(project(":data:currency"))
 }

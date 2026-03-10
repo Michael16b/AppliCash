@@ -44,8 +44,10 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -76,6 +78,9 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
+/** Source currency for all expenses entered in the app. */
+private const val EXPENSE_CURRENCY = "EUR"
+
 @Serializable
 data class GroupDetail(val groupId: Long)
 
@@ -87,13 +92,24 @@ fun GroupDetailScreen(
     onDeleteExpense: (Long) -> Unit = {},
     onEditGroup: () -> Unit = {},
     isLoggedIn: Boolean = true,
-    onRequireLogin: () -> Unit = {}
+    onRequireLogin: () -> Unit = {},
+    userCurrencyCode: String = EXPENSE_CURRENCY,
+    convertAmount: suspend (Double, String) -> Double? = { amount, _ -> amount }
 ) {
-    val currencyFormat = remember {
+    val originalFormat = remember(EXPENSE_CURRENCY) {
         NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-            currency = Currency.getInstance("EUR")
+            currency = Currency.getInstance(EXPENSE_CURRENCY)
         }
     }
+    val userFormat = remember(userCurrencyCode) {
+        runCatching {
+            NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
+                currency = Currency.getInstance(userCurrencyCode)
+            }
+        }.getOrDefault(originalFormat)
+    }
+    val showConversion = userCurrencyCode.uppercase() != EXPENSE_CURRENCY
+
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -152,7 +168,14 @@ fun GroupDetailScreen(
         }
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            HeaderSummary(group, currencyFormat)
+            HeaderSummary(
+                group = group,
+                originalFormat = originalFormat,
+                userFormat = userFormat,
+                userCurrencyCode = userCurrencyCode,
+                showConversion = showConversion,
+                convertAmount = convertAmount
+            )
             SecondaryTabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
@@ -192,17 +215,42 @@ fun GroupDetailScreen(
             }
 
             when (selectedTab) {
-                0 -> ExpensesTab(group, currencyFormat, onDeleteExpense)
-                1 -> BalancesTab(group, currencyFormat)
+                0 -> ExpensesTab(
+                    group = group,
+                    originalFormat = originalFormat,
+                    userFormat = userFormat,
+                    showConversion = showConversion,
+                    convertAmount = convertAmount,
+                    onDeleteExpense = onDeleteExpense
+                )
+                1 -> BalancesTab(
+                    group = group,
+                    originalFormat = originalFormat,
+                    userFormat = userFormat,
+                    showConversion = showConversion,
+                    convertAmount = convertAmount
+                )
             }
         }
     }
 }
 
 @Composable
-private fun HeaderSummary(group: GroupData, currencyFormat: NumberFormat) {
-    val currencyCode = "EUR"
+private fun HeaderSummary(
+    group: GroupData,
+    originalFormat: NumberFormat,
+    userFormat: NumberFormat,
+    userCurrencyCode: String,
+    showConversion: Boolean,
+    convertAmount: suspend (Double, String) -> Double?
+) {
     val total = group.expenses.sumOf { it.amount }
+    var convertedTotal by remember { mutableStateOf<Double?>(null) }
+
+    LaunchedEffect(total, userCurrencyCode) {
+        convertedTotal = if (showConversion) convertAmount(total, EXPENSE_CURRENCY) else total
+    }
+
     val isDarkMode = isSystemInDarkTheme()
     val cardColor = if (isDarkMode) MaterialTheme.colorScheme.surfaceContainerHigh else TealBg50
     val cardTextColor = MaterialTheme.colorScheme.onSurface
@@ -210,10 +258,7 @@ private fun HeaderSummary(group: GroupData, currencyFormat: NumberFormat) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = cardColor,
-            contentColor = cardTextColor
-        ),
+        colors = CardDefaults.cardColors(containerColor = cardColor, contentColor = cardTextColor),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
@@ -225,14 +270,29 @@ private fun HeaderSummary(group: GroupData, currencyFormat: NumberFormat) {
                 style = MaterialTheme.typography.labelMedium,
                 color = cardTextColor.copy(alpha = 0.8f)
             )
+            if (showConversion && convertedTotal != null) {
+                Text(
+                    text = userFormat.format(convertedTotal),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = cardTextColor
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.original_amount, originalFormat.format(total)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = cardTextColor.copy(alpha = 0.6f)
+                )
+            } else {
+                Text(
+                    text = originalFormat.format(total),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = cardTextColor
+                )
+            }
             Text(
-                text = currencyFormat.format(total),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = cardTextColor
-            )
-            Text(
-                text = stringResource(R.string.currency_label, currencyCode),
+                text = stringResource(R.string.currency_label, if (showConversion) userCurrencyCode else EXPENSE_CURRENCY),
                 style = MaterialTheme.typography.labelSmall,
                 color = cardTextColor.copy(alpha = 0.7f),
                 modifier = Modifier.padding(top = 4.dp)
@@ -244,7 +304,10 @@ private fun HeaderSummary(group: GroupData, currencyFormat: NumberFormat) {
 @Composable
 private fun ExpensesTab(
     group: GroupData,
-    currencyFormat: NumberFormat,
+    originalFormat: NumberFormat,
+    userFormat: NumberFormat,
+    showConversion: Boolean,
+    convertAmount: suspend (Double, String) -> Double?,
     onDeleteExpense: (Long) -> Unit
 ) {
     if (group.expenses.isEmpty()) {
@@ -264,7 +327,15 @@ private fun ExpensesTab(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(group.expenses, key = { it.id }) { expense ->
-            ExpenseItem(expense, group, currencyFormat, onDeleteExpense)
+            ExpenseItem(
+                expense = expense,
+                group = group,
+                originalFormat = originalFormat,
+                userFormat = userFormat,
+                showConversion = showConversion,
+                convertAmount = convertAmount,
+                onDeleteExpense = onDeleteExpense
+            )
         }
     }
 }
@@ -274,9 +345,28 @@ private fun ExpensesTab(
 private fun ExpenseItem(
     expense: Expense,
     group: GroupData,
-    currencyFormat: NumberFormat,
+    originalFormat: NumberFormat,
+    userFormat: NumberFormat,
+    showConversion: Boolean,
+    convertAmount: suspend (Double, String) -> Double?,
     onDeleteExpense: (Long) -> Unit
 ) {
+    val sharePerPerson = if (group.participants.isNotEmpty()) {
+        expense.amount / group.participants.size
+    } else {
+        0.0
+    }
+
+    var convertedAmount by remember(expense.id) { mutableStateOf<Double?>(null) }
+    var convertedShare by remember(expense.id) { mutableStateOf<Double?>(null) }
+
+    LaunchedEffect(expense.amount, showConversion) {
+        if (showConversion) {
+            convertedAmount = convertAmount(expense.amount, EXPENSE_CURRENCY)
+            convertedShare = convertAmount(sharePerPerson, EXPENSE_CURRENCY)
+        }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -297,12 +387,26 @@ private fun ExpenseItem(
                     modifier = Modifier.weight(1f)
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = currencyFormat.format(expense.amount),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        val displayAmount = if (showConversion && convertedAmount != null) {
+                            userFormat.format(convertedAmount)
+                        } else {
+                            originalFormat.format(expense.amount)
+                        }
+                        Text(
+                            text = displayAmount,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (showConversion && convertedAmount != null) {
+                            Text(
+                                text = stringResource(R.string.original_amount, originalFormat.format(expense.amount)),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                     IconButton(onClick = { onDeleteExpense(expense.id) }) {
                         Icon(
                             imageVector = Icons.Filled.Delete,
@@ -370,13 +474,36 @@ private fun ExpenseItem(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
+            Card(
+                modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                ),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text(
+                    text = if (showConversion && convertedShare != null) {
+                        "${userFormat.format(convertedShare)} ${stringResource(R.string.per_person_suffix)} (${originalFormat.format(sharePerPerson)})"
+                    } else {
+                        stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson))
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                )
             }
         }
     }
 }
 
 @Composable
-private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
+private fun BalancesTab(
+    group: GroupData,
+    originalFormat: NumberFormat,
+    userFormat: NumberFormat,
+    showConversion: Boolean,
+    convertAmount: suspend (Double, String) -> Double?
+) {
     val balances = remember(group) { calculateBalances(group) }
     val reimbursements = remember(balances) { calculateReimbursements(balances) }
 
@@ -416,7 +543,13 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
             }
         } else {
             items(balances) { balance ->
-                BalanceMemberRow(balance, currencyFormat)
+                BalanceMemberRow(
+                    balance = balance,
+                    originalFormat = originalFormat,
+                    userFormat = userFormat,
+                    showConversion = showConversion,
+                    convertAmount = convertAmount
+                )
             }
 
             item {
@@ -446,7 +579,13 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
             item { AllSettledBanner() }
         } else {
             items(reimbursements) { item ->
-                ReimbursementRow(item, currencyFormat)
+                ReimbursementRow(
+                    reimbursement = item,
+                    originalFormat = originalFormat,
+                    userFormat = userFormat,
+                    showConversion = showConversion,
+                    convertAmount = convertAmount
+                )
             }
         }
 
@@ -455,9 +594,20 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
 }
 
 @Composable
-private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
+private fun BalanceMemberRow(
+    balance: Balance,
+    originalFormat: NumberFormat,
+    userFormat: NumberFormat,
+    showConversion: Boolean,
+    convertAmount: suspend (Double, String) -> Double?
+) {
     val isPositive = balance.amount > BALANCE_THRESHOLD
     val isNegative = balance.amount < -BALANCE_THRESHOLD
+
+    var convertedBalance by remember(balance.participant) { mutableStateOf<Double?>(null) }
+    LaunchedEffect(balance.amount, showConversion) {
+        convertedBalance = if (showConversion) convertAmount(balance.amount, EXPENSE_CURRENCY) else balance.amount
+    }
 
     val (bgColor, amountColor, labelText) = when {
         isPositive -> BalanceStyle(
@@ -524,13 +674,28 @@ private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
                 isNegative -> "-"
                 else -> ""
             }
-            val displayAmount = if (isNegative) -balance.amount else balance.amount
-            Text(
-                text = sign + currencyFormat.format(displayAmount),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = amountColor
-            )
+            val absAmount = if (isNegative) -balance.amount else balance.amount
+            Column(horizontalAlignment = Alignment.End) {
+                val displayAmount = if (showConversion && convertedBalance != null) {
+                    val absConverted = if ((convertedBalance ?: 0.0) < 0) -(convertedBalance!!) else convertedBalance!!
+                    sign + userFormat.format(absConverted)
+                } else {
+                    sign + originalFormat.format(absAmount)
+                }
+                Text(
+                    text = displayAmount,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = amountColor
+                )
+                if (showConversion && convertedBalance != null) {
+                    Text(
+                        text = sign + originalFormat.format(absAmount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = amountColor.copy(alpha = 0.6f)
+                    )
+                }
+            }
         }
     }
 }
@@ -542,7 +707,18 @@ private data class BalanceStyle(
 )
 
 @Composable
-private fun ReimbursementRow(reimbursement: Reimbursement, currencyFormat: NumberFormat) {
+private fun ReimbursementRow(
+    reimbursement: Reimbursement,
+    originalFormat: NumberFormat,
+    userFormat: NumberFormat,
+    showConversion: Boolean,
+    convertAmount: suspend (Double, String) -> Double?
+) {
+    var convertedAmount by remember(reimbursement.from + reimbursement.to) { mutableStateOf<Double?>(null) }
+    LaunchedEffect(reimbursement.amount, showConversion) {
+        convertedAmount = if (showConversion) convertAmount(reimbursement.amount, EXPENSE_CURRENCY) else reimbursement.amount
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -579,11 +755,24 @@ private fun ReimbursementRow(reimbursement: Reimbursement, currencyFormat: Numbe
                         .background(TealBg50, RoundedCornerShape(20.dp))
                         .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
+                    val displayAmt = if (showConversion && convertedAmount != null) {
+                        userFormat.format(convertedAmount)
+                    } else {
+                        originalFormat.format(reimbursement.amount)
+                    }
                     Text(
-                        text = currencyFormat.format(reimbursement.amount),
+                        text = displayAmt,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = Teal400
+                    )
+                }
+                if (showConversion && convertedAmount != null) {
+                    Text(
+                        text = originalFormat.format(reimbursement.amount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
             }
@@ -686,7 +875,7 @@ private fun GroupDetailPreview() {
         )
     )
     AppliCashTheme {
-        GroupDetailScreen(group = group, onBack = {})
+        GroupDetailScreen(group = group, onBack = {}, userCurrencyCode = "USD")
     }
 }
 
@@ -707,7 +896,13 @@ private fun BalancesTabPreview() {
         currency = Currency.getInstance("EUR")
     }
     AppliCashTheme {
-        BalancesTab(group = group, currencyFormat = currencyFormat)
+        BalancesTab(
+            group = group,
+            originalFormat = currencyFormat,
+            userFormat = currencyFormat,
+            showConversion = false,
+            convertAmount = { amount, _ -> amount }
+        )
     }
 }
 
@@ -727,6 +922,12 @@ private fun BalancesTabSettledPreview() {
         currency = Currency.getInstance("EUR")
     }
     AppliCashTheme {
-        BalancesTab(group = group, currencyFormat = currencyFormat)
+        BalancesTab(
+            group = group,
+            originalFormat = currencyFormat,
+            userFormat = currencyFormat,
+            showConversion = false,
+            convertAmount = { amount, _ -> amount }
+        )
     }
 }

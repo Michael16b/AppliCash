@@ -120,13 +120,7 @@ private fun App() {
             }
             composable<BalanceRoute> {
                 BalanceScreen(
-                    viewModel = expenseViewModel,
-                    navigateToGroup = {
-                        expenseViewModel.reset()
-                        navController.navigate(Group) {
-                            popUpTo<Group> { inclusive = true }
-                        }
-                    }
+                    viewModel = expenseViewModel
                 )
             }
             composable<Home> {
@@ -184,7 +178,9 @@ private fun App() {
                             navController.navigate(Login) {
                                 popUpTo<Home> { inclusive = false }
                             }
-                        }
+                        },
+                        userCurrencyCode = state.userCurrencyCode,
+                        convertAmount = { amount, from -> expenseViewModel.convertAmount(amount, from) }
                     )
                 }
             }

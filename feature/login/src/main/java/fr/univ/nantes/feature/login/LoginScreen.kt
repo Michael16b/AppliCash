@@ -106,8 +106,11 @@ fun LoginScreen(
                     expanded = currencyMenuExpanded,
                     onExpandedChange = { currencyMenuExpanded = !currencyMenuExpanded }
                 ) {
+                    val currencies = state.currencies.ifEmpty { listOf("EUR" to "Euro") }
+                    val selectedLabel = currencies.firstOrNull { it.first == state.currency }
+                        ?.let { "${it.first} — ${it.second}" } ?: state.currency
                     OutlinedTextField(
-                        value = state.currency,
+                        value = selectedLabel,
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(stringResource(R.string.login_preferred_currency)) },
@@ -120,12 +123,11 @@ fun LoginScreen(
                         expanded = currencyMenuExpanded,
                         onDismissRequest = { currencyMenuExpanded = false }
                     ) {
-                        val currencies = state.currencies.ifEmpty { listOf("EUR - Euro") }
-                        currencies.forEach { currency ->
+                        currencies.forEach { (code, name) ->
                             DropdownMenuItem(
-                                text = { Text(currency) },
+                                text = { Text("$code — $name") },
                                 onClick = {
-                                    viewModel.setCurrency(currency)
+                                    viewModel.setCurrency(code)
                                     currencyMenuExpanded = false
                                 }
                             )

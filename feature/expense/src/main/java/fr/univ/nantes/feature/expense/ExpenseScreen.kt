@@ -51,6 +51,7 @@ fun ExpenseScreen(
     navigateToBalance: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val convertedExpenses by viewModel.convertedCurrentExpenses.collectAsState()
     val loginRequiredMessage = stringResource(id = R.string.login_required_add_expense)
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -66,7 +67,7 @@ fun ExpenseScreen(
         }
     }
 
-    val currencyCode = stringResource(R.string.currency_code)
+    val currencyCode = state.userCurrencyCode
     val currencyFormatter = remember(currencyCode) {
         val currency = java.util.Currency.getInstance(currencyCode)
         // Map common currency codes to locales for efficiency
@@ -229,14 +230,14 @@ fun ExpenseScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = stringResource(R.string.expenses_count, state.expenses.size),
+                text = stringResource(R.string.expenses_count, convertedExpenses.size),
                 style = MaterialTheme.typography.titleMedium
             )
 
             LazyColumn(
                 modifier = Modifier.weight(1f)
             ) {
-                items(state.expenses) { expense ->
+                items(convertedExpenses) { expense ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -267,7 +268,7 @@ fun ExpenseScreen(
             Button(
                 onClick = navigateToBalance,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = state.expenses.isNotEmpty()
+                enabled = convertedExpenses.isNotEmpty()
             ) {
                 Text(stringResource(R.string.view_split))
             }
