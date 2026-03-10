@@ -17,7 +17,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.io.IOException
 
 /**
  * Tests unitaires de CurrencyRepository.
@@ -56,8 +55,10 @@ class CurrencyRepositoryTest {
 
     @Test
     fun `getRate est insensible a la casse pour la meme devise`() = runTest {
-        val result = repository.getRate("eur", "EUR")
+        // "eur" et "EUR" sont normalisés → from == to → retourne 1.0 sans appel DAO ni API
+        val result = repository.getRate("eur", "eur")
         assertEquals(1.0, result)
+        verify(api, never()).getLatestRates(any())
     }
 
     // ── Cache valide (< 1h) ───────────────────────────────────────────────────
@@ -146,7 +147,8 @@ class CurrencyRepositoryTest {
     @Test
     fun `getRate retourne le cache stale quand le reseau echoue`() = runTest {
         whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (TTL_MS * 3)) // expiré
-        whenever(api.getLatestRates("EUR")).thenThrow(IOException("No network"))
+        // RuntimeException car suspend fun ne déclare pas IOException (checked)
+        whenever(api.getLatestRates("EUR")).thenThrow(RuntimeException("No network"))
         whenever(dao.getRate("EUR", "USD")).thenReturn(1.07) // stale cache
 
         val result = repository.getRate("EUR", "USD")
@@ -157,7 +159,7 @@ class CurrencyRepositoryTest {
     @Test
     fun `getRate retourne null quand reseau echoue et pas de cache stale`() = runTest {
         whenever(dao.getLastFetchTime("EUR")).thenReturn(null)
-        whenever(api.getLatestRates("EUR")).thenThrow(IOException("No network"))
+        whenever(api.getLatestRates("EUR")).thenThrow(RuntimeException("No network"))
         whenever(dao.getRate("EUR", "USD")).thenReturn(null)
 
         val result = repository.getRate("EUR", "USD")
@@ -180,7 +182,7 @@ class CurrencyRepositoryTest {
     @Test
     fun `convert retourne null quand le taux est indisponible`() = runTest {
         whenever(dao.getLastFetchTime("EUR")).thenReturn(null)
-        whenever(api.getLatestRates("EUR")).thenThrow(IOException("No network"))
+        whenever(api.getLatestRates("EUR")).thenThrow(RuntimeException("No network"))
         whenever(dao.getRate("EUR", "USD")).thenReturn(null)
 
         val result = repository.convert(50.0, "EUR", "USD")
@@ -241,4 +243,8 @@ class CurrencyRepositoryTest {
         verify(dao).getAvailableCurrencies("EUR")
     }
 }
+
+
+
+
 
