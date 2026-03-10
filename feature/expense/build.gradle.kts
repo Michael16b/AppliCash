@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.roborazzi)
+    alias(libs.plugins.ktlint)
 }
 android {
     namespace = "fr.univ.nantes.feature.expense"
@@ -31,6 +32,7 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
+        unitTests.isReturnDefaultValues = true
     }
 }
 kotlin {
@@ -63,6 +65,12 @@ dependencies {
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
     testImplementation(libs.robolectric)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.arch.core.testing)
+    testImplementation(libs.turbine)
+    testImplementation(libs.androidx.compose.material3)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     debugImplementation(libs.androidx.compose.ui.tooling)

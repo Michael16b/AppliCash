@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.roborazzi)
+    alias(libs.plugins.ktlint)
 }
 android {
     namespace = "fr.univ.nantes.feature.profil"
@@ -27,6 +28,7 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
+        unitTests.isReturnDefaultValues = true
     }
 }
 dependencies {
@@ -59,6 +61,14 @@ dependencies {
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
     testImplementation(libs.robolectric)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.arch.core.testing)
+    testImplementation(libs.turbine)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }
 // CA4/RG3: reference images versioned in /snapshots/
 roborazzi {

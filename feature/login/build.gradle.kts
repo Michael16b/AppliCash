@@ -33,6 +33,7 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
+        unitTests.isReturnDefaultValues = true
     }
 }
 dependencies {
@@ -66,6 +67,14 @@ dependencies {
     // Nav
     implementation(libs.kotlinx.serialization.json)
     implementation(project(":core:ui"))
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.arch.core.testing)
+    testImplementation(libs.turbine)
 }
 // CA4/RG3: reference images versioned in /snapshots/
 roborazzi {
