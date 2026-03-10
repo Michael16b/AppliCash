@@ -54,7 +54,9 @@ class FakeExpenseRepository : ExpenseRepository {
         groupId: Long,
         description: String,
         amount: Double,
-        paidBy: String
+        paidBy: String,
+        splitType: Int,
+        splitDetails: String
     ) {
         // No-op for testing
     }
@@ -105,6 +107,7 @@ private fun fakeCurrencyRepository(): ICurrencyRepository = object : ICurrencyRe
     override suspend fun getRate(from: String, to: String): Double = 1.0
     override suspend fun convert(amount: Double, from: String, to: String): Double = amount
     override suspend fun getCacheAgeMinutes(base: String): Long? = null
+    override suspend fun getAvailableCurrencies(base: String): List<String> = emptyList()
 }
 
 

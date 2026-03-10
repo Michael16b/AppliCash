@@ -18,7 +18,9 @@ interface ExpenseRepository {
         groupId: Long,
         description: String,
         amount: Double,
-        paidBy: String
+        paidBy: String,
+        splitType: Int = 0,
+        splitDetails: String = "{}"
     )
     suspend fun deleteGroup(groupId: Long)
     suspend fun deleteExpense(expenseId: Long)
@@ -71,14 +73,18 @@ class ExpenseRepositoryImpl(
         groupId: Long,
         description: String,
         amount: Double,
-        paidBy: String
+        paidBy: String,
+        splitType: Int,
+        splitDetails: String
     ) {
         expenseDao.insertExpense(
             ExpenseEntity(
                 groupId = groupId,
                 description = description,
                 amount = amount,
-                paidBy = paidBy
+                paidBy = paidBy,
+                splitType = splitType,
+                splitDetails = splitDetails
             )
         )
     }

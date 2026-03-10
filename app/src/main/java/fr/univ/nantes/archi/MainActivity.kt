@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -20,6 +21,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import fr.univ.nantes.core.ui.AppliCashTheme
+import fr.univ.nantes.feature.expense.AddExpenseRoute
+import fr.univ.nantes.feature.expense.AddExpenseScreen
 import fr.univ.nantes.feature.expense.BalanceRoute
 import fr.univ.nantes.feature.expense.BalanceScreen
 import fr.univ.nantes.feature.expense.EditGroup
@@ -156,8 +159,7 @@ private fun App() {
                             scope.launch {
                                 val loggedIn = runCatching { profileUseCase.isLoggedIn() }.getOrDefault(false)
                                 if (loggedIn) {
-                                    expenseViewModel.loadGroup(group.id)
-                                    navController.navigate(ExpenseRoute)
+                                    navController.navigate(AddExpenseRoute(groupId = group.id))
                                 } else {
                                     navController.navigate(Login) {
                                         popUpTo<Home> { inclusive = false }
@@ -181,6 +183,16 @@ private fun App() {
                         convertAmount = { amount, from -> expenseViewModel.convertAmount(amount, from) }
                     )
                 }
+            }
+            composable<AddExpenseRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<AddExpenseRoute>()
+                LaunchedEffect(route.groupId) {
+                    expenseViewModel.loadGroup(route.groupId)
+                }
+                AddExpenseScreen(
+                    viewModel = expenseViewModel,
+                    navigateBack = { navController.popBackStack() }
+                )
             }
             composable<EditGroup> { backStackEntry ->
                 val route = backStackEntry.toRoute<EditGroup>()

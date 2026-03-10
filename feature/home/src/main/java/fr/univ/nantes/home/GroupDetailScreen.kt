@@ -6,6 +6,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -338,6 +340,7 @@ private fun ExpensesTab(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ExpenseItem(
     expense: Expense,
@@ -416,32 +419,82 @@ private fun ExpenseItem(
             Text(
                 text = stringResource(R.string.paid_by, expense.paidBy),
                 style = MaterialTheme.typography.bodySmall,
-                color = Teal400,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 2.dp)
             )
+
+            // Split info
+            val splitLabel = when (expense.splitType) {
+                2 -> stringResource(fr.univ.nantes.feature.expense.R.string.split_by_amount)
+                1 -> stringResource(fr.univ.nantes.feature.expense.R.string.split_by_share)
+                else -> stringResource(fr.univ.nantes.feature.expense.R.string.split_equally)
+            }
+
             Text(
-                text = stringResource(R.string.participants_list_short, group.participants.joinToString()),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp)
+                text = splitLabel,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = Teal400,
+                modifier = Modifier.padding(top = 6.dp)
             )
-            Card(
-                modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                ),
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Text(
-                    text = if (showConversion && convertedShare != null) {
-                        "${userFormat.format(convertedShare)} ${stringResource(R.string.per_person_suffix)} (${originalFormat.format(sharePerPerson)})"
-                    } else {
-                        stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson))
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                )
+
+            if ((expense.splitType == 1 || expense.splitType == 2) && expense.splitDetails.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier.padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    expense.splitDetails.forEach { (participant, participantAmount) ->
+                        Box(
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "$participant · ${originalFormat.format(participantAmount)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            } else if (expense.splitType == 0) {
+                val sharePerPerson = if (group.participants.isNotEmpty()) {
+                    expense.amount / group.participants.size
+                } else {
+                    0.0
+                }
+                Box(
+                    modifier = Modifier
+                        .padding(top = 6.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "${originalFormat.format(sharePerPerson)}/pers. · ${group.participants.joinToString()}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Card(
+                    modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                    ),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = if (showConversion && convertedShare != null) {
+                            "${userFormat.format(convertedShare)} ${stringResource(R.string.per_person_suffix)} (${originalFormat.format(sharePerPerson)})"
+                        } else {
+                            stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson))
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    )
+                }
             }
         }
     }

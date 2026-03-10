@@ -23,5 +23,11 @@ interface ICurrencyRepository {
      * or null if no cache exists.
      */
     suspend fun getCacheAgeMinutes(base: String): Long?
+
+    /**
+     * Returns the list of available target currency codes cached in the local DB
+     * for the given [base] currency. Returns an empty list if nothing is cached yet.
+     */
+    suspend fun getAvailableCurrencies(base: String): List<String>
 }
 

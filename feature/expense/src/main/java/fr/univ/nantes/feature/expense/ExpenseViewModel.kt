@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import fr.univ.nantes.domain.profil.ProfileUseCase
+import org.json.JSONObject
 import fr.univ.nantes.domain.profil.normalizeCurrencyCode
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -38,7 +39,9 @@ data class Expense(
     val id: Long = 0,
     val description: String,
     val amount: Double,
-    val paidBy: String
+    val paidBy: String,
+    val splitType: Int = 0, // 0=Equally, 1=By share, 2=By amount
+    val splitDetails: Map<String, Double> = emptyMap() // participant -> amount/share
 )
 
 data class GroupData(
@@ -58,7 +61,11 @@ data class ExpenseState(
     val isLoggedIn: Boolean = false,
     val userCurrencyCode: String = "EUR",
     /** Age in minutes of the cached exchange rates, null if no cache or same currency. */
-    val cacheAgeMinutes: Long? = null
+    val cacheAgeMinutes: Long? = null,
+    /** List of currency codes available from the local DB cache. */
+    val availableCurrencies: List<String> = emptyList(),
+    /** Converted amount from selected expense currency to user base currency (for live preview). */
+    val convertedAmountInBase: Double? = null
 )
 
 data class Balance(
@@ -97,6 +104,33 @@ class ExpenseViewModel(
          * when comparing monetary amounts.
          */
         private const val BALANCE_THRESHOLD = 0.01
+
+        /**
+         * Helper function to parse JSON splitDetails string to Map<String, Double>
+         */
+        fun parseSplitDetails(jsonString: String): Map<String, Double> {
+            return try {
+                if (jsonString.isEmpty() || jsonString == "{}") return emptyMap()
+                val jsonObject = JSONObject(jsonString)
+                jsonObject.keys().asSequence().associate { key ->
+                    key to jsonObject.getDouble(key)
+                }
+            } catch (_: Exception) {
+                emptyMap()
+            }
+        }
+
+        /**
+         * Helper function to convert Map<String, Double> to JSON string
+         */
+        fun serializeSplitDetails(details: Map<String, Double>): String {
+            if (details.isEmpty()) return "{}"
+            val jsonObject = JSONObject()
+            details.forEach { (key, value) ->
+                jsonObject.put(key, value)
+            }
+            return jsonObject.toString()
+        }
 
         /**
          * The currency in which expenses are stored in the database.
@@ -174,7 +208,9 @@ class ExpenseViewModel(
                                 id = it.id,
                                 description = it.description,
                                 amount = it.amount,
-                                paidBy = it.paidBy
+                                paidBy = it.paidBy,
+                                splitType = it.splitType,
+                                splitDetails = parseSplitDetails(it.splitDetails)
                             )
                         }
                     )
@@ -192,6 +228,49 @@ class ExpenseViewModel(
                     )
                 }
             }
+        }
+        // Load available currencies from the local DB (triggers network fetch if needed)
+        viewModelScope.launch {
+            val currencies = currencyRepository.getAvailableCurrencies(STORAGE_CURRENCY)
+            if (currencies.isNotEmpty()) {
+                _state.update { it.copy(availableCurrencies = currencies) }
+            }
+        }
+    }
+
+    /**
+     * Converts [amount] from [fromCurrency] to the user's base currency and stores the
+     * result in [ExpenseState.convertedAmountInBase] for live preview in the form.
+     * The target currency is always [STORAGE_CURRENCY] (the group's base currency).
+     * Clears the preview if [fromCurrency] already equals [STORAGE_CURRENCY].
+     * Emits a [ExpenseEvent.ShowSnackbar] if the conversion rate is unavailable.
+     */
+    fun updateLiveConversion(amount: Double, fromCurrency: String) {
+        // Target is always the group storage currency (EUR)
+        val targetCurrency = STORAGE_CURRENCY
+        if (fromCurrency == targetCurrency || amount <= 0.0) {
+            _state.update { it.copy(convertedAmountInBase = null) }
+            return
+        }
+        viewModelScope.launch {
+            // The EUR-based rate cache contains EUR→X entries.
+            // To convert X→EUR, use the inverse: 1/rate(EUR→X).
+            val eurToFrom = currencyRepository.getRate(targetCurrency, fromCurrency)
+            val converted: Double? = if (eurToFrom != null && eurToFrom != 0.0) {
+                amount / eurToFrom
+            } else {
+                // Fallback: try direct network-based conversion
+                currencyRepository.convert(amount, fromCurrency, targetCurrency)
+            }
+
+            if (converted == null) {
+                _events.emit(
+                    ExpenseEvent.ShowSnackbar(
+                        "Impossible de convertir $fromCurrency → $targetCurrency. Vérifiez votre connexion Internet."
+                    )
+                )
+            }
+            _state.update { it.copy(convertedAmountInBase = converted) }
         }
     }
 
@@ -281,7 +360,9 @@ class ExpenseViewModel(
                                 id = it.id,
                                 description = it.description,
                                 amount = it.amount,
-                                paidBy = it.paidBy
+                                paidBy = it.paidBy,
+                                splitType = it.splitType,
+                                splitDetails = parseSplitDetails(it.splitDetails)
                             )
                         },
                         currentGroupId = groupId
@@ -352,13 +433,22 @@ class ExpenseViewModel(
      * @param amount The amount of the expense
      * @param paidBy The name of the participant who paid for the expense
      */
-    fun addExpense(description: String, amount: Double, paidBy: String) {
+    fun addExpense(
+        description: String,
+        amount: Double,
+        paidBy: String,
+        splitType: Int = 0,
+        splitDetails: Map<String, Double> = emptyMap()
+    ) {
         if (description.isNotBlank() && amount > 0 && paidBy.isNotBlank() && _state.value.participants.contains(paidBy)) {
-            val expense = Expense(description = description, amount = amount, paidBy = paidBy)
-            _state.update { it.copy(
-                expenses = it.expenses + expense
-            ) }
-
+            val expense = Expense(
+                description = description,
+                amount = amount,
+                paidBy = paidBy,
+                splitType = splitType,
+                splitDetails = splitDetails
+            )
+            _state.update { it.copy(expenses = it.expenses + expense) }
 
             val groupId = getCurrentGroupId()
             if (groupId != null) {
@@ -367,7 +457,9 @@ class ExpenseViewModel(
                         groupId = groupId,
                         description = description,
                         amount = amount,
-                        paidBy = paidBy
+                        paidBy = paidBy,
+                        splitType = splitType,
+                        splitDetails = serializeSplitDetails(splitDetails)
                     )
                 }
             }
@@ -477,7 +569,9 @@ class ExpenseViewModel(
                         groupId = groupId,
                         description = expense.description,
                         amount = expense.amount,
-                        paidBy = expense.paidBy
+                        paidBy = expense.paidBy,
+                        splitType = expense.splitType,
+                        splitDetails = serializeSplitDetails(expense.splitDetails)
                     )
                 }
 

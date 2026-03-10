@@ -37,6 +37,24 @@
     <string name="login_required_add_expense">You need to be logged in to add an expense.</string>
     <string name="login_action">Log in</string>
 
+    <!-- AddExpenseScreen -->
+    <string name="new_expense_title">Nouvelle dépense</string>
+    <string name="expense_title_label">Titre de la dépense</string>
+    <string name="expense_title_placeholder">Ex: Restaurant, Essence…</string>
+    <string name="amount_label">Montant</string>
+    <string name="expense_date_label">Date de la dépense</string>
+    <string name="select_date">Sélectionner une date</string>
+    <string name="paid_by_label">Payé par</string>
+    <string name="split_type_label">Type de partage</string>
+    <string name="split_equally">Équitablement</string>
+    <string name="split_by_share">Par part</string>
+    <string name="split_by_amount">Par montant</string>
+    <string name="participants_label">Participants</string>
+    <string name="select_all">Sélectionner tout le monde</string>
+    <string name="add_expense_button">Ajouter la dépense</string>
+    <string name="confirm">Confirmer</string>
+    <string name="cancel">Annuler</string>
+
     <!-- BalanceScreen -->
     <string name="total_format">Total: %s</string>
     <string name="balances">Balances</string>
@@ -53,4 +71,19 @@
 
     <!-- Currency -->
     <string name="currency_code">EUR</string>
+
+    <!-- Additional strings for AddExpenseScreen -->
+    <string name="receipt_section_label">Receipt (optional)</string>
+    <string name="take_photo">Take a photo</string>
+    <string name="choose_file">Choose</string>
+    <string name="shares_per_participant_label">Shares per participant</string>
+    <string name="amounts_per_participant_label">Amounts per participant</string>
+    <string name="share_suffix">share(s)</string>
+    <string name="my_currency_label">My currency</string>
+    <string name="me_label">Me</string>
+    <string name="decrease_share">Decrease</string>
+    <string name="increase_share">Increase</string>
+    <string name="split_equally_quick">Split equally (%1$s %2$s/person)</string>
+    <string name="remaining_to_split">Remaining to split</string>
+    <string name="converted_amount">≈ %1$s %2$s</string>
 </resources>

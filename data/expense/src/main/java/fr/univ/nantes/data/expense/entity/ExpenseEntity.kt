@@ -24,6 +24,8 @@ data class ExpenseEntity(
     val description: String,
     val amount: Double,
     val paidBy: String,
+    val splitType: Int = 0, // 0=Equally, 1=By share, 2=By amount
+    val splitDetails: String = "{}", // JSON format: {"participant": amount}
     val createdAt: Long = System.currentTimeMillis()
 )
 
