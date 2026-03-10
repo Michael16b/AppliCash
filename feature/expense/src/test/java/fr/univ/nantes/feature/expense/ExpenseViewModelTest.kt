@@ -20,6 +20,18 @@ import fr.univ.nantes.domain.profil.ProfileRepository
  * Fake repository for testing that does not interact with the database
  */
 class FakeExpenseRepository : ExpenseRepository {
+
+    var lastAddedParticipantGroupId: Long? = null
+    var lastAddedParticipantName: String? = null
+    var lastRemovedParticipantGroupId: Long? = null
+    var lastRemovedParticipantName: String? = null
+    var lastUpdatedGroupNameId: Long? = null
+    var lastUpdatedGroupName: String? = null
+    var lastUpdateGroupId: Long? = null
+    var lastUpdateNewName: String? = null
+    var lastUpdateAddParticipants: List<String>? = null
+    var lastUpdateRemoveParticipants: List<String>? = null
+
     override fun getAllGroupsWithDetails(): Flow<List<GroupWithDetails>> {
         return flowOf(emptyList())
     }
@@ -33,7 +45,8 @@ class FakeExpenseRepository : ExpenseRepository {
     }
 
     override suspend fun addParticipantToGroup(groupId: Long, participantName: String) {
-        // No-op for testing
+        lastAddedParticipantGroupId = groupId
+        lastAddedParticipantName = participantName
     }
 
     override suspend fun addExpenseToGroup(
@@ -54,12 +67,26 @@ class FakeExpenseRepository : ExpenseRepository {
     }
 
     override suspend fun updateGroupName(groupId: Long, groupName: String) {
+        lastUpdatedGroupNameId = groupId
+        lastUpdatedGroupName = groupName
     }
 
     override suspend fun removeParticipantFromGroup(groupId: Long, participantName: String) {
-        // Ancienne méthode, non utilisée
+        lastRemovedParticipantGroupId = groupId
+        lastRemovedParticipantName = participantName
     }
 
+    override suspend fun updateGroup(
+        groupId: Long,
+        newName: String?,
+        addParticipants: List<String>,
+        removeParticipants: List<String>
+    ) {
+        lastUpdateGroupId = groupId
+        lastUpdateNewName = newName
+        lastUpdateAddParticipants = addParticipants
+        lastUpdateRemoveParticipants = removeParticipants
+    }
 
 }
 private fun fakeProfileUseCase(): ProfileUseCase {
@@ -81,7 +108,7 @@ private fun fakeProfileUseCase(): ProfileUseCase {
 @OptIn(ExperimentalCoroutinesApi::class)
 class ExpenseViewModelTest {
     private lateinit var viewModel: ExpenseViewModel
-    private lateinit var fakeRepository: ExpenseRepository
+    private lateinit var fakeRepository: FakeExpenseRepository
     private lateinit var fakeProfileUseCase: ProfileUseCase
     private val mainDispatcher = StandardTestDispatcher()
 
@@ -283,5 +310,92 @@ class ExpenseViewModelTest {
         assertEquals("", viewModel.state.value.groupName)
         assertTrue(viewModel.state.value.participants.isEmpty())
         assertTrue(viewModel.state.value.expenses.isEmpty())
+    }
+
+    @Test
+    fun updateGroupName_invokesRepositoryWithCorrectParams() {
+        viewModel.updateGroupName(42L, "New Name")
+        mainDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(42L, fakeRepository.lastUpdatedGroupNameId)
+        assertEquals("New Name", fakeRepository.lastUpdatedGroupName)
+    }
+
+    @Test
+    fun updateGroupName_doesNotUpdateStateWhenCurrentGroupIdDoesNotMatch() {
+        viewModel.setGroupName("Old Name")
+        // currentGroupId is null (never set via loadGroup), so the state update branch is skipped
+        viewModel.updateGroupName(42L, "New Name")
+        mainDispatcher.scheduler.advanceUntilIdle()
+
+        // Repository is still called with the correct params
+        assertEquals(42L, fakeRepository.lastUpdatedGroupNameId)
+        assertEquals("New Name", fakeRepository.lastUpdatedGroupName)
+        // But state.groupName must remain unchanged because currentGroupId != 42L
+        assertEquals("Old Name", viewModel.state.value.groupName)
+    }
+
+    @Test
+    fun addParticipantToGroup_invokesRepositoryWithCorrectParams() {
+        viewModel.addParticipantToGroup(10L, "Alice")
+        mainDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(10L, fakeRepository.lastAddedParticipantGroupId)
+        assertEquals("Alice", fakeRepository.lastAddedParticipantName)
+    }
+
+    @Test
+    fun addParticipantToGroup_trimsParticipantName() {
+        viewModel.addParticipantToGroup(10L, "  Alice  ")
+        mainDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Alice", fakeRepository.lastAddedParticipantName)
+    }
+
+    @Test
+    fun addParticipantToGroup_ignoresBlankName() {
+        viewModel.addParticipantToGroup(10L, "   ")
+        mainDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(fakeRepository.lastAddedParticipantName)
+    }
+
+    @Test
+    fun removeParticipantFromGroup_invokesRepositoryWithCorrectParams() {
+        viewModel.removeParticipantFromGroup(10L, "Alice")
+        mainDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(10L, fakeRepository.lastRemovedParticipantGroupId)
+        assertEquals("Alice", fakeRepository.lastRemovedParticipantName)
+    }
+
+    @Test
+    fun updateGroup_invokesRepositoryWithCorrectParams() {
+        viewModel.updateGroup(
+            groupId = 5L,
+            newName = "Renamed",
+            addParticipants = listOf("Charlie"),
+            removeParticipants = listOf("Dave")
+        )
+        mainDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(5L, fakeRepository.lastUpdateGroupId)
+        assertEquals("Renamed", fakeRepository.lastUpdateNewName)
+        assertEquals(listOf("Charlie"), fakeRepository.lastUpdateAddParticipants)
+        assertEquals(listOf("Dave"), fakeRepository.lastUpdateRemoveParticipants)
+    }
+
+    @Test
+    fun updateGroup_withNullNewName_passesNullToRepository() {
+        viewModel.updateGroup(
+            groupId = 5L,
+            newName = null,
+            addParticipants = listOf("Charlie"),
+            removeParticipants = emptyList()
+        )
+        mainDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(fakeRepository.lastUpdateNewName)
+        assertEquals(listOf("Charlie"), fakeRepository.lastUpdateAddParticipants)
     }
 }
