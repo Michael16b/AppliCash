@@ -12,9 +12,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import fr.univ.nantes.domain.profil.ProfileUseCase
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.builtins.serializer
 import org.json.JSONObject
 
 /**

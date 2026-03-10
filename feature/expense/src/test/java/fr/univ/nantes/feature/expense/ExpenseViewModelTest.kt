@@ -53,7 +53,9 @@ class FakeExpenseRepository : ExpenseRepository {
         groupId: Long,
         description: String,
         amount: Double,
-        paidBy: String
+        paidBy: String,
+        splitType: Int,
+        splitDetails: String
     ) {
         // No-op for testing
     }

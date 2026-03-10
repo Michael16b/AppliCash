@@ -65,4 +65,12 @@
 
     <!-- Currency -->
     <string name="currency_code">EUR</string>
+
+    <!-- Additional strings for AddExpenseScreen -->
+    <string name="receipt_section_label">Ticket de caisse (optionnel)</string>
+    <string name="take_photo">Prendre une photo</string>
+    <string name="choose_file">Choisir</string>
+    <string name="shares_per_participant_label">Parts par participant</string>
+    <string name="amounts_per_participant_label">Montants par participant</string>
+    <string name="share_suffix">part(s)</string>
 </resources>

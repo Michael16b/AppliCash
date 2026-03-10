@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -43,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -56,7 +58,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -93,26 +94,44 @@ fun AddExpenseScreen(
 
     var title by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
-    var selectedPayer by remember { mutableStateOf(if (participants.isNotEmpty()) participants[0] else "") }
+    var selectedPayer by remember { mutableStateOf("") }
     var payerExpanded by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(System.currentTimeMillis()) }
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedSplitType by remember { mutableStateOf(0) }
-    val selectedParticipants = remember { mutableStateListOf<String>().apply { addAll(participants) } }
-    val participantAmounts = remember { mutableStateMapOf<String, String>().apply { participants.forEach { put(it, "") } } }
-    val participantShares = remember { mutableStateMapOf<String, String>().apply { participants.forEach { put(it, "") } } }
+    val selectedParticipants = remember { mutableStateListOf<String>() }
+    val participantAmounts = remember { mutableStateMapOf<String, String>() }
+    val participantShares = remember { mutableStateMapOf<String, String>() }
+
+    LaunchedEffect(participants) {
+        if (selectedPayer.isEmpty() && participants.isNotEmpty()) {
+            selectedPayer = participants[0]
+        }
+        val currentSelected = selectedParticipants.toSet()
+        val newParticipants = participants.toSet()
+        selectedParticipants.removeAll { it !in newParticipants }
+        participants.forEach { p ->
+            if (p !in currentSelected) {
+                selectedParticipants.add(p)
+                participantAmounts.putIfAbsent(p, "")
+                participantShares.putIfAbsent(p, "")
+            }
+        }
+        participantAmounts.keys.retainAll(newParticipants)
+        participantShares.keys.retainAll(newParticipants)
+    }
 
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE) }
 
     val scrollState = rememberScrollState()
-    val backgroundColor = Color(0xFFF2F2F2)
+    val backgroundColor = MaterialTheme.colorScheme.surfaceVariant
     val fieldShape = RoundedCornerShape(10.dp)
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        unfocusedBorderColor = Color(0xFFDDDDDD),
+        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
         focusedBorderColor = Green500,
         cursorColor = Green500,
-        unfocusedContainerColor = Color.White,
-        focusedContainerColor = Color.White
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedContainerColor = MaterialTheme.colorScheme.surface
     )
 
     Scaffold(
@@ -149,7 +168,7 @@ fun AddExpenseScreen(
                     placeholder = {
                         Text(
                             stringResource(R.string.expense_title_placeholder),
-                            color = Color(0xFFBBBBBB)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -192,7 +211,7 @@ fun AddExpenseScreen(
                                 amount = filtered
                             }
                         },
-                        placeholder = { Text("0.00", color = Color(0xFFBBBBBB)) },
+                        placeholder = { Text("0.00", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.weight(2f),
                         shape = fieldShape,
                         singleLine = true,
@@ -257,16 +276,16 @@ fun AddExpenseScreen(
                         )
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        disabledBorderColor = Color(0xFFDDDDDD),
+                        disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
                         disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledContainerColor = Color.White,
+                        disabledContainerColor = MaterialTheme.colorScheme.surface,
                         disabledTrailingIconColor = Green500
                     )
                 )
 
                 // 4. Ticket de caisse (optionnel)
                 Text(
-                    text = "Ticket de caisse (optionnel)",
+                    text = stringResource(R.string.receipt_section_label),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -279,35 +298,35 @@ fun AddExpenseScreen(
                         onClick = { /* TODO: Implement camera action */ },
                         modifier = Modifier
                             .weight(1f)
-                            .border(1.dp, Color(0xFFDDDDDD), fieldShape),
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, fieldShape),
                         shape = fieldShape,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
+                            containerColor = MaterialTheme.colorScheme.surface,
                             contentColor = MaterialTheme.colorScheme.onSurface
                         ),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                     ) {
                         Icon(
-                            Icons.Outlined.DateRange,
-                            contentDescription = "Camera",
+                            Icons.Outlined.CameraAlt,
+                            contentDescription = stringResource(R.string.take_photo),
                             modifier = Modifier.padding(end = 4.dp),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
-                        Text("Prendre une photo", color = MaterialTheme.colorScheme.onSurface)
+                        Text(stringResource(R.string.take_photo), color = MaterialTheme.colorScheme.onSurface)
                     }
                     Button(
                         onClick = { /* TODO: Implement file picker action */ },
                         modifier = Modifier
                             .weight(1f)
-                            .border(1.dp, Color(0xFFDDDDDD), fieldShape),
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, fieldShape),
                         shape = fieldShape,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
+                            containerColor = MaterialTheme.colorScheme.surface,
                             contentColor = MaterialTheme.colorScheme.onSurface
                         ),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                     ) {
-                        Text("Choisir", color = MaterialTheme.colorScheme.onSurface)
+                        Text(stringResource(R.string.choose_file), color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
 
@@ -325,7 +344,7 @@ fun AddExpenseScreen(
                         value = selectedPayer,
                         onValueChange = {},
                         readOnly = true,
-                        placeholder = { Text(stringResource(R.string.paid_by_label), color = Color(0xFFBBBBBB)) },
+                        placeholder = { Text(stringResource(R.string.paid_by_label), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = payerExpanded) },
                         modifier = Modifier
                             .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
@@ -371,13 +390,13 @@ fun AddExpenseScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .then(
-                                    if (!isSelected) Modifier.border(1.dp, Color(0xFFDDDDDD), fieldShape)
+                                    if (!isSelected) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, fieldShape)
                                     else Modifier
                                 ),
                             shape = fieldShape,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isSelected) Green500 else Color.White,
-                                contentColor = if (isSelected) Color.White else Color.Gray
+                                containerColor = if (isSelected) Green500 else MaterialTheme.colorScheme.surface,
+                                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                         ) {
@@ -398,7 +417,7 @@ fun AddExpenseScreen(
                 )
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(12.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
@@ -410,7 +429,7 @@ fun AddExpenseScreen(
                                     .fillMaxWidth()
                                     .clickable {
                                         if (isChecked) selectedParticipants.remove(participant)
-                                        else selectedParticipants.add(participant)
+                                        else if (participant !in selectedParticipants) selectedParticipants.add(participant)
                                     }
                                     .padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
@@ -418,12 +437,12 @@ fun AddExpenseScreen(
                                 Checkbox(
                                     checked = isChecked,
                                     onCheckedChange = { checked ->
-                                        if (checked) selectedParticipants.add(participant)
-                                        else selectedParticipants.remove(participant)
+                                        if (checked && participant !in selectedParticipants) selectedParticipants.add(participant)
+                                        else if (!checked) selectedParticipants.remove(participant)
                                     },
                                     colors = CheckboxDefaults.colors(
                                         checkedColor = Green500,
-                                        checkmarkColor = Color.White
+                                        checkmarkColor = MaterialTheme.colorScheme.onPrimary
                                     )
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -457,13 +476,13 @@ fun AddExpenseScreen(
                         participantShares[it]?.toDoubleOrNull() ?: 1.0
                     }
                     Text(
-                        text = "Parts par participant",
+                        text = stringResource(R.string.shares_per_participant_label),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
@@ -495,13 +514,13 @@ fun AddExpenseScreen(
                                                 participantShares[participant] = filtered
                                             }
                                         },
-                                        placeholder = { Text("1", color = Color(0xFFBBBBBB)) },
+                                        placeholder = { Text("1", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                                         modifier = Modifier.weight(1f),
                                         shape = fieldShape,
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         colors = fieldColors,
-                                        suffix = { Text("part(s)", color = Color.Gray) }
+                                        suffix = { Text(stringResource(R.string.share_suffix), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                                     )
                                     Text(
                                         text = "= ${String.format("%.2f", computed)}${currencies[selectedCurrencyIndex].split(" ")[0]}",
@@ -519,13 +538,13 @@ fun AddExpenseScreen(
                 // 8b. Montants par participant si "Par montant" est sélectionné
                 if (selectedSplitType == 2) {
                     Text(
-                        text = "Montants par participant",
+                        text = stringResource(R.string.amounts_per_participant_label),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
@@ -566,13 +585,13 @@ fun AddExpenseScreen(
                                                 participantAmounts[participant] = filtered
                                             }
                                         },
-                                        placeholder = { Text("0", color = Color(0xFFBBBBBB)) },
+                                        placeholder = { Text("0", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                                         modifier = Modifier.weight(1f),
                                         shape = fieldShape,
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                         colors = fieldColors,
-                                        suffix = { Text(currencies[selectedCurrencyIndex].split(" ")[0], color = Color.Gray) }
+                                        suffix = { Text(currencies[selectedCurrencyIndex].split(" ")[0], color = MaterialTheme.colorScheme.onSurfaceVariant) }
                                     )
                                 }
                             }
@@ -621,7 +640,7 @@ fun AddExpenseScreen(
                     Text(
                         stringResource(R.string.add_expense_button),
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
 
@@ -676,7 +695,7 @@ fun AddExpenseScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(R.string.cancel), color = Color.Gray)
+                    Text(stringResource(R.string.cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         ) {

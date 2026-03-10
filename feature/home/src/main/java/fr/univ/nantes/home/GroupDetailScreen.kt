@@ -321,9 +321,9 @@ private fun ExpenseItem(
 
             // Split info
             val splitLabel = when (expense.splitType) {
-                2 -> "Par montant"
-                1 -> "Par parts"
-                else -> "Équitablement"
+                2 -> stringResource(fr.univ.nantes.feature.expense.R.string.split_by_amount)
+                1 -> stringResource(fr.univ.nantes.feature.expense.R.string.split_by_share)
+                else -> stringResource(fr.univ.nantes.feature.expense.R.string.split_equally)
             }
 
             Text(
