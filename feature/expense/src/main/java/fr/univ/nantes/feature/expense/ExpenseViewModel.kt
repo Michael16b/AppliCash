@@ -12,6 +12,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import fr.univ.nantes.domain.profil.ProfileUseCase
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
+import org.json.JSONObject
 
 /**
  * Represents an expense in the group.
@@ -29,7 +33,9 @@ data class Expense(
     val id: Long = 0,
     val description: String,
     val amount: Double,
-    val paidBy: String
+    val paidBy: String,
+    val splitType: Int = 0, // 0=Equally, 1=By share, 2=By amount
+    val splitDetails: Map<String, Double> = emptyMap() // participant -> amount/share
 )
 
 data class GroupData(
@@ -79,6 +85,33 @@ class ExpenseViewModel(
          * when comparing monetary amounts.
          */
         private const val BALANCE_THRESHOLD = 0.01
+
+        /**
+         * Helper function to parse JSON splitDetails string to Map<String, Double>
+         */
+        fun parseSplitDetails(jsonString: String): Map<String, Double> {
+            return try {
+                if (jsonString.isEmpty() || jsonString == "{}") return emptyMap()
+                val jsonObject = JSONObject(jsonString)
+                jsonObject.keys().asSequence().associate { key ->
+                    key to jsonObject.getDouble(key)
+                }
+            } catch (e: Exception) {
+                emptyMap()
+            }
+        }
+
+        /**
+         * Helper function to convert Map<String, Double> to JSON string
+         */
+        fun serializeSplitDetails(details: Map<String, Double>): String {
+            if (details.isEmpty()) return "{}"
+            val jsonObject = JSONObject()
+            details.forEach { (key, value) ->
+                jsonObject.put(key, value)
+            }
+            return jsonObject.toString()
+        }
     }
 
     private val _state = MutableStateFlow(ExpenseState())
@@ -98,7 +131,9 @@ class ExpenseViewModel(
                                 id = it.id,
                                 description = it.description,
                                 amount = it.amount,
-                                paidBy = it.paidBy
+                                paidBy = it.paidBy,
+                                splitType = it.splitType,
+                                splitDetails = parseSplitDetails(it.splitDetails)
                             )
                         }
                     )
@@ -155,7 +190,9 @@ class ExpenseViewModel(
                                 id = expense.id,
                                 description = expense.description,
                                 amount = expense.amount,
-                                paidBy = expense.paidBy
+                                paidBy = expense.paidBy,
+                                splitType = expense.splitType,
+                                splitDetails = parseSplitDetails(expense.splitDetails)
                             )
                         },
                         currentGroupId = groupId
@@ -224,13 +261,22 @@ class ExpenseViewModel(
      * @param amount The amount of the expense
      * @param paidBy The name of the participant who paid for the expense
      */
-    fun addExpense(description: String, amount: Double, paidBy: String) {
+    fun addExpense(
+        description: String,
+        amount: Double,
+        paidBy: String,
+        splitType: Int = 0,
+        splitDetails: Map<String, Double> = emptyMap()
+    ) {
         if (description.isNotBlank() && amount > 0 && paidBy.isNotBlank() && _state.value.participants.contains(paidBy)) {
-            val expense = Expense(description = description, amount = amount, paidBy = paidBy)
-            _state.update { it.copy(
-                expenses = it.expenses + expense
-            ) }
-
+            val expense = Expense(
+                description = description,
+                amount = amount,
+                paidBy = paidBy,
+                splitType = splitType,
+                splitDetails = splitDetails
+            )
+            _state.update { it.copy(expenses = it.expenses + expense) }
 
             val groupId = getCurrentGroupId()
             if (groupId != null) {
@@ -239,7 +285,9 @@ class ExpenseViewModel(
                         groupId = groupId,
                         description = description,
                         amount = amount,
-                        paidBy = paidBy
+                        paidBy = paidBy,
+                        splitType = splitType,
+                        splitDetails = serializeSplitDetails(splitDetails)
                     )
                 }
             }

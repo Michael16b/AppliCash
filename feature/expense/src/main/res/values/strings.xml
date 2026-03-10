@@ -32,6 +32,24 @@
     <string name="login_required_add_expense">You need to be logged in to add an expense.</string>
     <string name="login_action">Log in</string>
 
+    <!-- AddExpenseScreen -->
+    <string name="new_expense_title">Add expense</string>
+    <string name="expense_title_label">Expense title</string>
+    <string name="expense_title_placeholder">Ex: Restaurant, Movie …</string>
+    <string name="amount_label">Amount</string>
+    <string name="expense_date_label">Expense date</string>
+    <string name="select_date">Select date</string>
+    <string name="paid_by_label">Paid by</string>
+    <string name="split_type_label">Split type</string>
+    <string name="split_equally">Equally</string>
+    <string name="split_by_share">By share</string>
+    <string name="split_by_amount">By amount</string>
+    <string name="participants_label">Participants</string>
+    <string name="select_all">Select everyone</string>
+    <string name="add_expense_button">Add expense</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+
     <!-- BalanceScreen -->
     <string name="total_format">Total: %s</string>
     <string name="balances">Balances</string>
@@ -42,4 +60,8 @@
 
     <!-- Currency -->
     <string name="currency_code">EUR</string>
+
+    <!-- Additional strings for AddExpenseScreen -->
+    <string name="per_person">%s per person</string>
+    <string name="equally">Equally</string>
 </resources>
