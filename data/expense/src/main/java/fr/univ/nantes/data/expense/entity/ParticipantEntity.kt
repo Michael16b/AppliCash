@@ -15,7 +15,10 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["groupId"])]
+    indices = [
+        Index(value = ["groupId"]),
+        Index(value = ["groupId", "name"], unique = true)
+    ]
 )
 data class ParticipantEntity(
     @PrimaryKey(autoGenerate = true)

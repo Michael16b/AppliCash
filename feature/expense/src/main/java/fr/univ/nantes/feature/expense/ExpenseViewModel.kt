@@ -222,13 +222,15 @@ class ExpenseViewModel(
      * Adds a new participant to the group.
      *
      * The participant will only be added if the name is not blank and not already in the group.
+     * The name is trimmed before validation.
      *
      * @param name The name of the participant to add
      */
     fun addParticipant(name: String) {
-        if (name.isNotBlank() && !_state.value.participants.contains(name)) {
+        val trimmedName = name.trim()
+        if (trimmedName.isNotBlank() && !_state.value.participants.contains(trimmedName)) {
             _state.update { it.copy(
-                participants = it.participants + name
+                participants = it.participants + trimmedName
             ) }
         }
     }
@@ -378,14 +380,22 @@ class ExpenseViewModel(
     /**
      * Saves the current group as a complete group and adds it to the groups list.
      * This clears the current working state for creating a new group.
+     *
+     * Normalizes participant names (trim) and removes duplicates before persisting.
      */
     fun saveGroup() {
         val currentGroup = _state.value
-        if (currentGroup.groupName.isNotBlank() && currentGroup.participants.isNotEmpty()) {
+        // Normalize participant names: trim and remove duplicates
+        val normalizedParticipants = currentGroup.participants
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        if (currentGroup.groupName.isNotBlank() && normalizedParticipants.isNotEmpty()) {
             viewModelScope.launch {
                 val groupId = repository.createGroup(
                     groupName = currentGroup.groupName,
-                    participants = currentGroup.participants
+                    participants = normalizedParticipants
                 )
 
                 currentGroup.expenses.forEach { expense ->
@@ -414,6 +424,60 @@ class ExpenseViewModel(
         viewModelScope.launch {
             repository.deleteExpense(expenseId)
             loadGroup(groupId)
+        }
+    }
+
+    /**
+     * Updates the name of an existing group in the database.
+     */
+    fun updateGroupName(groupId: Long, newName: String) {
+        viewModelScope.launch {
+            repository.updateGroupName(groupId, newName)
+            if (_state.value.currentGroupId == groupId) {
+                _state.update { it.copy(groupName = newName) }
+            }
+        }
+    }
+
+    /**
+     * Adds a participant to an existing group in the database.
+     * The name is trimmed and checked for duplicates before being added.
+     */
+    fun addParticipantToGroup(groupId: Long, participantName: String) {
+        val trimmedName = participantName.trim()
+        if (trimmedName.isNotBlank() && !_state.value.participants.contains(trimmedName)) {
+            viewModelScope.launch {
+                repository.addParticipantToGroup(groupId, trimmedName)
+                loadGroup(groupId)
+            }
+        }
+    }
+
+    /**
+     * Removes a participant from an existing group in the database.
+     */
+    fun removeParticipantFromGroup(groupId: Long, participantName: String) {
+        viewModelScope.launch {
+            repository.removeParticipantFromGroup(groupId, participantName)
+            loadGroup(groupId)
+        }
+    }
+
+    /**
+     * Applies all group edits (name change, added/removed participants) in a single batch,
+     * then refreshes the current group state once to avoid redundant DB reads.
+     */
+    fun updateGroup(
+        groupId: Long,
+        newName: String?,
+        addParticipants: List<String>,
+        removeParticipants: List<String>
+    ) {
+        viewModelScope.launch {
+            repository.updateGroup(groupId, newName, addParticipants, removeParticipants)
+            if (newName != null && _state.value.currentGroupId == groupId) {
+                _state.update { it.copy(groupName = newName) }
+            }
         }
     }
 

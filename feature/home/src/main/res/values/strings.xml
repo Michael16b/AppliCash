@@ -36,4 +36,5 @@
     <string name="all_settled">Everyone is balanced ✓</string>
     <string name="no_members">No members in this group</string>
     <string name="paid_by_format">paid by %1$s</string>
+    <string name="edit_group">Edit Group</string>
 </resources>

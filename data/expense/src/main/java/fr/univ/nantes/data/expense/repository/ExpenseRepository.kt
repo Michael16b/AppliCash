@@ -24,6 +24,14 @@ interface ExpenseRepository {
     )
     suspend fun deleteGroup(groupId: Long)
     suspend fun deleteExpense(expenseId: Long)
+    suspend fun updateGroupName(groupId: Long, groupName: String)
+    suspend fun removeParticipantFromGroup(groupId: Long, participantName: String)
+    suspend fun updateGroup(
+        groupId: Long,
+        newName: String?,
+        addParticipants: List<String>,
+        removeParticipants: List<String>
+    )
 }
 
 class ExpenseRepositoryImpl(
@@ -88,5 +96,30 @@ class ExpenseRepositoryImpl(
     override suspend fun deleteExpense(expenseId: Long) {
         expenseDao.deleteExpense(expenseId)
     }
+
+    override suspend fun updateGroupName(groupId: Long, groupName: String) {
+        groupDao.updateGroupName(groupId, groupName)
+    }
+
+    override suspend fun removeParticipantFromGroup(groupId: Long, participantName: String) {
+        participantDao.deleteParticipantByName(groupId, participantName)
+    }
+
+    override suspend fun updateGroup(
+        groupId: Long,
+        newName: String?,
+        addParticipants: List<String>,
+        removeParticipants: List<String>
+    ) {
+        if (newName != null) {
+            groupDao.updateGroupName(groupId, newName)
+        }
+        participantDao.updateParticipants(
+            groupId = groupId,
+            addParticipants = addParticipants.map { ParticipantEntity(groupId = groupId, name = it) },
+            removeNames = removeParticipants
+        )
+    }
+
 }
 

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -84,6 +85,7 @@ fun GroupDetailScreen(
     onBack: () -> Unit,
     onAddExpense: () -> Unit = {},
     onDeleteExpense: (Long) -> Unit = {},
+    onEditGroup: () -> Unit = {},
     isLoggedIn: Boolean = true,
     onRequireLogin: () -> Unit = {}
 ) {
@@ -105,7 +107,16 @@ fun GroupDetailScreen(
                 title = group.groupName.ifBlank { stringResource(R.string.home_title) },
                 subtitle = "${group.participants.size} ${stringResource(if (group.participants.size != 1) R.string.members else R.string.member)}",
                 showBack = true,
-                onBack = onBack
+                onBack = onBack,
+                actions = {
+                    IconButton(onClick = onEditGroup) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.edit_group),
+                            tint = Color.White
+                        )
+                    }
+                }
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
