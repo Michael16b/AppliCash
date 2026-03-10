@@ -80,12 +80,6 @@ fun ProfileScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val currencies = state.currencies
-
-    val selectedCurrencyLabel = currencies.firstOrNull { it.first == state.currency }
-        ?.let { "${it.first} — ${it.second}" }
-        ?: state.currency
-
     val saveSuccessMessage = stringResource(id = R.string.profile_saved_success)
 
     LaunchedEffect(state.saveSuccess, saveSuccessMessage) {
@@ -101,10 +95,43 @@ fun ProfileScreen(
         }
     }
 
+    ProfileScreenContent(
+        state = state,
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
+        onBack = onBack,
+        onLogout = { viewModel.logout(onLogout) },
+        onFirstNameChange = viewModel::onFirstNameChange,
+        onLastNameChange = viewModel::onLastNameChange,
+        onEmailChange = viewModel::onEmailChange,
+        onCurrencyChange = viewModel::onCurrencyChange,
+        onSave = viewModel::saveProfile
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileScreenContent(
+    state: ProfileUiState,
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onBack: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    onFirstNameChange: (String) -> Unit = {},
+    onLastNameChange: (String) -> Unit = {},
+    onEmailChange: (String) -> Unit = {},
+    onCurrencyChange: (String) -> Unit = {},
+    onSave: () -> Unit = {}
+) {
+    val currencies = state.currencies
+
+    val selectedCurrencyLabel = currencies.firstOrNull { it.first == state.currency }
+        ?.let { "${it.first} — ${it.second}" }
+        ?: state.currency
+
     var currencyMenuExpanded by remember { mutableStateOf(false) }
 
     if (state.shouldRedirectLogin && !state.isLoading) {
-        // Redirection en cours, on évite d'afficher le contenu profil
         return
     }
 
@@ -129,7 +156,6 @@ fun ProfileScreen(
             )
         }
     ) { innerPadding ->
-        // remove loading guard inside Scaffold since handled above
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -139,19 +165,14 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(Green500, Teal600)
-                            )
-                        ),
+                        .background(Brush.linearGradient(listOf(Green500, Teal600))),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -166,7 +187,7 @@ fun ProfileScreen(
             ProfileSectionCard(title = stringResource(id = R.string.profile_personal_information)) {
                 OutlinedTextField(
                     value = state.firstName,
-                    onValueChange = viewModel::onFirstNameChange,
+                    onValueChange = onFirstNameChange,
                     leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
                     label = { Text(stringResource(id = R.string.profile_first_name)) },
                     isError = state.errors.containsKey("firstName"),
@@ -178,7 +199,7 @@ fun ProfileScreen(
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = state.lastName,
-                    onValueChange = viewModel::onLastNameChange,
+                    onValueChange = onLastNameChange,
                     leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
                     label = { Text(stringResource(id = R.string.profile_last_name)) },
                     isError = state.errors.containsKey("lastName"),
@@ -190,7 +211,7 @@ fun ProfileScreen(
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = state.email,
-                    onValueChange = viewModel::onEmailChange,
+                    onValueChange = onEmailChange,
                     leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
                     label = { Text(stringResource(id = R.string.profile_email)) },
                     isError = state.errors.containsKey("email"),
@@ -236,7 +257,6 @@ fun ProfileScreen(
                             currencySearch = ""
                         }
                     ) {
-                        // Champ de recherche fixe en haut du menu
                         OutlinedTextField(
                             value = currencySearch,
                             onValueChange = { currencySearch = it },
@@ -248,7 +268,6 @@ fun ProfileScreen(
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                         HorizontalDivider()
-                        // Liste filtrée avec hauteur max pour rester dans l'écran
                         LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
                             if (filteredCurrencies.isEmpty()) {
                                 item {
@@ -264,7 +283,7 @@ fun ProfileScreen(
                                     DropdownMenuItem(
                                         text = { Text("$code — $name") },
                                         onClick = {
-                                            viewModel.onCurrencyChange(code)
+                                            onCurrencyChange(code)
                                             currencyMenuExpanded = false
                                             currencySearch = ""
                                         }
@@ -285,7 +304,7 @@ fun ProfileScreen(
             InfoBanner(preferredCurrency = state.currency)
 
             Button(
-                onClick = { viewModel.saveProfile() },
+                onClick = onSave,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp),
@@ -302,7 +321,7 @@ fun ProfileScreen(
             }
 
             TextButton(
-                onClick = { viewModel.logout(onLogout) },
+                onClick = onLogout,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 Text(stringResource(id = R.string.profile_logout), color = MaterialTheme.colorScheme.error)
@@ -374,6 +393,17 @@ private fun ErrorText(message: String) {
 @Composable
 private fun ProfileScreenPreview() {
     AppliCashTheme {
-        ProfileScreen(onBack = {}, onLogout = {})
+        ProfileScreenContent(
+            state = ProfileUiState(
+                firstName = "Alice",
+                lastName = "Martin",
+                email = "alice@example.com",
+                currency = "EUR",
+                currencies = listOf("EUR" to "Euro", "USD" to "Dollar"),
+                isLoading = false
+            ),
+            onBack = {},
+            onLogout = {}
+        )
     }
 }

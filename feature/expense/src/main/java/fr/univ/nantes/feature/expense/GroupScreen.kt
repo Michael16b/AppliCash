@@ -55,19 +55,41 @@ fun GroupScreen(
     navigateToHome: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
+    GroupScreenContent(
+        groupName = state.groupName,
+        currentUserName = state.currentUserName,
+        onGroupNameChange = viewModel::setGroupName,
+        onSaveGroup = viewModel::saveGroup,
+        onAddParticipant = viewModel::addParticipant,
+        navigateToHome = navigateToHome
+    )
+}
+
+@Composable
+fun GroupScreenContent(
+    groupName: String = "",
+    currentUserName: String? = null,
+    modifier: Modifier = Modifier,
+    onGroupNameChange: (String) -> Unit = {},
+    onSaveGroup: () -> Unit = {},
+    onAddParticipant: (String) -> Unit = {},
+    navigateToHome: () -> Unit = {}
+) {
     val nextId = remember { mutableStateOf(1) }
     val memberFields = remember { mutableStateListOf(MemberField(id = 0, value = "")) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val groupNameError = stringResource(R.string.error_group_name)
     val membersError = stringResource(R.string.error_members)
     val duplicateMembersError = stringResource(R.string.error_duplicate_members)
-    val currentUserName = state.currentUserName
+
     LaunchedEffect(currentUserName) {
         if (!currentUserName.isNullOrBlank() && memberFields.size == 1 && memberFields[0].value.isBlank()) {
             memberFields[0] = memberFields[0].copy(value = currentUserName)
         }
     }
+
     Scaffold(
+        modifier = modifier,
         topBar = {
             AppTopBar(
                 title = stringResource(R.string.new_group),
@@ -91,14 +113,12 @@ fun GroupScreen(
             )
 
             OutlinedTextField(
-                value = state.groupName,
+                value = groupName,
                 onValueChange = {
-                    viewModel.setGroupName(it)
+                    onGroupNameChange(it)
                     errorMessage = null
                 },
-                label = {
-                    Text(stringResource(R.string.group_name_label))
-                },
+                label = { Text(stringResource(R.string.group_name_label)) },
                 placeholder = {
                     Text(
                         stringResource(R.string.group_name_placeholder),
@@ -228,7 +248,7 @@ fun GroupScreen(
                         val uniqueNames = normalizedMembers.map { it.value }.distinct()
 
                         when {
-                            state.groupName.isBlank() -> errorMessage = groupNameError
+                            groupName.isBlank() -> errorMessage = groupNameError
                             normalizedMembers.size < 2 -> errorMessage = membersError
                             uniqueNames.size < normalizedMembers.size -> {
                                 // Doublons détectés
@@ -236,8 +256,8 @@ fun GroupScreen(
                             }
                             else -> {
                                 errorMessage = null
-                                uniqueNames.forEach { viewModel.addParticipant(it) }
-                                viewModel.saveGroup()
+                                uniqueNames.forEach { onAddParticipant(it) }
+                                onSaveGroup()
                                 navigateToHome()
                             }
                         }

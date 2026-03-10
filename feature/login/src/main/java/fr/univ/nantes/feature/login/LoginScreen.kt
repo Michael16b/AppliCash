@@ -54,6 +54,32 @@ fun LoginScreen(
 ) {
     val viewModel: LoginViewModel = koinViewModel()
     val state by viewModel.uiState.collectAsState()
+    LoginScreenContent(
+        state = state,
+        modifier = modifier,
+        onEmailChange = viewModel::setEmail,
+        onPasswordChange = viewModel::setPassword,
+        onFirstNameChange = viewModel::setFirstName,
+        onLastNameChange = viewModel::setLastName,
+        onCurrencyChange = viewModel::setCurrency,
+        onToggleMode = viewModel::toggleMode,
+        onSubmit = { viewModel.submit(navigateToHome) }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LoginScreenContent(
+    state: LoginUiState,
+    modifier: Modifier = Modifier,
+    onEmailChange: (String) -> Unit = {},
+    onPasswordChange: (String) -> Unit = {},
+    onFirstNameChange: (String) -> Unit = {},
+    onLastNameChange: (String) -> Unit = {},
+    onCurrencyChange: (String) -> Unit = {},
+    onToggleMode: () -> Unit = {},
+    onSubmit: () -> Unit = {}
+) {
     var currencyMenuExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -70,7 +96,7 @@ fun LoginScreen(
         ) {
             OutlinedTextField(
                 value = state.email,
-                onValueChange = viewModel::setEmail,
+                onValueChange = onEmailChange,
                 label = { Text(stringResource(R.string.login_email)) },
                 leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
@@ -78,7 +104,7 @@ fun LoginScreen(
             )
             OutlinedTextField(
                 value = state.password,
-                onValueChange = viewModel::setPassword,
+                onValueChange = onPasswordChange,
                 label = { Text(stringResource(R.string.login_password)) },
                 leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
                 visualTransformation = PasswordVisualTransformation(),
@@ -88,7 +114,7 @@ fun LoginScreen(
             if (state.isRegister) {
                 OutlinedTextField(
                     value = state.firstName,
-                    onValueChange = viewModel::setFirstName,
+                    onValueChange = onFirstNameChange,
                     label = { Text(stringResource(R.string.login_first_name)) },
                     leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
                     modifier = Modifier.fillMaxWidth(),
@@ -96,7 +122,7 @@ fun LoginScreen(
                 )
                 OutlinedTextField(
                     value = state.lastName,
-                    onValueChange = viewModel::setLastName,
+                    onValueChange = onLastNameChange,
                     label = { Text(stringResource(R.string.login_last_name)) },
                     leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
                     modifier = Modifier.fillMaxWidth(),
@@ -127,7 +153,7 @@ fun LoginScreen(
                             DropdownMenuItem(
                                 text = { Text("$code — $name") },
                                 onClick = {
-                                    viewModel.setCurrency(code)
+                                    onCurrencyChange(code)
                                     currencyMenuExpanded = false
                                 }
                             )
@@ -141,7 +167,7 @@ fun LoginScreen(
             }
 
             Button(
-                onClick = { viewModel.submit(navigateToHome) },
+                onClick = onSubmit,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp),
@@ -156,7 +182,7 @@ fun LoginScreen(
                 Text(if (state.isRegister) stringResource(R.string.login_create_account) else stringResource(R.string.login_login), fontWeight = FontWeight.SemiBold)
             }
 
-            TextButton(onClick = viewModel::toggleMode) {
+            TextButton(onClick = onToggleMode) {
                 Text(if (state.isRegister) stringResource(R.string.login_already_have_account) else stringResource(R.string.login_create_account_prompt))
             }
         }
@@ -170,6 +196,6 @@ object Login
 @Composable
 fun LoginScreenPreview() {
     AppliCashTheme {
-        LoginScreen(navigateToHome = {}, modifier = Modifier.fillMaxSize())
+        LoginScreenContent(state = LoginUiState(), modifier = Modifier.fillMaxSize())
     }
 }

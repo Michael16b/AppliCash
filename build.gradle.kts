@@ -5,8 +5,16 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.ktlint) apply false
-
+    alias(libs.plugins.roborazzi) apply false
 }
 
-
+// Configure le répertoire de sortie des snapshots Roborazzi pour tous les sous-projets (CA4/RG3)
+subprojects {
+    tasks.withType<Test>().configureEach {
+        systemProperty(
+            "roborazzi.output.dir",
+            "${rootProject.projectDir}/snapshots/${project.name}"
+        )
+    }
+}
 
