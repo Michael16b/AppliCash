@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import fr.univ.nantes.domain.profil.ProfileUseCase
+import fr.univ.nantes.domain.profil.normalizeCurrencyCode
 
 /**
  * Represents an expense in the group.
@@ -115,7 +116,7 @@ class ExpenseViewModel(
                     it.copy(
                         currentUserName = profile?.firstName,
                         isLoggedIn = profile?.isLoggedIn == true,
-                        userCurrencyCode = profile?.currency?.uppercase() ?: "EUR"
+                        userCurrencyCode = profile?.currency?.normalizeCurrencyCode() ?: "EUR"
                     )
                 }
             }

@@ -2,6 +2,7 @@ package fr.univ.nantes.data.profil
 
 import fr.univ.nantes.domain.profil.Profile
 import fr.univ.nantes.domain.profil.ProfileRepository
+import fr.univ.nantes.domain.profil.normalizeCurrencyCode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -79,7 +80,7 @@ class ProfileRepositoryImpl(
             firstName = firstName,
             lastName = lastName,
             email = email,
-            currency = currency,
+            currency = currency.normalizeCurrencyCode(),
             isLoggedIn = isLoggedIn
         )
 
