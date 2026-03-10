@@ -92,15 +92,9 @@ fun GroupDetailScreen(
     userCurrencyCode: String = EXPENSE_CURRENCY,
     convertAmount: suspend (Double, String) -> Double? = { amount, _ -> amount }
 ) {
-<<<<<<< feats/KAN-49_GestionMultidevise
     val originalFormat = remember(EXPENSE_CURRENCY) {
         NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
             currency = Currency.getInstance(EXPENSE_CURRENCY)
-=======
-    val currencyFormat = remember {
-        NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-            currency = Currency.getInstance("EUR")
->>>>>>> main
         }
     }
     val userFormat = remember(userCurrencyCode) {
@@ -220,7 +214,6 @@ fun GroupDetailScreen(
                     group = group,
                     originalFormat = originalFormat,
                     userFormat = userFormat,
-                    userCurrencyCode = userCurrencyCode,
                     showConversion = showConversion,
                     convertAmount = convertAmount
                 )
@@ -426,15 +419,12 @@ private fun ExpenseItem(
                 ),
                 shape = RoundedCornerShape(6.dp)
             ) {
-                val displayShare = if (showConversion && convertedShare != null) {
-                    "${userFormat.format(convertedShare)} ${stringResource(R.string.per_person_suffix)}" +
-                        " (${originalFormat.format(sharePerPerson)})"
-                } else {
-                    stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson))
-                }
                 Text(
-                    text = if (showConversion && convertedShare != null) displayShare
-                           else stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson)),
+                    text = if (showConversion && convertedShare != null) {
+                        "${userFormat.format(convertedShare)} ${stringResource(R.string.per_person_suffix)} (${originalFormat.format(sharePerPerson)})"
+                    } else {
+                        stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson))
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -445,26 +435,13 @@ private fun ExpenseItem(
 }
 
 @Composable
-<<<<<<< feats/KAN-49_GestionMultidevise
 private fun BalancesTab(
     group: GroupData,
     originalFormat: NumberFormat,
     userFormat: NumberFormat,
-    userCurrencyCode: String,
     showConversion: Boolean,
     convertAmount: suspend (Double, String) -> Double?
 ) {
-    val balances = remember(group) { calculateBalances(group) }
-    val reimbursements = remember(balances) { calculateReimbursements(balances) }
-
-    // Pre-convert all balances and reimbursements amounts
-    val convertedBalances = remember(balances.size, userCurrencyCode) {
-        mutableMapOf<String, Double?>()
-    }
-    val convertedReimbursements = remember(reimbursements.size, userCurrencyCode) {
-        mutableMapOf<Int, Double?>()
-=======
-private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
     val balances = remember(group) { calculateBalances(group) }
     val reimbursements = remember(balances) { calculateReimbursements(balances) }
 
@@ -478,7 +455,6 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
             )
         }
         return
->>>>>>> main
     }
 
     LazyColumn(
@@ -505,88 +481,22 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
             }
         } else {
             items(balances) { balance ->
-<<<<<<< feats/KAN-49_GestionMultidevise
-                var convertedBalance by remember(balance.participant, userCurrencyCode) {
-                    mutableStateOf<Double?>(null)
-                }
-                LaunchedEffect(balance.amount, showConversion) {
-                    convertedBalance = if (showConversion) convertAmount(balance.amount, EXPENSE_CURRENCY) else balance.amount
-                }
-
-                val positive = balance.amount >= 0
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = balance.participant,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Column(horizontalAlignment = Alignment.End) {
-                            val absAmount = if (balance.amount >= 0) balance.amount else -balance.amount
-                            val sign = if (positive) "+" else "-"
-                            val displayAmt = if (showConversion && convertedBalance != null) {
-                                val absConverted = if (convertedBalance!! >= 0) convertedBalance!! else -convertedBalance!!
-                                "$sign${userFormat.format(absConverted)}"
-                            } else {
-                                "$sign${originalFormat.format(absAmount)}"
-                            }
-                            Text(
-                                text = displayAmt,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (positive) Teal400 else MaterialTheme.colorScheme.error
-                            )
-                            if (showConversion && convertedBalance != null) {
-                                val absAmt = if (balance.amount >= 0) balance.amount else -balance.amount
-                                Text(
-                                    text = "$sign${originalFormat.format(absAmt)}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-=======
-                BalanceMemberRow(balance, currencyFormat)
->>>>>>> main
+                BalanceMemberRow(
+                    balance = balance,
+                    originalFormat = originalFormat,
+                    userFormat = userFormat,
+                    showConversion = showConversion,
+                    convertAmount = convertAmount
+                )
             }
 
             item {
                 Text(
                     text = stringResource(R.string.balances_hint),
                     style = MaterialTheme.typography.bodySmall,
-<<<<<<< feats/KAN-49_GestionMultidevise
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                if (showConversion) {
-                    Text(
-                        text = stringResource(R.string.currency_label, userCurrencyCode),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Teal400
-                    )
-                } else {
-                    Text(
-                        text = stringResource(R.string.currency_label, EXPENSE_CURRENCY),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Teal400
-                    )
-                }
-=======
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)
                 )
->>>>>>> main
             }
         }
 
@@ -607,7 +517,13 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
             item { AllSettledBanner() }
         } else {
             items(reimbursements) { item ->
-                ReimbursementRow(item, currencyFormat)
+                ReimbursementRow(
+                    reimbursement = item,
+                    originalFormat = originalFormat,
+                    userFormat = userFormat,
+                    showConversion = showConversion,
+                    convertAmount = convertAmount
+                )
             }
         }
 
@@ -616,9 +532,20 @@ private fun BalancesTab(group: GroupData, currencyFormat: NumberFormat) {
 }
 
 @Composable
-private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
+private fun BalanceMemberRow(
+    balance: Balance,
+    originalFormat: NumberFormat,
+    userFormat: NumberFormat,
+    showConversion: Boolean,
+    convertAmount: suspend (Double, String) -> Double?
+) {
     val isPositive = balance.amount > BALANCE_THRESHOLD
     val isNegative = balance.amount < -BALANCE_THRESHOLD
+
+    var convertedBalance by remember(balance.participant) { mutableStateOf<Double?>(null) }
+    LaunchedEffect(balance.amount, showConversion) {
+        convertedBalance = if (showConversion) convertAmount(balance.amount, EXPENSE_CURRENCY) else balance.amount
+    }
 
     val (bgColor, amountColor, labelText) = when {
         isPositive -> BalanceStyle(
@@ -663,66 +590,6 @@ private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
                     color = amountColor
                 )
             }
-<<<<<<< feats/KAN-49_GestionMultidevise
-        } else {
-            items(reimbursements) { item ->
-                var convertedRmbAmount by remember(item.from + item.to, userCurrencyCode) {
-                    mutableStateOf<Double?>(null)
-                }
-                LaunchedEffect(item.amount, showConversion) {
-                    convertedRmbAmount = if (showConversion) convertAmount(item.amount, EXPENSE_CURRENCY) else item.amount
-                }
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = item.from,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Card(
-                                colors = CardDefaults.cardColors(containerColor = TealBg50),
-                                shape = RoundedCornerShape(20.dp)
-                            ) {
-                                val displayAmt = if (showConversion && convertedRmbAmount != null) {
-                                    userFormat.format(convertedRmbAmount)
-                                } else {
-                                    originalFormat.format(item.amount)
-                                }
-                                Text(
-                                    text = displayAmt,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Teal400,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                )
-                            }
-                            if (showConversion && convertedRmbAmount != null) {
-                                Text(
-                                    text = originalFormat.format(item.amount),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 2.dp)
-                                )
-                            }
-                        }
-                        Text(
-                            text = item.to,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-=======
 
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -745,13 +612,28 @@ private fun BalanceMemberRow(balance: Balance, currencyFormat: NumberFormat) {
                 isNegative -> "-"
                 else -> ""
             }
-            val displayAmount = if (isNegative) -balance.amount else balance.amount
-            Text(
-                text = sign + currencyFormat.format(displayAmount),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = amountColor
-            )
+            val absAmount = if (isNegative) -balance.amount else balance.amount
+            Column(horizontalAlignment = Alignment.End) {
+                val displayAmount = if (showConversion && convertedBalance != null) {
+                    val absConverted = if ((convertedBalance ?: 0.0) < 0) -(convertedBalance!!) else convertedBalance!!
+                    sign + userFormat.format(absConverted)
+                } else {
+                    sign + originalFormat.format(absAmount)
+                }
+                Text(
+                    text = displayAmount,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = amountColor
+                )
+                if (showConversion && convertedBalance != null) {
+                    Text(
+                        text = sign + originalFormat.format(absAmount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = amountColor.copy(alpha = 0.6f)
+                    )
+                }
+            }
         }
     }
 }
@@ -763,7 +645,18 @@ private data class BalanceStyle(
 )
 
 @Composable
-private fun ReimbursementRow(reimbursement: Reimbursement, currencyFormat: NumberFormat) {
+private fun ReimbursementRow(
+    reimbursement: Reimbursement,
+    originalFormat: NumberFormat,
+    userFormat: NumberFormat,
+    showConversion: Boolean,
+    convertAmount: suspend (Double, String) -> Double?
+) {
+    var convertedAmount by remember(reimbursement.from + reimbursement.to) { mutableStateOf<Double?>(null) }
+    LaunchedEffect(reimbursement.amount, showConversion) {
+        convertedAmount = if (showConversion) convertAmount(reimbursement.amount, EXPENSE_CURRENCY) else reimbursement.amount
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -800,13 +693,25 @@ private fun ReimbursementRow(reimbursement: Reimbursement, currencyFormat: Numbe
                         .background(TealBg50, RoundedCornerShape(20.dp))
                         .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
+                    val displayAmt = if (showConversion && convertedAmount != null) {
+                        userFormat.format(convertedAmount)
+                    } else {
+                        originalFormat.format(reimbursement.amount)
+                    }
                     Text(
-                        text = currencyFormat.format(reimbursement.amount),
+                        text = displayAmt,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = Teal400
                     )
->>>>>>> main
+                }
+                if (showConversion && convertedAmount != null) {
+                    Text(
+                        text = originalFormat.format(reimbursement.amount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
                 }
             }
 
@@ -929,7 +834,13 @@ private fun BalancesTabPreview() {
         currency = Currency.getInstance("EUR")
     }
     AppliCashTheme {
-        BalancesTab(group = group, currencyFormat = currencyFormat)
+        BalancesTab(
+            group = group,
+            originalFormat = currencyFormat,
+            userFormat = currencyFormat,
+            showConversion = false,
+            convertAmount = { amount, _ -> amount }
+        )
     }
 }
 
@@ -949,6 +860,12 @@ private fun BalancesTabSettledPreview() {
         currency = Currency.getInstance("EUR")
     }
     AppliCashTheme {
-        BalancesTab(group = group, currencyFormat = currencyFormat)
+        BalancesTab(
+            group = group,
+            originalFormat = currencyFormat,
+            userFormat = currencyFormat,
+            showConversion = false,
+            convertAmount = { amount, _ -> amount }
+        )
     }
 }
