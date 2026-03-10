@@ -61,7 +61,11 @@ data class ExpenseState(
     val isLoggedIn: Boolean = false,
     val userCurrencyCode: String = "EUR",
     /** Age in minutes of the cached exchange rates, null if no cache or same currency. */
-    val cacheAgeMinutes: Long? = null
+    val cacheAgeMinutes: Long? = null,
+    /** List of currency codes available from the local DB cache. */
+    val availableCurrencies: List<String> = emptyList(),
+    /** Converted amount from selected expense currency to user base currency (for live preview). */
+    val convertedAmountInBase: Double? = null
 )
 
 data class Balance(
@@ -224,6 +228,30 @@ class ExpenseViewModel(
                     )
                 }
             }
+        }
+        // Load available currencies from the local DB (triggers network fetch if needed)
+        viewModelScope.launch {
+            val currencies = currencyRepository.getAvailableCurrencies(STORAGE_CURRENCY)
+            if (currencies.isNotEmpty()) {
+                _state.update { it.copy(availableCurrencies = currencies) }
+            }
+        }
+    }
+
+    /**
+     * Converts [amount] from [fromCurrency] to the user's base currency and stores the
+     * result in [ExpenseState.convertedAmountInBase] for live preview in the form.
+     * Clears the preview if [fromCurrency] equals the user base currency.
+     */
+    fun updateLiveConversion(amount: Double, fromCurrency: String) {
+        val baseCurrency = _state.value.userCurrencyCode
+        if (fromCurrency == baseCurrency || amount <= 0.0) {
+            _state.update { it.copy(convertedAmountInBase = null) }
+            return
+        }
+        viewModelScope.launch {
+            val converted = currencyRepository.convert(amount, fromCurrency, baseCurrency)
+            _state.update { it.copy(convertedAmountInBase = converted) }
         }
     }
 

@@ -79,4 +79,11 @@
     <string name="shares_per_participant_label">Shares per participant</string>
     <string name="amounts_per_participant_label">Amounts per participant</string>
     <string name="share_suffix">share(s)</string>
+    <string name="my_currency_label">My currency</string>
+    <string name="me_label">Me</string>
+    <string name="decrease_share">Decrease</string>
+    <string name="increase_share">Increase</string>
+    <string name="split_equally_quick">Split equally (%1$s %.2f/person)</string>
+    <string name="remaining_to_split">Remaining to split</string>
+    <string name="converted_amount">≈ %1$s %.2f</string>
 </resources>

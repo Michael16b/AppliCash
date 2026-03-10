@@ -105,4 +105,16 @@ open class CurrencyRepository(
         val ageMs = System.currentTimeMillis() - lastFetch
         return ageMs / (60 * 1000L)
     }
+
+    /**
+     * Returns the list of available target currency codes cached in the local DB.
+     * Triggers a network fetch first if no cache exists, so the list is populated
+     * on first launch.
+     */
+    override suspend fun getAvailableCurrencies(base: String): List<String> {
+        val normalizedBase = base.uppercase()
+        // Ensure rates are loaded (cache-first)
+        getRate(normalizedBase, normalizedBase) // triggers fetch if stale/missing
+        return dao.getAvailableCurrencies(normalizedBase)
+    }
 }

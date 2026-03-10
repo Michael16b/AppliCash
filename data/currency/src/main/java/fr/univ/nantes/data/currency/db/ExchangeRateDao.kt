@@ -19,5 +19,8 @@ interface ExchangeRateDao {
 
     @Query("SELECT fetched_at FROM exchange_rates WHERE base_currency = :base LIMIT 1")
     suspend fun getLastFetchTime(base: String): Long?
+
+    @Query("SELECT DISTINCT target_currency FROM exchange_rates WHERE base_currency = :base ORDER BY target_currency ASC")
+    suspend fun getAvailableCurrencies(base: String): List<String>
 }
 

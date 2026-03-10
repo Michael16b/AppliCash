@@ -1,33 +1,48 @@
 package fr.univ.nantes.feature.expense
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AttachFile
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CameraAlt
-import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CurrencyExchange
+import androidx.compose.material.icons.outlined.EuroSymbol
+import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Receipt
+import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.Splitscreen
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
@@ -35,11 +50,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -47,7 +65,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,15 +72,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import fr.univ.nantes.core.ui.AppTopBar
+import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.Green500
+import fr.univ.nantes.core.ui.GreenBg50
+import fr.univ.nantes.core.ui.Teal600
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -71,6 +95,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AddExpenseRoute(val groupId: Long)
+
+private val avatarColors = listOf(
+    Color(0xFF6366F1), Color(0xFFF59E0B), Color(0xFFEF4444),
+    Color(0xFF8B5CF6), Color(0xFF06B6D4), Color(0xFFEC4899),
+    Color(0xFF14B8A6), Color(0xFFF97316)
+)
+private val quickAmounts = listOf(5.0, 10.0, 20.0, 50.0, 100.0)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,27 +112,39 @@ fun AddExpenseScreen(
     val state by viewModel.state.collectAsState()
     val participants = state.participants
 
-    val currencies = remember {
-        listOf(
-            "\u20AC EUR", "$ USD", "\u00A3 GBP", "\u00A5 JPY", "CHF", "$ CAD",
-            "$ AUD", "\u00A5 CNY", "\u20B9 INR", "R$ BRL", "\u20BD RUB",
-            "kr SEK", "kr NOK", "kr DKK", "z\u0142 PLN", "K\u010D CZK",
-            "Ft HUF", "\u20BA TRY", "R ZAR", "\u20A9 KRW"
+    val fallbackCurrencies = remember {
+        listOf("EUR", "USD", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY", "INR", "BRL",
+               "RUB", "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "TRY", "ZAR", "KRW")
+    }
+    val availableCurrencies = state.availableCurrencies.ifEmpty { fallbackCurrencies }
+
+    val userCurrency = state.userCurrencyCode
+    var selectedCurrency by remember(userCurrency, availableCurrencies) {
+        mutableStateOf(
+            if (availableCurrencies.contains(userCurrency)) userCurrency
+            else availableCurrencies.firstOrNull() ?: "EUR"
         )
     }
-    var selectedCurrencyIndex by remember { mutableIntStateOf(0) }
     var currencyExpanded by remember { mutableStateOf(false) }
 
     var title by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
-    var selectedPayer by remember { mutableStateOf("") }
+
+    val defaultPayer = remember(state.currentUserName, participants) {
+        val userName = state.currentUserName ?: ""
+        participants.firstOrNull { it.equals(userName, ignoreCase = true) }
+            ?: participants.firstOrNull() ?: ""
+    }
+    var selectedPayer by remember(defaultPayer) { mutableStateOf(defaultPayer) }
     var payerExpanded by remember { mutableStateOf(false) }
+
     var selectedDate by remember { mutableStateOf(System.currentTimeMillis()) }
-    var showDatePicker by remember { mutableStateOf(false) }
+    var datePickerOpen by remember { mutableStateOf(false) }
+    val closeDatePicker = { datePickerOpen = false }
     var selectedSplitType by remember { mutableStateOf(0) }
     val selectedParticipants = remember { mutableStateListOf<String>() }
+    val participantShares = remember { mutableStateMapOf<String, Int>() }
     val participantAmounts = remember { mutableStateMapOf<String, String>() }
-    val participantShares = remember { mutableStateMapOf<String, String>() }
 
     LaunchedEffect(participants) {
         if (selectedPayer.isEmpty() && participants.isNotEmpty()) {
@@ -113,19 +156,23 @@ fun AddExpenseScreen(
         participants.forEach { p ->
             if (p !in currentSelected) {
                 selectedParticipants.add(p)
+                participantShares.putIfAbsent(p, 1)
                 participantAmounts.putIfAbsent(p, "")
-                participantShares.putIfAbsent(p, "")
             }
         }
-        participantAmounts.keys.retainAll(newParticipants)
         participantShares.keys.retainAll(newParticipants)
+        participantAmounts.keys.retainAll(newParticipants)
     }
 
-    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE) }
+    val amountValue = amount.toDoubleOrNull() ?: 0.0
+    LaunchedEffect(amountValue, selectedCurrency) {
+        viewModel.updateLiveConversion(amountValue, selectedCurrency)
+    }
+    val convertedInBase = state.convertedAmountInBase
 
+    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE) }
     val scrollState = rememberScrollState()
-    val backgroundColor = MaterialTheme.colorScheme.surfaceVariant
-    val fieldShape = RoundedCornerShape(10.dp)
+    val fieldShape = RoundedCornerShape(12.dp)
     val fieldColors = OutlinedTextFieldDefaults.colors(
         unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
         focusedBorderColor = Green500,
@@ -133,6 +180,8 @@ fun AddExpenseScreen(
         unfocusedContainerColor = MaterialTheme.colorScheme.surface,
         focusedContainerColor = MaterialTheme.colorScheme.surface
     )
+
+    val isFormValid = title.isNotBlank() && amountValue > 0 && selectedPayer.isNotBlank()
 
     Scaffold(
         topBar = {
@@ -143,391 +192,328 @@ fun AddExpenseScreen(
             )
         }
     ) { innerPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(innerPadding)
+                .verticalScroll(scrollState)
         ) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(backgroundColor)
-                    .verticalScroll(scrollState)
-                    .padding(start = 22.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .fillMaxWidth()
+                    .background(Brush.horizontalGradient(listOf(Color(0xFF10B981), Color(0xFF0D9488))))
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
             ) {
-                // 1. Titre de la depense
-                Text(
-                    text = stringResource(R.string.expense_title_label),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    placeholder = {
-                        Text(
-                            stringResource(R.string.expense_title_placeholder),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = fieldShape,
-                    singleLine = true,
-                    colors = fieldColors
-                )
-
-                // 2. Montant + Devise
-                Text(
-                    text = stringResource(R.string.amount_label),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
+                    Text(
+                        text = if (amountValue > 0) "$selectedCurrency ${"%.2f".format(amountValue)}" else "– –",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 36.sp
+                    )
+                    if (convertedInBase != null && selectedCurrency != userCurrency) {
+                        Spacer(Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.CurrencyExchange,
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = 0.8f),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.converted_amount, userCurrency, convertedInBase),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.85f)
+                            )
+                        }
+                    }
+                    if (title.isNotBlank()) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.75f)
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SectionCard(icon = Icons.Outlined.ShoppingCart, title = stringResource(R.string.expense_title_label)) {
                     OutlinedTextField(
-                        value = amount,
-                        onValueChange = { input ->
-                            var dotSeen = false
-                            var hasDigitBeforeDot = false
-                            val filtered = buildString {
-                                for (c in input) {
-                                    when {
-                                        c.isDigit() -> {
-                                            append(c)
-                                            if (!dotSeen) hasDigitBeforeDot = true
-                                        }
-                                        c == '.' && !dotSeen && hasDigitBeforeDot -> {
-                                            append(c)
-                                            dotSeen = true
+                        value = title,
+                        onValueChange = { title = it },
+                        placeholder = {
+                            Text(
+                                stringResource(R.string.expense_title_placeholder),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = fieldShape,
+                        singleLine = true,
+                        colors = fieldColors
+                    )
+                }
+
+                SectionCard(icon = Icons.Outlined.EuroSymbol, title = stringResource(R.string.amount_label)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = amount,
+                            onValueChange = { input ->
+                                var dotSeen = false
+                                var hasDigitBeforeDot = false
+                                val filtered = buildString {
+                                    for (c in input) {
+                                        when {
+                                            c.isDigit() -> { append(c); if (!dotSeen) hasDigitBeforeDot = true }
+                                            c == '.' && !dotSeen && hasDigitBeforeDot -> { append(c); dotSeen = true }
                                         }
                                     }
                                 }
-                            }
-                            if (filtered.isEmpty() || filtered.any { it.isDigit() }) {
-                                amount = filtered
-                            }
-                        },
-                        placeholder = { Text("0.00", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        modifier = Modifier.weight(2f),
-                        shape = fieldShape,
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        colors = fieldColors
-                    )
-                    ExposedDropdownMenuBox(
-                        expanded = currencyExpanded,
-                        onExpandedChange = { currencyExpanded = !currencyExpanded },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        OutlinedTextField(
-                            value = currencies[selectedCurrencyIndex],
-                            onValueChange = {},
-                            readOnly = true,
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = currencyExpanded) },
-                            modifier = Modifier
-                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                                .fillMaxWidth(),
+                                if (filtered.isEmpty() || filtered.any { it.isDigit() }) amount = filtered
+                            },
+                            placeholder = { Text("0.00", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            modifier = Modifier.weight(2f),
                             shape = fieldShape,
                             singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             colors = fieldColors
                         )
-                        ExposedDropdownMenu(
+                        ExposedDropdownMenuBox(
                             expanded = currencyExpanded,
-                            onDismissRequest = { currencyExpanded = false }
+                            onExpandedChange = { currencyExpanded = !currencyExpanded },
+                            modifier = Modifier.weight(1f)
                         ) {
-                            currencies.forEachIndexed { index, currency ->
-                                DropdownMenuItem(
-                                    text = { Text(currency) },
-                                    onClick = {
-                                        selectedCurrencyIndex = index
-                                        currencyExpanded = false
-                                    }
+                            OutlinedTextField(
+                                value = selectedCurrency,
+                                onValueChange = {},
+                                readOnly = true,
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = currencyExpanded) },
+                                modifier = Modifier
+                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                                    .fillMaxWidth(),
+                                shape = fieldShape,
+                                singleLine = true,
+                                colors = fieldColors
+                            )
+                            ExposedDropdownMenu(
+                                expanded = currencyExpanded,
+                                onDismissRequest = { currencyExpanded = false }
+                            ) {
+                                availableCurrencies.forEach { currency ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Text(currency, fontWeight = FontWeight.SemiBold)
+                                                if (currency == userCurrency) {
+                                                    Surface(
+                                                        color = GreenBg50,
+                                                        shape = RoundedCornerShape(4.dp)
+                                                    ) {
+                                                        Text(
+                                                            stringResource(R.string.my_currency_label),
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = Green500,
+                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        onClick = { selectedCurrency = currency; currencyExpanded = false }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        quickAmounts.forEach { preset ->
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { amount = preset.toInt().toString() },
+                                color = if (amount == preset.toInt().toString()) GreenBg50
+                                        else MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(8.dp),
+                                border = if (amount == preset.toInt().toString())
+                                    androidx.compose.foundation.BorderStroke(1.dp, Green500)
+                                else null
+                            ) {
+                                Text(
+                                    text = preset.toInt().toString(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (amount == preset.toInt().toString()) Green500
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 6.dp)
                                 )
                             }
                         }
                     }
                 }
 
-                // 3. Date de la depense
-                Text(
-                    text = stringResource(R.string.expense_date_label),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                OutlinedTextField(
-                    value = dateFormatter.format(Date(selectedDate)),
-                    onValueChange = {},
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showDatePicker = true },
-                    shape = fieldShape,
-                    singleLine = true,
-                    enabled = false,
-                    trailingIcon = {
-                        Icon(
-                            Icons.Outlined.DateRange,
-                            contentDescription = stringResource(R.string.select_date),
-                            tint = Green500
-                        )
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledContainerColor = MaterialTheme.colorScheme.surface,
-                        disabledTrailingIconColor = Green500
-                    )
-                )
-
-                // 4. Ticket de caisse (optionnel)
-                Text(
-                    text = stringResource(R.string.receipt_section_label),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Button(
-                        onClick = { /* TODO: Implement camera action */ },
-                        modifier = Modifier
-                            .weight(1f)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, fieldShape),
-                        shape = fieldShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-                    ) {
-                        Icon(
-                            Icons.Outlined.CameraAlt,
-                            contentDescription = stringResource(R.string.take_photo),
-                            modifier = Modifier.padding(end = 4.dp),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(stringResource(R.string.take_photo), color = MaterialTheme.colorScheme.onSurface)
-                    }
-                    Button(
-                        onClick = { /* TODO: Implement file picker action */ },
-                        modifier = Modifier
-                            .weight(1f)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, fieldShape),
-                        shape = fieldShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-                    ) {
-                        Text(stringResource(R.string.choose_file), color = MaterialTheme.colorScheme.onSurface)
-                    }
-                }
-
-                // 5. Paye par
-                Text(
-                    text = stringResource(R.string.paid_by_label),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                ExposedDropdownMenuBox(
-                    expanded = payerExpanded,
-                    onExpandedChange = { payerExpanded = !payerExpanded }
-                ) {
-                    OutlinedTextField(
-                        value = selectedPayer,
-                        onValueChange = {},
-                        readOnly = true,
-                        placeholder = { Text(stringResource(R.string.paid_by_label), color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = payerExpanded) },
-                        modifier = Modifier
-                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                            .fillMaxWidth(),
-                        shape = fieldShape,
-                        colors = fieldColors
-                    )
-                    ExposedDropdownMenu(
-                        expanded = payerExpanded,
-                        onDismissRequest = { payerExpanded = false }
-                    ) {
-                        participants.forEach { participant ->
-                            DropdownMenuItem(
-                                text = { Text(participant) },
-                                onClick = {
-                                    selectedPayer = participant
-                                    payerExpanded = false
-                                }
+                    Box(modifier = Modifier.weight(1f)) {
+                        SectionCard(icon = Icons.Outlined.CalendarMonth, title = stringResource(R.string.expense_date_label)) {
+                            OutlinedTextField(
+                                value = dateFormatter.format(Date(selectedDate)),
+                                onValueChange = {},
+                                readOnly = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { datePickerOpen = true },
+                                shape = fieldShape,
+                                singleLine = true,
+                                enabled = false,
+                                trailingIcon = {
+                                    Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = Green500)
+                                },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledContainerColor = MaterialTheme.colorScheme.surface,
+                                    disabledTrailingIconColor = Green500
+                                )
                             )
+                        }
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        SectionCard(icon = Icons.Outlined.Person, title = stringResource(R.string.paid_by_label)) {
+                            ExposedDropdownMenuBox(
+                                expanded = payerExpanded,
+                                onExpandedChange = { payerExpanded = !payerExpanded }
+                            ) {
+                                OutlinedTextField(
+                                    value = selectedPayer,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = payerExpanded) },
+                                    modifier = Modifier
+                                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                                        .fillMaxWidth(),
+                                    shape = fieldShape,
+                                    singleLine = true,
+                                    colors = fieldColors,
+                                    leadingIcon = {
+                                        if (selectedPayer.isNotBlank()) {
+                                            val idx = participants.indexOf(selectedPayer).coerceAtLeast(0)
+                                            ParticipantAvatar(
+                                                name = selectedPayer,
+                                                color = avatarColors[idx % avatarColors.size],
+                                                size = 24
+                                            )
+                                        }
+                                    }
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = payerExpanded,
+                                    onDismissRequest = { payerExpanded = false }
+                                ) {
+                                    participants.forEachIndexed { idx, participant ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    ParticipantAvatar(
+                                                        name = participant,
+                                                        color = avatarColors[idx % avatarColors.size],
+                                                        size = 26
+                                                    )
+                                                    Text(participant)
+                                                    if (participant.equals(state.currentUserName, ignoreCase = true)) {
+                                                        Spacer(Modifier.weight(1f))
+                                                        Surface(
+                                                            color = GreenBg50,
+                                                            shape = RoundedCornerShape(4.dp)
+                                                        ) {
+                                                            Text(
+                                                                stringResource(R.string.me_label),
+                                                                style = MaterialTheme.typography.labelSmall,
+                                                                color = Green500,
+                                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            onClick = { selectedPayer = participant; payerExpanded = false }
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
 
-                // 6. Type de partage
-                Text(
-                    text = stringResource(R.string.split_type_label),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                SectionCard(icon = Icons.Outlined.Splitscreen, title = stringResource(R.string.split_type_label)) {
                     val splitLabels = listOf(
                         stringResource(R.string.split_equally),
                         stringResource(R.string.split_by_share),
                         stringResource(R.string.split_by_amount)
                     )
-                    splitLabels.forEachIndexed { index, label ->
-                        val isSelected = selectedSplitType == index
-                        Button(
-                            onClick = { selectedSplitType = index },
-                            modifier = Modifier
-                                .weight(1f)
-                                .then(
-                                    if (!isSelected) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, fieldShape)
-                                    else Modifier
-                                ),
-                            shape = fieldShape,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isSelected) Green500 else MaterialTheme.colorScheme.surface,
-                                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-                        ) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                            )
-                        }
-                    }
-                }
-
-                // 7. Participants
-                Text(
-                    text = stringResource(R.string.participants_label),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        participants.forEach { participant ->
-                            val isChecked = participant in selectedParticipants
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        if (isChecked) selectedParticipants.remove(participant)
-                                        else if (participant !in selectedParticipants) selectedParticipants.add(participant)
-                                    }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = isChecked,
-                                    onCheckedChange = { checked ->
-                                        if (checked && participant !in selectedParticipants) selectedParticipants.add(participant)
-                                        else if (!checked) selectedParticipants.remove(participant)
-                                    },
-                                    colors = CheckboxDefaults.colors(
-                                        checkedColor = Green500,
-                                        checkmarkColor = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = participant,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
-
-                        TextButton(
-                            onClick = {
-                                selectedParticipants.clear()
-                                selectedParticipants.addAll(participants)
-                            },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Text(
-                                stringResource(R.string.select_all),
-                                color = Green500,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-                }
-
-                // 8a. Parts par participant si "By Share" est sélectionné
-                if (selectedSplitType == 1) {
-                    val amountValue = amount.toDoubleOrNull() ?: 0.0
-                    val totalShares = selectedParticipants.sumOf {
-                        participantShares[it]?.toDoubleOrNull() ?: 1.0
-                    }
-                    Text(
-                        text = stringResource(R.string.shares_per_participant_label),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
+                            .padding(3.dp)
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            selectedParticipants.forEach { participant ->
-                                val shares = participantShares[participant]?.toDoubleOrNull() ?: 1.0
-                                val computed = if (totalShares > 0) shares / totalShares * amountValue else 0.0
-                                Row(
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            splitLabels.forEachIndexed { index, label ->
+                                val isSelected = selectedSplitType == index
+                                Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (isSelected) Brush.horizontalGradient(
+                                                listOf(Color(0xFF10B981), Color(0xFF0D9488))
+                                            )
+                                            else Brush.horizontalGradient(
+                                                listOf(Color.Transparent, Color.Transparent)
+                                            )
+                                        )
+                                        .clickable { selectedSplitType = index }
+                                        .padding(vertical = 8.dp, horizontal = 2.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = participant,
-                                        modifier = Modifier.weight(1f),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    OutlinedTextField(
-                                        value = participantShares[participant] ?: "",
-                                        onValueChange = { newValue ->
-                                            val filtered = buildString {
-                                                for (c in newValue) {
-                                                    if (c.isDigit()) append(c)
-                                                }
-                                            }
-                                            if (filtered.isEmpty() || filtered.any { it.isDigit() }) {
-                                                participantShares[participant] = filtered
-                                            }
-                                        },
-                                        placeholder = { Text("1", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                        modifier = Modifier.weight(1f),
-                                        shape = fieldShape,
-                                        singleLine = true,
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        colors = fieldColors,
-                                        suffix = { Text(stringResource(R.string.share_suffix), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                                    )
-                                    Text(
-                                        text = "= ${String.format("%.2f", computed)}${currencies[selectedCurrencyIndex].split(" ")[0]}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Green500,
-                                        fontWeight = FontWeight.SemiBold,
-                                        modifier = Modifier.weight(1f)
+                                        text = label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) Color.White
+                                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
                                     )
                                 }
                             }
@@ -535,28 +521,206 @@ fun AddExpenseScreen(
                     }
                 }
 
-                // 8b. Montants par participant si "Par montant" est sélectionné
-                if (selectedSplitType == 2) {
-                    Text(
-                        text = stringResource(R.string.amounts_per_participant_label),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                SectionCard(icon = Icons.Outlined.Group, title = stringResource(R.string.participants_label)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        participants.forEachIndexed { idx, participant ->
+                            val isChecked = participant in selectedParticipants
+                            val avatarColor = avatarColors[idx % avatarColors.size]
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isChecked) GreenBg50 else Color.Transparent)
+                                    .clickable {
+                                        if (isChecked) selectedParticipants.remove(participant)
+                                        else if (participant !in selectedParticipants) selectedParticipants.add(participant)
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                ParticipantAvatar(name = participant, color = avatarColor, size = 32)
+                                Text(
+                                    text = participant,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isChecked) FontWeight.SemiBold else FontWeight.Normal,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (isChecked) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .background(Green500, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Check,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                    }
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .border(1.5.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                                    )
+                                }
+                            }
+                            if (idx < participants.lastIndex) {
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                    TextButton(
+                        onClick = { selectedParticipants.clear(); selectedParticipants.addAll(participants) },
+                        modifier = Modifier.align(Alignment.End)
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            selectedParticipants.forEach { participant ->
+                        Text(stringResource(R.string.select_all), color = Green500, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = selectedSplitType == 1,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    val totalShares = selectedParticipants.sumOf { (participantShares[it] ?: 1).toDouble() }
+                    SectionCard(
+                        icon = Icons.Outlined.Splitscreen,
+                        title = stringResource(R.string.shares_per_participant_label)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            selectedParticipants.forEachIndexed { _, participant ->
+                                val share = participantShares[participant] ?: 1
+                                val computed = if (totalShares > 0) share / totalShares * amountValue else 0.0
+                                val avatarColor = avatarColors[
+                                    participants.indexOf(participant).coerceAtLeast(0) % avatarColors.size
+                                ]
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
+                                    modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
+                                    ParticipantAvatar(name = participant, color = avatarColor, size = 30)
+                                    Text(
+                                        text = participant,
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            val current = participantShares[participant] ?: 1
+                                            if (current > 1) participantShares[participant] = current - 1
+                                        },
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.surfaceVariant,
+                                                CircleShape
+                                            )
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Remove,
+                                            contentDescription = stringResource(R.string.decrease_share),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(GreenBg50, RoundedCornerShape(8.dp))
+                                            .border(1.dp, Green500.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = share.toString(),
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Green500
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            participantShares[participant] = (participantShares[participant] ?: 1) + 1
+                                        },
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .background(Green500, CircleShape)
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Add,
+                                            contentDescription = stringResource(R.string.increase_share),
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                    Surface(
+                                        color = GreenBg50,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "$selectedCurrency ${"%.2f".format(computed)}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = Teal600,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = selectedSplitType == 2,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    val totalAssigned = selectedParticipants.sumOf {
+                        participantAmounts[it]?.toDoubleOrNull() ?: 0.0
+                    }
+                    val remaining = amountValue - totalAssigned
+                    val equalShare = if (selectedParticipants.isNotEmpty())
+                        amountValue / selectedParticipants.size else 0.0
+
+                    SectionCard(
+                        icon = Icons.Outlined.Splitscreen,
+                        title = stringResource(R.string.amounts_per_participant_label)
+                    ) {
+                        if (amountValue > 0 && selectedParticipants.isNotEmpty()) {
+                            TextButton(
+                                onClick = {
+                                    selectedParticipants.forEach { p ->
+                                        participantAmounts[p] = "%.2f".format(equalShare)
+                                    }
+                                },
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                Text(
+                                    stringResource(R.string.split_equally_quick, selectedCurrency, equalShare),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Green500
+                                )
+                            }
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            selectedParticipants.forEachIndexed { _, participant ->
+                                val avatarColor = avatarColors[
+                                    participants.indexOf(participant).coerceAtLeast(0) % avatarColors.size
+                                ]
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    ParticipantAvatar(name = participant, color = avatarColor, size = 30)
                                     Text(
                                         text = participant,
                                         modifier = Modifier.weight(1f),
@@ -565,19 +729,15 @@ fun AddExpenseScreen(
                                     OutlinedTextField(
                                         value = participantAmounts[participant] ?: "",
                                         onValueChange = { newValue ->
-                                            var dotSeen = false
-                                            var hasDigitBeforeDot = false
+                                            var dotSeen = false; var hasDigitBeforeDot = false
                                             val filtered = buildString {
-                                                for (c in newValue) {
-                                                    when {
-                                                        c.isDigit() -> {
-                                                            append(c)
-                                                            if (!dotSeen) hasDigitBeforeDot = true
-                                                        }
-                                                        c == '.' && !dotSeen && hasDigitBeforeDot -> {
-                                                            append(c)
-                                                            dotSeen = true
-                                                        }
+                                                for (c in newValue) when {
+                                                    c.isDigit() -> {
+                                                        append(c)
+                                                        if (!dotSeen) hasDigitBeforeDot = true
+                                                    }
+                                                    c == '.' && !dotSeen && hasDigitBeforeDot -> {
+                                                        append(c); dotSeen = true
                                                     }
                                                 }
                                             }
@@ -585,33 +745,123 @@ fun AddExpenseScreen(
                                                 participantAmounts[participant] = filtered
                                             }
                                         },
-                                        placeholder = { Text("0", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                        modifier = Modifier.weight(1f),
+                                        placeholder = {
+                                            Text(
+                                                "%.2f".format(equalShare),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        },
+                                        modifier = Modifier.width(110.dp),
                                         shape = fieldShape,
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                         colors = fieldColors,
-                                        suffix = { Text(currencies[selectedCurrencyIndex].split(" ")[0], color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                                        suffix = {
+                                            Text(
+                                                selectedCurrency,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     )
+                                }
+                            }
+                            if (amountValue > 0) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(top = 4.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.remaining_to_split),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (kotlin.math.abs(remaining) > 0.01)
+                                            MaterialTheme.colorScheme.error else Teal600
+                                    )
+                                    Surface(
+                                        color = if (kotlin.math.abs(remaining) > 0.01)
+                                            MaterialTheme.colorScheme.errorContainer
+                                        else GreenBg50,
+                                        shape = RoundedCornerShape(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "$selectedCurrency ${"%.2f".format(remaining)}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (kotlin.math.abs(remaining) > 0.01)
+                                                MaterialTheme.colorScheme.error else Teal600,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                // 9. Bouton Ajouter
-                Spacer(modifier = Modifier.height(8.dp))
+                SectionCard(icon = Icons.Outlined.Receipt, title = stringResource(R.string.receipt_section_label)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = { /* TODO: camera */ },
+                            modifier = Modifier.weight(1f).height(46.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = GreenBg50,
+                                contentColor = Green500
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(0.dp)
+                        ) {
+                            Icon(Icons.Outlined.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                stringResource(R.string.take_photo),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Button(
+                            onClick = { /* TODO: file picker */ },
+                            modifier = Modifier.weight(1f).height(46.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp, MaterialTheme.colorScheme.outlineVariant
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(0.dp)
+                        ) {
+                            Icon(Icons.Outlined.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                stringResource(R.string.choose_file),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
                 Button(
                     onClick = {
-                        val amountValue = amount.toDoubleOrNull() ?: 0.0
-                        if (title.isNotBlank() && amountValue > 0 && selectedPayer.isNotBlank()) {
+                        if (isFormValid) {
                             val splitDetailsMap: Map<String, Double> = when (selectedSplitType) {
                                 1 -> {
                                     val totalShares = selectedParticipants.sumOf {
-                                        participantShares[it]?.toDoubleOrNull() ?: 1.0
+                                        (participantShares[it] ?: 1).toDouble()
                                     }
                                     selectedParticipants.associate { p ->
-                                        val shares = participantShares[p]?.toDoubleOrNull() ?: 1.0
+                                        val shares = (participantShares[p] ?: 1).toDouble()
                                         p to if (totalShares > 0) shares / totalShares * amountValue else 0.0
                                     }
                                 }
@@ -630,76 +880,571 @@ fun AddExpenseScreen(
                             navigateBack()
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Green500),
-                    enabled = title.isNotBlank() && amount.isNotBlank() && selectedPayer.isNotBlank()
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isFormValid) Green500
+                                         else MaterialTheme.colorScheme.outlineVariant,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = if (isFormValid) 4.dp else 0.dp
+                    ),
+                    enabled = isFormValid
                 ) {
+                    Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text(
                         stringResource(R.string.add_expense_button),
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            // Scrollbar droite
-            val maxScroll = scrollState.maxValue.toFloat()
-            if (maxScroll > 0f) {
-                Canvas(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .fillMaxHeight()
-                        .width(16.dp)
-                ) {
-                    val barWidth = 4.dp.toPx()
-                    val barX = 6.dp.toPx()
-                    val thumbHeight = size.height * size.height / (size.height + maxScroll)
-                    val thumbTop = scrollState.value.toFloat() / maxScroll * (size.height - thumbHeight)
-
-                    // Track
-                    drawRoundRect(
-                        color = Green500.copy(alpha = 0.2f),
-                        topLeft = Offset(barX, 0f),
-                        size = Size(barWidth, size.height),
-                        cornerRadius = CornerRadius(barWidth / 2)
-                    )
-                    // Thumb
-                    drawRoundRect(
-                        color = Green500,
-                        topLeft = Offset(barX, thumbTop),
-                        size = Size(barWidth, thumbHeight),
-                        cornerRadius = CornerRadius(barWidth / 2)
-                    )
-                }
+                Spacer(Modifier.height(20.dp))
             }
         }
     }
 
-    // DatePicker Dialog
-    if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate)
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { selectedDate = it }
-                    showDatePicker = false
-                }) {
-                    Text(stringResource(R.string.confirm), color = Green500)
-                }
+    if (datePickerOpen) {
+        ExpenseDatePickerDialog(
+            initialDateMillis = selectedDate,
+            onConfirm = { millis ->
+                selectedDate = millis
+                closeDatePicker()
             },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(R.string.cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            onDismiss = closeDatePicker
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExpenseDatePickerDialog(
+    initialDateMillis: Long,
+    onConfirm: (Long) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialDateMillis)
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm(datePickerState.selectedDateMillis ?: initialDateMillis)
+            }) { Text(stringResource(R.string.confirm), color = Green500) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    ) { DatePicker(state = datePickerState) }
+}
+
+@Composable
+private fun SectionCard(
+    icon: ImageVector,
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(bottom = 10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(GreenBg50, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = Green500, modifier = Modifier.size(16.dp))
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun ParticipantAvatar(name: String, color: Color, size: Int) {
+    Box(
+        modifier = Modifier
+            .size(size.dp)
+            .background(color.copy(alpha = 0.15f), CircleShape)
+            .border(1.5.dp, color.copy(alpha = 0.4f), CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = name.take(1).uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = color,
+            fontSize = (size * 0.38).sp
+        )
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+private fun previewState(
+    participants: List<String> = listOf("Alice", "Bob", "Charlie"),
+    currentUserName: String = "Alice",
+    userCurrencyCode: String = "EUR",
+    availableCurrencies: List<String> = listOf("EUR", "USD", "GBP", "JPY", "CHF"),
+    convertedAmountInBase: Double? = null
+) = ExpenseState(
+    groupName = "Summer trip",
+    participants = participants,
+    currentUserName = currentUserName,
+    isLoggedIn = true,
+    userCurrencyCode = userCurrencyCode,
+    availableCurrencies = availableCurrencies,
+    convertedAmountInBase = convertedAmountInBase
+)
+
+@Preview(name = "Add Expense – Light", showBackground = true, showSystemUi = true)
+@Composable
+private fun AddExpenseScreenPreview() {
+    AppliCashTheme {
+        AddExpenseScreenContent(state = previewState())
+    }
+}
+
+@Preview(name = "Add Expense – Dark", showBackground = true, showSystemUi = true,
+    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun AddExpenseScreenDarkPreview() {
+    AppliCashTheme(darkTheme = true) {
+        AddExpenseScreenContent(state = previewState())
+    }
+}
+
+@Preview(name = "Add Expense – With conversion", showBackground = true, showSystemUi = true)
+@Composable
+private fun AddExpenseScreenConversionPreview() {
+    AppliCashTheme {
+        AddExpenseScreenContent(
+            state = previewState(
+                userCurrencyCode = "EUR",
+                availableCurrencies = listOf("EUR", "USD", "GBP"),
+                convertedAmountInBase = 42.50
+            ),
+            previewAmount = "45",
+            previewCurrency = "USD"
+        )
+    }
+}
+
+@Preview(name = "Add Expense – Split by share", showBackground = true, showSystemUi = true)
+@Composable
+private fun AddExpenseScreenSharePreview() {
+    AppliCashTheme {
+        AddExpenseScreenContent(
+            state = previewState(),
+            previewAmount = "120",
+            previewSplitType = 1
+        )
+    }
+}
+
+@Preview(name = "Add Expense – Split by amount", showBackground = true, showSystemUi = true)
+@Composable
+private fun AddExpenseScreenAmountSplitPreview() {
+    AppliCashTheme {
+        AddExpenseScreenContent(
+            state = previewState(),
+            previewAmount = "90",
+            previewSplitType = 2
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddExpenseScreenContent(
+    state: ExpenseState,
+    previewAmount: String = "",
+    previewCurrency: String = state.userCurrencyCode,
+    previewSplitType: Int = 0
+) {
+    val participants = state.participants
+    val userCurrency = state.userCurrencyCode
+    val selectedCurrency = previewCurrency
+    val amount = previewAmount
+    val amountValue = amount.toDoubleOrNull() ?: 0.0
+    val convertedInBase = state.convertedAmountInBase
+    val title = if (previewAmount.isNotEmpty()) "Restaurant" else ""
+    val selectedPayer = state.currentUserName ?: participants.firstOrNull() ?: ""
+    val selectedDate = System.currentTimeMillis()
+    val selectedSplitType = previewSplitType
+    val selectedParticipants = participants
+    val participantShares = participants.associateWith { 1 }
+
+    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE) }
+    val fieldShape = RoundedCornerShape(12.dp)
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+        focusedBorderColor = Green500,
+        cursorColor = Green500,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedContainerColor = MaterialTheme.colorScheme.surface
+    )
+    val isFormValid = title.isNotBlank() && amountValue > 0 && selectedPayer.isNotBlank()
+
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = stringResource(R.string.new_expense_title),
+                showBack = true,
+                onBack = {}
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Brush.horizontalGradient(listOf(Color(0xFF10B981), Color(0xFF0D9488))))
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (amountValue > 0) "$selectedCurrency ${"%.2f".format(amountValue)}" else "– –",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 36.sp
+                    )
+                    if (convertedInBase != null && selectedCurrency != userCurrency) {
+                        Spacer(Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.CurrencyExchange,
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = 0.8f),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.converted_amount, userCurrency, convertedInBase),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.85f)
+                            )
+                        }
+                    }
+                    if (title.isNotBlank()) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.75f)
+                        )
+                    }
                 }
             }
-        ) {
-            DatePicker(state = datePickerState)
+
+            Spacer(Modifier.height(12.dp))
+
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SectionCard(icon = Icons.Outlined.ShoppingCart, title = stringResource(R.string.expense_title_label)) {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = {},
+                        placeholder = {
+                            Text(stringResource(R.string.expense_title_placeholder),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = fieldShape,
+                        singleLine = true,
+                        colors = fieldColors
+                    )
+                }
+
+                SectionCard(icon = Icons.Outlined.EuroSymbol, title = stringResource(R.string.amount_label)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = amount,
+                            onValueChange = {},
+                            placeholder = { Text("0.00", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            modifier = Modifier.weight(2f),
+                            shape = fieldShape,
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            colors = fieldColors
+                        )
+                        OutlinedTextField(
+                            value = selectedCurrency,
+                            onValueChange = {},
+                            readOnly = true,
+                            modifier = Modifier.weight(1f),
+                            shape = fieldShape,
+                            singleLine = true,
+                            colors = fieldColors
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        quickAmounts.forEach { preset ->
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable {},
+                                color = if (amount == preset.toInt().toString()) GreenBg50
+                                        else MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(8.dp),
+                                border = if (amount == preset.toInt().toString())
+                                    androidx.compose.foundation.BorderStroke(1.dp, Green500) else null
+                            ) {
+                                Text(
+                                    text = preset.toInt().toString(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (amount == preset.toInt().toString()) Green500
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        SectionCard(icon = Icons.Outlined.CalendarMonth, title = stringResource(R.string.expense_date_label)) {
+                            OutlinedTextField(
+                                value = dateFormatter.format(Date(selectedDate)),
+                                onValueChange = {},
+                                readOnly = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = fieldShape,
+                                singleLine = true,
+                                enabled = false,
+                                trailingIcon = { Icon(Icons.Outlined.CalendarMonth, null, tint = Green500) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledContainerColor = MaterialTheme.colorScheme.surface,
+                                    disabledTrailingIconColor = Green500
+                                )
+                            )
+                        }
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        SectionCard(icon = Icons.Outlined.Person, title = stringResource(R.string.paid_by_label)) {
+                            OutlinedTextField(
+                                value = selectedPayer,
+                                onValueChange = {},
+                                readOnly = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = fieldShape,
+                                singleLine = true,
+                                colors = fieldColors,
+                                leadingIcon = {
+                                    ParticipantAvatar(
+                                        name = selectedPayer,
+                                        color = avatarColors[0],
+                                        size = 24
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+
+                SectionCard(icon = Icons.Outlined.Splitscreen, title = stringResource(R.string.split_type_label)) {
+                    val splitLabels = listOf(
+                        stringResource(R.string.split_equally),
+                        stringResource(R.string.split_by_share),
+                        stringResource(R.string.split_by_amount)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
+                            .padding(3.dp)
+                    ) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            splitLabels.forEachIndexed { index, label ->
+                                val isSelected = selectedSplitType == index
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (isSelected) Brush.horizontalGradient(listOf(Color(0xFF10B981), Color(0xFF0D9488)))
+                                            else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                                        )
+                                        .padding(vertical = 8.dp, horizontal = 2.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                SectionCard(icon = Icons.Outlined.Group, title = stringResource(R.string.participants_label)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        participants.forEachIndexed { idx, participant ->
+                            val isChecked = participant in selectedParticipants
+                            val avatarColor = avatarColors[idx % avatarColors.size]
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isChecked) GreenBg50 else Color.Transparent)
+                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                ParticipantAvatar(name = participant, color = avatarColor, size = 32)
+                                Text(
+                                    text = participant,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isChecked) FontWeight.SemiBold else FontWeight.Normal,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (isChecked) {
+                                    Box(
+                                        modifier = Modifier.size(20.dp).background(Green500, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Outlined.Check, null, tint = Color.White, modifier = Modifier.size(12.dp))
+                                    }
+                                } else {
+                                    Box(modifier = Modifier.size(20.dp).border(1.5.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
+                                }
+                            }
+                            if (idx < participants.lastIndex) {
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                    TextButton(onClick = {}, modifier = Modifier.align(Alignment.End)) {
+                        Text(stringResource(R.string.select_all), color = Green500, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                if (selectedSplitType == 1) {
+                    val totalShares = selectedParticipants.sumOf { (participantShares[it] ?: 1).toDouble() }
+                    SectionCard(icon = Icons.Outlined.Splitscreen, title = stringResource(R.string.shares_per_participant_label)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            selectedParticipants.forEachIndexed { _, participant ->
+                                val share = participantShares[participant] ?: 1
+                                val computed = if (totalShares > 0) share / totalShares * amountValue else 0.0
+                                val avatarColor = avatarColors[participants.indexOf(participant).coerceAtLeast(0) % avatarColors.size]
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    ParticipantAvatar(name = participant, color = avatarColor, size = 30)
+                                    Text(text = participant, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                    Box(modifier = Modifier.size(32.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Outlined.Remove, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                                    }
+                                    Box(modifier = Modifier.size(36.dp).background(GreenBg50, RoundedCornerShape(8.dp)).border(1.dp, Green500.copy(alpha = 0.3f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                        Text(text = share.toString(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Green500)
+                                    }
+                                    Box(modifier = Modifier.size(32.dp).background(Green500, CircleShape), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Outlined.Add, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                    }
+                                    Surface(color = GreenBg50, shape = RoundedCornerShape(8.dp)) {
+                                        Text(text = "$selectedCurrency ${"%.2f".format(computed)}", style = MaterialTheme.typography.labelMedium, color = Teal600, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (selectedSplitType == 2) {
+                    val equalShare = if (selectedParticipants.isNotEmpty()) amountValue / selectedParticipants.size else 0.0
+                    SectionCard(icon = Icons.Outlined.Splitscreen, title = stringResource(R.string.amounts_per_participant_label)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            selectedParticipants.forEachIndexed { _, participant ->
+                                val avatarColor = avatarColors[participants.indexOf(participant).coerceAtLeast(0) % avatarColors.size]
+                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    ParticipantAvatar(name = participant, color = avatarColor, size = 30)
+                                    Text(text = participant, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                    OutlinedTextField(
+                                        value = "%.2f".format(equalShare),
+                                        onValueChange = {},
+                                        modifier = Modifier.width(110.dp),
+                                        shape = fieldShape,
+                                        singleLine = true,
+                                        colors = fieldColors,
+                                        suffix = { Text(selectedCurrency, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
+                Button(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isFormValid) Green500 else MaterialTheme.colorScheme.outlineVariant,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = if (isFormValid) 4.dp else 0.dp),
+                    enabled = isFormValid
+                ) {
+                    Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.add_expense_button), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                }
+
+                Spacer(Modifier.height(20.dp))
+            }
         }
     }
 }
