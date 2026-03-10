@@ -80,3 +80,7 @@ dependencies {
 roborazzi {
     outputDir.set(rootProject.layout.projectDirectory.dir("snapshots/feature-login"))
 }
+// CA4/RG3: reference images versioned in /snapshots/
+roborazzi {
+    outputDir.set(rootProject.layout.projectDirectory.dir("snapshots/feature-login"))
+}
