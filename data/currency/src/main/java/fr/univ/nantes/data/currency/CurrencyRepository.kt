@@ -30,12 +30,14 @@ open class CurrencyRepository(
      * Returns null only if no rate is available (neither from cache nor from network).
      */
     override suspend fun getRate(from: String, to: String): Double? {
-        if (from == to) return 1.0
+        if (from == to) {
+            Log.d(TAG, "getRate($from -> $to): Currencies are same, returning 1.0")
+            return 1.0
+        }
 
         val normalizedFrom = from.uppercase()
         val normalizedTo = to.uppercase()
 
-        // Check the cache
         val lastFetch = dao.getLastFetchTime(normalizedFrom)
         val now = System.currentTimeMillis()
         val isCacheValid = lastFetch != null && (now - lastFetch) < CACHE_TTL_MS
@@ -69,13 +71,17 @@ open class CurrencyRepository(
             }
             dao.insertAll(entities)
             val result = response.rates[normalizedTo]
-            Log.d(TAG, "Returning rate $normalizedFrom -> $normalizedTo = $result")
+            if (result == null) {
+                Log.w(TAG, "Rate for $normalizedTo not found in network response for base $normalizedFrom.")
+            }
+            Log.d(TAG, "Network result for $normalizedFrom -> $normalizedTo = $result")
             result
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             // Network unavailable: fall back to the stale cached rate if any
+            Log.e(TAG, "Network error fetching rates for base $normalizedFrom. Falling back to stale cache.", e)
             val stale = dao.getRate(normalizedFrom, normalizedTo)
-            Log.w(TAG, "Network error, using stale cache: $normalizedFrom -> $normalizedTo = $stale", e)
+            Log.w(TAG, "Using stale cache: $normalizedFrom -> $normalizedTo = $stale")
             stale
         }
     }
@@ -87,9 +93,16 @@ open class CurrencyRepository(
      */
     override suspend fun convert(amount: Double, from: String, to: String): Double? {
         val rate = getRate(from, to) ?: return null
+        Log.d(TAG, "Converting $amount $from to $to with rate $rate. Result: ${amount * rate}")
         return amount * rate
     }
+
+    /**
+     * Returns the age of cached rates for [base] in minutes, or null if no cache exists.
+     */
+    override suspend fun getCacheAgeMinutes(base: String): Long? {
+        val lastFetch = dao.getLastFetchTime(base.uppercase()) ?: return null
+        val ageMs = System.currentTimeMillis() - lastFetch
+        return ageMs / (60 * 1000L)
+    }
 }
-
-
-

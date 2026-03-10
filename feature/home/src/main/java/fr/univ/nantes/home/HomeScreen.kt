@@ -32,6 +32,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -54,8 +56,10 @@ import fr.univ.nantes.core.ui.TealBg50
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.GroupData
 import java.text.NumberFormat
-import java.util.Locale
 import kotlinx.serialization.Serializable
+import fr.univ.nantes.feature.expense.ExpenseEvent
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun HomeScreen(
@@ -67,6 +71,17 @@ fun HomeScreen(
 ) {
     val groups = viewModel?.convertedGroups?.collectAsState()?.value ?: emptyList()
     val userCurrencyCode = viewModel?.state?.collectAsState()?.value?.userCurrencyCode ?: "EUR"
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(viewModel) {
+        viewModel?.events?.collectLatest { event ->
+            when (event) {
+                is ExpenseEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+            }
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -86,6 +101,7 @@ fun HomeScreen(
                 }
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddGroupClick,
@@ -173,21 +189,16 @@ fun GroupCard(
     val cardColor = if (isDarkMode) MaterialTheme.colorScheme.surfaceContainerHigh else Color.White
     var expanded by rememberSaveable { mutableStateOf(false) }
     val currencyFormat = remember(userCurrencyCode) {
-        val currency = java.util.Currency.getInstance(userCurrencyCode)
-        val locale = when (userCurrencyCode) {
-            "EUR" -> Locale.FRANCE
-            "USD" -> Locale.US
-            "GBP" -> Locale.UK
-            "JPY" -> Locale.JAPAN
-            "CNY" -> Locale.CHINA
-            "CAD" -> Locale.CANADA
-            else -> Locale.getAvailableLocales().find { locale ->
-                locale.country.isNotEmpty() &&
-                try { java.util.Currency.getInstance(locale).currencyCode == userCurrencyCode } catch (_: Exception) { false }
-            } ?: Locale.getDefault()
-        }
-        NumberFormat.getCurrencyInstance(locale).apply {
-            this.currency = currency
+        val currency = runCatching { java.util.Currency.getInstance(userCurrencyCode) }.getOrNull()
+        if (currency == null) {
+            NumberFormat.getCurrencyInstance()
+        } else {
+            val nativeLocale = java.util.Locale.getAvailableLocales().firstOrNull { loc ->
+                loc.country.isNotEmpty() && runCatching {
+                    java.util.Currency.getInstance(loc) == currency
+                }.getOrDefault(false)
+            } ?: java.util.Locale.getDefault()
+            NumberFormat.getCurrencyInstance(nativeLocale).apply { this.currency = currency }
         }
     }
 

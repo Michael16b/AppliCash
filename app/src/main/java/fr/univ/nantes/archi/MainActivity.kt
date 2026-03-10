@@ -145,7 +145,8 @@ private fun App() {
             composable<GroupDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<GroupDetail>()
                 val state by expenseViewModel.state.collectAsState()
-                val group = state.groups.find { it.id == route.groupId }
+                val convertedGroups by expenseViewModel.convertedGroups.collectAsState()
+                val group = convertedGroups.find { it.id == route.groupId }
                 if (group != null) {
                     GroupDetailScreen(
                         group = group,
@@ -173,7 +174,7 @@ private fun App() {
                             }
                         },
                         userCurrencyCode = state.userCurrencyCode,
-                        convertAmount = { amount, from -> expenseViewModel.convertAmount(amount, from) }
+                        viewModel = expenseViewModel
                     )
                 }
             }

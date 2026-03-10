@@ -7,10 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,9 +33,9 @@ import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -58,13 +56,33 @@ import fr.univ.nantes.feature.expense.Expense
 import fr.univ.nantes.feature.expense.GroupData
 import fr.univ.nantes.feature.expense.Reimbursement
 import java.text.NumberFormat
-import java.util.Currency
 import java.util.Locale
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import fr.univ.nantes.feature.expense.ExpenseViewModel
+import fr.univ.nantes.feature.expense.ExpenseEvent
+import kotlinx.coroutines.flow.collectLatest
 
 /** Source currency for all expenses entered in the app. */
 private const val EXPENSE_CURRENCY = "EUR"
+
+/**
+ * Returns a NumberFormat that uses the native short symbol for [currencyCode]
+ * (e.g. "$" for USD, "£" for GBP) regardless of the device locale.
+ */
+private fun currencyFormatter(currencyCode: String): NumberFormat {
+    val currency = runCatching { java.util.Currency.getInstance(currencyCode) }.getOrNull()
+        ?: return NumberFormat.getCurrencyInstance()
+    // Try to find a locale whose country uses this currency natively → gives short symbol
+    val nativeLocale = Locale.getAvailableLocales().firstOrNull { loc ->
+        loc.country.isNotEmpty() && runCatching {
+            java.util.Currency.getInstance(loc) == currency
+        }.getOrDefault(false)
+    } ?: Locale.getDefault()
+    return NumberFormat.getCurrencyInstance(nativeLocale).apply {
+        this.currency = currency
+    }
+}
 
 @Serializable
 data class GroupDetail(val groupId: Long)
@@ -78,27 +96,29 @@ fun GroupDetailScreen(
     isLoggedIn: Boolean = true,
     onRequireLogin: () -> Unit = {},
     userCurrencyCode: String = EXPENSE_CURRENCY,
-    convertAmount: suspend (Double, String) -> Double? = { amount, _ -> amount }
+    viewModel: ExpenseViewModel? = null
 ) {
-    val originalFormat = remember(EXPENSE_CURRENCY) {
-        NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-            currency = Currency.getInstance(EXPENSE_CURRENCY)
-        }
-    }
     val userFormat = remember(userCurrencyCode) {
-        runCatching {
-            NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-                currency = Currency.getInstance(userCurrencyCode)
-            }
-        }.getOrDefault(originalFormat)
+        runCatching { currencyFormatter(userCurrencyCode) }.getOrElse { currencyFormatter(EXPENSE_CURRENCY) }
     }
     val showConversion = userCurrencyCode.uppercase() != EXPENSE_CURRENCY
+    val cacheAgeMinutes: Long? = viewModel?.state?.collectAsState()?.value?.cacheAgeMinutes
 
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val loginMessage = stringResource(id = fr.univ.nantes.feature.expense.R.string.login_required_add_expense)
     val loginAction = stringResource(id = fr.univ.nantes.feature.expense.R.string.login_action)
+
+    LaunchedEffect(viewModel) {
+        viewModel?.events?.collectLatest { event -> // Handle nullable viewModel
+            when (event) {
+                is ExpenseEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+            }
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -145,11 +165,10 @@ fun GroupDetailScreen(
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             HeaderSummary(
                 group = group,
-                originalFormat = originalFormat,
                 userFormat = userFormat,
                 userCurrencyCode = userCurrencyCode,
                 showConversion = showConversion,
-                convertAmount = convertAmount
+                cacheAgeMinutes = cacheAgeMinutes
             )
             SecondaryTabRow(
                 selectedTabIndex = selectedTab,
@@ -192,20 +211,15 @@ fun GroupDetailScreen(
             when (selectedTab) {
                 0 -> ExpensesTab(
                     group = group,
-                    originalFormat = originalFormat,
                     userFormat = userFormat,
-                    userCurrencyCode = userCurrencyCode,
-                    showConversion = showConversion,
-                    convertAmount = convertAmount,
                     onDeleteExpense = onDeleteExpense
                 )
                 1 -> BalancesTab(
                     group = group,
-                    originalFormat = originalFormat,
                     userFormat = userFormat,
                     userCurrencyCode = userCurrencyCode,
                     showConversion = showConversion,
-                    convertAmount = convertAmount
+                    cacheAgeMinutes = cacheAgeMinutes
                 )
             }
         }
@@ -215,18 +229,12 @@ fun GroupDetailScreen(
 @Composable
 private fun HeaderSummary(
     group: GroupData,
-    originalFormat: NumberFormat,
     userFormat: NumberFormat,
     userCurrencyCode: String,
     showConversion: Boolean,
-    convertAmount: suspend (Double, String) -> Double?
+    cacheAgeMinutes: Long? = null
 ) {
     val total = group.expenses.sumOf { it.amount }
-    var convertedTotal by remember(total, userCurrencyCode) { mutableStateOf<Double?>(null) }
-
-    LaunchedEffect(total, userCurrencyCode) {
-        convertedTotal = if (showConversion) convertAmount(total, EXPENSE_CURRENCY) else null
-    }
 
     val isDarkMode = isSystemInDarkTheme()
     val cardColor = if (isDarkMode) MaterialTheme.colorScheme.surfaceContainerHigh else TealBg50
@@ -247,33 +255,35 @@ private fun HeaderSummary(
                 style = MaterialTheme.typography.labelMedium,
                 color = cardTextColor.copy(alpha = 0.8f)
             )
-            if (showConversion && convertedTotal != null) {
+            Text(
+                text = userFormat.format(total),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = cardTextColor
+            )
+            if (showConversion) {
                 Text(
-                    text = userFormat.format(convertedTotal),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = cardTextColor
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = stringResource(R.string.original_amount, originalFormat.format(total)),
+                    text = stringResource(R.string.currency_converted_label, EXPENSE_CURRENCY, userCurrencyCode),
                     style = MaterialTheme.typography.labelSmall,
-                    color = cardTextColor.copy(alpha = 0.6f)
+                    color = cardTextColor.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 4.dp)
                 )
+                if (cacheAgeMinutes != null) {
+                    Text(
+                        text = stringResource(R.string.cache_age_info, cacheAgeMinutes),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
             } else {
                 Text(
-                    text = originalFormat.format(total),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = cardTextColor
+                    text = stringResource(R.string.currency_label, userCurrencyCode),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = cardTextColor.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 4.dp)
                 )
             }
-            Text(
-                text = stringResource(R.string.currency_label, if (showConversion) userCurrencyCode else EXPENSE_CURRENCY),
-                style = MaterialTheme.typography.labelSmall,
-                color = cardTextColor.copy(alpha = 0.7f),
-                modifier = Modifier.padding(top = 4.dp)
-            )
         }
     }
 }
@@ -281,20 +291,16 @@ private fun HeaderSummary(
 @Composable
 private fun ExpensesTab(
     group: GroupData,
-    originalFormat: NumberFormat,
     userFormat: NumberFormat,
-    userCurrencyCode: String,
-    showConversion: Boolean,
-    convertAmount: suspend (Double, String) -> Double?,
     onDeleteExpense: (Long) -> Unit
 ) {
     if (group.expenses.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(R.string.no_expenses),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp)
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp)
             )
         }
         return
@@ -308,11 +314,7 @@ private fun ExpensesTab(
             ExpenseItem(
                 expense = expense,
                 group = group,
-                originalFormat = originalFormat,
                 userFormat = userFormat,
-                userCurrencyCode = userCurrencyCode,
-                showConversion = showConversion,
-                convertAmount = convertAmount,
                 onDeleteExpense = onDeleteExpense
             )
         }
@@ -323,30 +325,13 @@ private fun ExpensesTab(
 private fun ExpenseItem(
     expense: Expense,
     group: GroupData,
-    originalFormat: NumberFormat,
     userFormat: NumberFormat,
-    userCurrencyCode: String,
-    showConversion: Boolean,
-    convertAmount: suspend (Double, String) -> Double?,
     onDeleteExpense: (Long) -> Unit
 ) {
     val sharePerPerson = if (group.participants.isNotEmpty()) {
         expense.amount / group.participants.size
     } else {
         0.0
-    }
-
-    var convertedAmount by remember(expense.id, userCurrencyCode) { mutableStateOf<Double?>(null) }
-    var convertedShare by remember(expense.id, userCurrencyCode) { mutableStateOf<Double?>(null) }
-
-    LaunchedEffect(expense.amount, showConversion, userCurrencyCode) {
-        if (showConversion) {
-            convertedAmount = convertAmount(expense.amount, EXPENSE_CURRENCY)
-            convertedShare = convertAmount(sharePerPerson, EXPENSE_CURRENCY)
-        } else {
-            convertedAmount = null
-            convertedShare = null
-        }
     }
 
     Card(
@@ -370,24 +355,12 @@ private fun ExpenseItem(
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(horizontalAlignment = Alignment.End) {
-                        val displayAmount = if (showConversion && convertedAmount != null) {
-                            userFormat.format(convertedAmount)
-                        } else {
-                            originalFormat.format(expense.amount)
-                        }
                         Text(
-                            text = displayAmount,
+                            text = userFormat.format(expense.amount),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        if (showConversion && convertedAmount != null) {
-                            Text(
-                                text = stringResource(R.string.original_amount, originalFormat.format(expense.amount)),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
                     IconButton(onClick = { onDeleteExpense(expense.id) }) {
                         Icon(
@@ -417,18 +390,8 @@ private fun ExpenseItem(
                 ),
                 shape = RoundedCornerShape(6.dp)
             ) {
-                val displayShare = if (showConversion && convertedShare != null) {
-                    "${userFormat.format(convertedShare)} ${stringResource(R.string.per_person_suffix)}" +
-                        " (${originalFormat.format(sharePerPerson)})"
-                } else {
-                    stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson))
-                }
                 Text(
-                    text = if (showConversion && convertedShare != null) {
-                        displayShare
-                    } else {
-                        stringResource(R.string.per_person_amount, originalFormat.format(sharePerPerson))
-                    },
+                    text = stringResource(R.string.per_person_amount, userFormat.format(sharePerPerson)),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -441,11 +404,10 @@ private fun ExpenseItem(
 @Composable
 private fun BalancesTab(
     group: GroupData,
-    originalFormat: NumberFormat,
     userFormat: NumberFormat,
     userCurrencyCode: String,
     showConversion: Boolean,
-    convertAmount: suspend (Double, String) -> Double?
+    cacheAgeMinutes: Long? = null
 ) {
     val balances = remember(group) { calculateBalances(group) }
     val reimbursements = remember(balances) { calculateReimbursements(balances) }
@@ -473,13 +435,6 @@ private fun BalancesTab(
             }
         } else {
             items(balances) { balance ->
-                var convertedBalance by remember(balance.participant, userCurrencyCode) {
-                    mutableStateOf<Double?>(null)
-                }
-                LaunchedEffect(balance.amount, showConversion, userCurrencyCode) {
-                    convertedBalance = if (showConversion) convertAmount(balance.amount, EXPENSE_CURRENCY) else null
-                }
-
                 val positive = balance.amount >= 0
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -501,26 +456,13 @@ private fun BalancesTab(
                         Column(horizontalAlignment = Alignment.End) {
                             val absAmount = if (balance.amount >= 0) balance.amount else -balance.amount
                             val sign = if (positive) "+" else "-"
-                            val displayAmt = if (showConversion && convertedBalance != null) {
-                                val absConverted = if (convertedBalance!! >= 0) convertedBalance!! else -convertedBalance!!
-                                "$sign${userFormat.format(absConverted)}"
-                            } else {
-                                "$sign${originalFormat.format(absAmount)}"
-                            }
+                            val displayAmt = "$sign${userFormat.format(absAmount)}"
                             Text(
                                 text = displayAmt,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = if (positive) Teal400 else MaterialTheme.colorScheme.error
                             )
-                            if (showConversion && convertedBalance != null) {
-                                val absAmt = if (balance.amount >= 0) balance.amount else -balance.amount
-                                Text(
-                                    text = "$sign${originalFormat.format(absAmt)}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                         }
                     }
                 }
@@ -533,13 +475,21 @@ private fun BalancesTab(
                 )
                 if (showConversion) {
                     Text(
-                        text = stringResource(R.string.currency_label, userCurrencyCode),
+                        text = stringResource(R.string.currency_converted_label, EXPENSE_CURRENCY, userCurrencyCode),
                         style = MaterialTheme.typography.labelSmall,
                         color = Teal400
                     )
+                    if (cacheAgeMinutes != null) {
+                        Text(
+                            text = stringResource(R.string.cache_age_info, cacheAgeMinutes),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
                 } else {
                     Text(
-                        text = stringResource(R.string.currency_label, EXPENSE_CURRENCY),
+                        text = stringResource(R.string.currency_label, userCurrencyCode),
                         style = MaterialTheme.typography.labelSmall,
                         color = Teal400
                     )
@@ -565,12 +515,6 @@ private fun BalancesTab(
             }
         } else {
             items(reimbursements) { item ->
-                var convertedRmbAmount by remember(item.from + item.to, userCurrencyCode) {
-                    mutableStateOf<Double?>(null)
-                }
-                LaunchedEffect(item.amount, showConversion, userCurrencyCode) {
-                    convertedRmbAmount = if (showConversion) convertAmount(item.amount, EXPENSE_CURRENCY) else null
-                }
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -593,32 +537,19 @@ private fun BalancesTab(
                                 colors = CardDefaults.cardColors(containerColor = TealBg50),
                                 shape = RoundedCornerShape(20.dp)
                             ) {
-                                val displayAmt = if (showConversion && convertedRmbAmount != null) {
-                                    userFormat.format(convertedRmbAmount)
-                                } else {
-                                    originalFormat.format(item.amount)
-                                }
                                 Text(
-                                    text = displayAmt,
+                                    text = userFormat.format(item.amount),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Teal400,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                 )
                             }
-                            if (showConversion && convertedRmbAmount != null) {
-                                Text(
-                                    text = originalFormat.format(item.amount),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 2.dp)
-                                )
-                            }
                         }
                         Text(
                             text = item.to,
                             style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
@@ -674,6 +605,6 @@ private fun GroupDetailPreview() {
         )
     )
     AppliCashTheme {
-        GroupDetailScreen(group = group, onBack = {}, userCurrencyCode = "USD")
+        GroupDetailScreen(group = group, onBack = {}, userCurrencyCode = "USD", viewModel = null)
     }
 }

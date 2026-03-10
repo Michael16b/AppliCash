@@ -18,6 +18,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import fr.univ.nantes.domain.profil.ProfileUseCase
 import fr.univ.nantes.domain.profil.normalizeCurrencyCode
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Represents an expense in the group.
@@ -53,7 +56,9 @@ data class ExpenseState(
     val currentGroupId: Long? = null,
     val currentUserName: String? = null,
     val isLoggedIn: Boolean = false,
-    val userCurrencyCode: String = "EUR"
+    val userCurrencyCode: String = "EUR",
+    /** Age in minutes of the cached exchange rates, null if no cache or same currency. */
+    val cacheAgeMinutes: Long? = null
 )
 
 data class Balance(
@@ -66,6 +71,10 @@ data class Reimbursement(
     val to: String,
     val amount: Double
 )
+
+sealed class ExpenseEvent {
+    data class ShowSnackbar(val message: String) : ExpenseEvent()
+}
 
 /**
  * ViewModel for managing group expenses and calculating balances.
@@ -99,6 +108,9 @@ class ExpenseViewModel(
     private val _state = MutableStateFlow(ExpenseState())
     val state: StateFlow<ExpenseState> = _state.asStateFlow()
 
+    private val _events = MutableSharedFlow<ExpenseEvent>()
+    val events: SharedFlow<ExpenseEvent> = _events.asSharedFlow()
+
     /**
      * Groups with amounts converted to the user's preferred currency.
      * Uses flatMapLatest so that each time groups or currency changes, a new suspend
@@ -109,15 +121,34 @@ class ExpenseViewModel(
         .flatMapLatest { (groups, targetCurrency) ->
             flow {
                 if (targetCurrency == STORAGE_CURRENCY) {
+                    _state.update { it.copy(cacheAgeMinutes = null) }
                     emit(groups)
                 } else {
+                    var hadConversionError = false
                     val converted = groups.map { group ->
                         group.copy(
                             expenses = group.expenses.map { expense ->
                                 val c = currencyRepository.convert(expense.amount, STORAGE_CURRENCY, targetCurrency)
-                                if (c != null) expense.copy(amount = c) else expense
+                                if (c != null) {
+                                    expense.copy(amount = c)
+                                } else {
+                                    hadConversionError = true
+                                    expense
+                                }
                             }
                         )
+                    }
+                    val ageMinutes = currencyRepository.getCacheAgeMinutes(STORAGE_CURRENCY)
+                    _state.update { it.copy(cacheAgeMinutes = ageMinutes) }
+                    if (hadConversionError) {
+                        viewModelScope.launch {
+                            val msg = if (ageMinutes != null) {
+                                "Données de conversion de il y a $ageMinutes min (hors connexion)"
+                            } else {
+                                "Impossible de convertir les devises. Vérifiez votre connexion Internet."
+                            }
+                            _events.emit(ExpenseEvent.ShowSnackbar(msg))
+                        }
                     }
                     emit(converted)
                 }
@@ -175,9 +206,26 @@ class ExpenseViewModel(
                 if (targetCurrency == STORAGE_CURRENCY) {
                     emit(expenses)
                 } else {
+                    var hadConversionError = false
                     val converted = expenses.map { expense ->
                         val c = currencyRepository.convert(expense.amount, STORAGE_CURRENCY, targetCurrency)
-                        if (c != null) expense.copy(amount = c) else expense
+                        if (c != null) {
+                            expense.copy(amount = c)
+                        } else {
+                            hadConversionError = true
+                            expense
+                        }
+                    }
+                    if (hadConversionError) {
+                        val ageMinutes = currencyRepository.getCacheAgeMinutes(STORAGE_CURRENCY)
+                        viewModelScope.launch {
+                            val msg = if (ageMinutes != null) {
+                                "Données de conversion de il y a $ageMinutes min (hors connexion)"
+                            } else {
+                                "Impossible de convertir les devises. Vérifiez votre connexion Internet."
+                            }
+                            _events.emit(ExpenseEvent.ShowSnackbar(msg))
+                        }
                     }
                     emit(converted)
                 }
@@ -228,12 +276,12 @@ class ExpenseViewModel(
                     it.copy(
                         groupName = groupWithDetails.group.groupName,
                         participants = groupWithDetails.participants.map { participant -> participant.name },
-                        expenses = groupWithDetails.expenses.map { expense ->
+                        expenses = groupWithDetails.expenses.map {
                             Expense(
-                                id = expense.id,
-                                description = expense.description,
-                                amount = expense.amount,
-                                paidBy = expense.paidBy
+                                id = it.id,
+                                description = it.description,
+                                amount = it.amount,
+                                paidBy = it.paidBy
                             )
                         },
                         currentGroupId = groupId
@@ -388,14 +436,6 @@ class ExpenseViewModel(
     fun calculateReimbursements(): List<Reimbursement> =
         calculateReimbursementsFrom(calculateBalances())
 
-    /**
-     * Converts [amount] from [fromCurrency] to the user's preferred currency.
-     * Returns null if the rate is unavailable (no network, no cache).
-     */
-    suspend fun convertAmount(amount: Double, fromCurrency: String): Double? {
-        val targetCurrency = _state.value.userCurrencyCode
-        return currencyRepository.convert(amount, fromCurrency, targetCurrency)
-    }
 
     /**
      * Resets the ViewModel to its initial state.
