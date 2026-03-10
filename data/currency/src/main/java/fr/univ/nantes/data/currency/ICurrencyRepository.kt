@@ -17,5 +17,11 @@ interface ICurrencyRepository {
      * Returns null if the exchange rate is unavailable.
      */
     suspend fun convert(amount: Double, from: String, to: String): Double?
+
+    /**
+     * Returns the age of the cached rates for [base] currency in minutes,
+     * or null if no cache exists.
+     */
+    suspend fun getCacheAgeMinutes(base: String): Long?
 }
 

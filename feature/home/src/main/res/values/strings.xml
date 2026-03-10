@@ -26,6 +26,8 @@
     <string name="add_expense">Add an expense</string>
     <string name="delete_expense">Delete expense</string>
     <string name="currency_label">Currency: %1$s</string>
+    <string name="currency_converted_label">Converted from %1$s → %2$s</string>
+    <string name="cache_age_info">Exchange rates from %1$d min ago (offline)</string>
     <string name="show_expenses_preview">Show expenses preview</string>
     <string name="hide_expenses_preview">Hide expenses preview</string>
     <string name="balances_hint">Positive balances indicate amounts to receive, negative amounts to pay</string>

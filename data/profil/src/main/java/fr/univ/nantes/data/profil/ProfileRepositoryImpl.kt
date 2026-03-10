@@ -52,9 +52,8 @@ class ProfileRepositoryImpl(
     override fun observeCurrencies(): Flow<List<Pair<String, String>>> =
         currencyDao.observeCurrencies()
             .onStart {
-                if (currencyDao.countCurrencies() == 0) {
-                    currencyDao.insertAll(defaultCurrencies)
-                }
+                // Always sync the full list so new currencies are added on app update
+                currencyDao.insertAll(defaultCurrencies)
             }
             .map { list -> list.map { it.code to it.name } }
 
