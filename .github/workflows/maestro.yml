@@ -1,216 +1,99 @@
-name: Maestro E2E Tests
+name: Maestro E2E Tests (Self-Hosted Oracle AMD)
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
-
-# CA16: Each scenario must complete within 5 minutes — the job timeout is 60 minutes total
-# CA15: Tests run on an emulator (API 29) matching physical device constraints
+    push:
+        branches: [ "main" ]
+    pull_request:
+        branches: [ "main" ]
+    workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 
-# Needed for mikepenz/action-junit-report to create check runs
 permissions:
-  contents: read
-  checks: write
+    contents: read
+    checks: write
 
 env:
-  GRADLE_COMMON_ARGS: "--build-cache --no-configuration-cache --parallel --console=plain"
+    GRADLE_COMMON_ARGS: "--build-cache --no-configuration-cache --parallel --console=plain"
 
 jobs:
-  maestro-e2e:
-    name: Maestro E2E - Scenario Tests
-    runs-on: self-hosted
-    timeout-minutes: 60
+    maestro-e2e:
+        name: Maestro E2E - Scenario Tests
+        runs-on: self-hosted
+        timeout-minutes: 60
 
-    steps:
-      # ── Checkout ─────────────────────────────────────────────────────────────
-      - uses: actions/checkout@v4
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
 
-      # ── Java (Temurin 21 — matches gradle-daemon-jvm.properties) ─────────────
-      - name: Set up JDK 21
-        id: setup-java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
+            # ── Java Setup ──────────────────────────────────────────────────────────
+            - name: Set up JDK 21
+              id: setup-java
+              uses: actions/setup-java@v4
+              with:
+                  java-version: '21'
+                  distribution: 'temurin'
 
-      # ── Override GRADLE_OPTS so Gradle uses the Temurin JDK from setup-java ──
-      # gradle-daemon-jvm.properties requests a JetBrains JDK which is not present
-      # on self-hosted runners and cannot be auto-provisioned.
-      # Setting org.gradle.java.home bypasses the toolchain lookup entirely.
-      - name: Set GRADLE_OPTS to use Temurin JDK
-        run: |
-          echo "GRADLE_OPTS=-Dorg.gradle.java.home=${{ steps.setup-java.outputs.path }} -Dorg.gradle.java.installations.auto-download=false" >> $GITHUB_ENV
+            # ── FORCE GRADLE TOOLCHAIN OVERRIDE ──────────────────────────────────────
+            - name: Force Gradle to use Temurin JDK
+              run: |
+                  echo "org.gradle.java.home=${{ steps.setup-java.outputs.path }}" >> gradle.properties
+                  echo "org.gradle.java.installations.auto-download=false" >> gradle.properties
+                  echo "org.gradle.java.installations.auto-detect=false" >> gradle.properties
+                  cat gradle.properties
 
-      # ── Gradle cache (same settings as android.yml to maximise cache hits) ───
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
-          cache-cleanup: on-success
-          gradle-home-cache-strict-match: false
-          gradle-home-cache-includes: |
-            caches
-            notifications
-            init.d
-          gradle-home-cache-excludes: |
-            caches/modules-*/files-*/com.google.android.gms
-            caches/modules-*/files-*/com.android.tools*
-            caches/transforms-*/!*.jar
+            # ── Gradle Setup & Cache ────────────────────────────────────────────────
+            - name: Setup Gradle
+              uses: gradle/actions/setup-gradle@v4
+              with:
+                  cache-read-only: false
+                  cache-cleanup: on-success
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+            - name: Grant execute permission for gradlew
+              run: chmod +x gradlew
 
-      # ── Cache: debug APK (skip rebuild if sources unchanged) ─────────────────
-      - name: Cache debug APK
-        id: apk-cache
-        uses: actions/cache@v4
-        with:
-          path: app/build/outputs/apk/debug/app-debug.apk
-          key: apk-debug-${{ runner.os }}-${{ hashFiles('**/*.kt', '**/*.kts', '**/res/**') }}
-          restore-keys: |
-            apk-debug-${{ runner.os }}-
+            # ── Build APK ───────────────────────────────────────────────────
+            - name: Build Debug APK
+              run: ./gradlew assembleDebug ${{ env.GRADLE_COMMON_ARGS }}
 
-      # ── Build debug APK (skipped if cache hit) ────────────────────────────────
-      - name: Build Debug APK
-        if: steps.apk-cache.outputs.cache-hit != 'true'
-        run: ./gradlew assembleDebug ${{ env.GRADLE_COMMON_ARGS }}
+            # ── Maestro Setup ───────────────────────────────────────────────────────
+            - name: Install Maestro CLI
+              run: |
+                  curl -Ls "https://get.maestro.mobile.dev" | bash
+                  echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
-      # ── Cache: Maestro CLI binary ─────────────────────────────────────────────
-      - name: Cache Maestro CLI
-        id: maestro-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.maestro
-          key: maestro-cli-${{ runner.os }}-1.40.0
+            # ── KVM & Dependencies ──────────────────────────────────────────────────
+            - name: Enable KVM
+              run: |
+                  sudo usermod -aG kvm $USER
+                  echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+                    | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+                  sudo udevadm control --reload-rules
+                  sudo udevadm trigger --name-match=kvm
+                  sudo apt-get update -qq
+                  sudo apt-get install -y --no-install-recommends libpulse0 libasound2-plugins libgl1 libx11-6
 
-      # ── Install Maestro CLI (skipped if cache hit) ────────────────────────────
-      - name: Install Maestro CLI
-        if: steps.maestro-cache.outputs.cache-hit != 'true'
-        run: curl -Ls "https://get.maestro.mobile.dev" | bash
-
-      - name: Add Maestro to PATH
-        run: echo "$HOME/.maestro/bin" >> $GITHUB_PATH
-
-      # ── Enable KVM for hardware acceleration ──────────────────────────────────
-      - name: Enable KVM group permissions
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
-            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
-      # ── Install emulator system dependencies ──────────────────────────────────
-      # libpulse0 is required by the Android emulator even with -no-audio flag.
-      # Without it the emulator process crashes immediately with:
-      #   error while loading shared libraries: libpulse.so.0: cannot open shared object file
-      - name: Install emulator dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            libpulse0 \
-            libasound2-plugins \
-            libgl1 \
-            libx11-6
-
-      # ── Start Android Emulator and run Maestro scenarios ──────────────────────
-      # CA15: API 29 is compatible with both emulator and physical devices
-      # CA16: Each scenario is wrapped with `timeout 5m` to enforce the 5-minute limit
-      - name: Start Android Emulator and run E2E tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 29
-          arch: x86_64
-          target: google_apis
-          profile: pixel_3a
-          avd-name: maestro_test_device
-          ram-size: 4096M
-          heap-size: 512M
-          disk-size: 6000M
-          # boot-timeout: abort emulator startup after 60 seconds (CA16 requirement)
-          emulator-boot-timeout: 60
-          emulator-options: >-
-            -no-snapshot
-            -no-audio
-            -no-boot-anim
-            -gpu swiftshader_indirect
-            -no-window
-            -noaudio
-          disable-animations: true
-          script: |
-            # Install APK
-            adb install -r app/build/outputs/apk/debug/app-debug.apk
-
-            # CA17: Disable animations for deterministic test execution
-            adb shell settings put global window_animation_scale 0
-            adb shell settings put global transition_animation_scale 0
-            adb shell settings put global animator_duration_scale 0
-
-            # Grant internet permission
-            adb shell pm grant fr.univ.nantes.archi android.permission.INTERNET || true
-
-            # CA14: Run all 4 Maestro scenarios
-            # CA16: Each scenario is limited to 5 minutes via `timeout`
-            mkdir -p .maestro/results .maestro/screenshots
-
-            echo "=== Scenario 1: Create group and add members ==="
-            timeout 300 maestro test .maestro/01_create_group.yaml \
-              --format junit \
-              --output .maestro/results/01_results.xml \
-              --no-ansi || true
-
-            echo "=== Scenario 2: Add expense and check balances ==="
-            timeout 300 maestro test .maestro/02_add_expense_check_balances.yaml \
-              --format junit \
-              --output .maestro/results/02_results.xml \
-              --no-ansi || true
-
-            echo "=== Scenario 3: View reimbursements ==="
-            timeout 300 maestro test .maestro/03_view_reimbursements.yaml \
-              --format junit \
-              --output .maestro/results/03_results.xml \
-              --no-ansi || true
-
-            echo "=== Scenario 4: Edit and delete expense ==="
-            timeout 300 maestro test .maestro/04_edit_delete_expense.yaml \
-              --format junit \
-              --output .maestro/results/04_results.xml \
-              --no-ansi || true
-
-      # ── Upload test results ───────────────────────────────────────────────────
-      - name: Upload Maestro results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: maestro-test-results
-          path: |
-            .maestro/results/
-            .maestro/screenshots/
-          retention-days: 7
-          if-no-files-found: warn
-
-      # ── Upload screenshots ────────────────────────────────────────────────────
-      - name: Upload screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: maestro-screenshots
-          path: .maestro/screenshots/
-          retention-days: 7
-          if-no-files-found: warn
-
-      # ── Publish JUnit results ─────────────────────────────────────────────────
-      - name: Publish Test Results
-        if: always()
-        uses: mikepenz/action-junit-report@v4
-        with:
-          report_paths: ".maestro/results/*.xml"
-          check_name: "Maestro E2E Results"
-          fail_on_failure: true
-          require_tests: false
+            # ── Start Android Emulator & Run E2E Tests ──────────────────────────────
+            - name: Start Android Emulator and run Maestro
+              uses: reactivecircus/android-emulator-runner@v2
+              with:
+                  api-level: 29
+                  # Since you are on AMD, we use x86_64
+                  arch: x86_64
+                  target: google_apis
+                  profile: pixel_3a
+                  avd-name: maestro_test_device
+                  # WARNING: 1GB RAM instances will likely fail here
+                  ram-size: 2048M
+                  heap-size: 256M
+                  emulator-boot-timeout: 120
+                  emulator-options: >-
+                      -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader_indirect
+                  disable-animations: true
+                  script: |
+                      adb install -r app/build/outputs/apk/debug/app-debug.apk
+                      mkdir -p .maestro/results
+                      for scenario in .maestro/*.yaml; do
+                        timeout 300 maestro test "$scenario" --
