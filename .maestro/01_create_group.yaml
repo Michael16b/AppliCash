@@ -8,7 +8,7 @@ tags:
   - ca15
   - ca16
 
-# ── Business rules verified ──────────────────────────────────────────────────
+# Business rules verified:
 # RG1:  A group must have at least 2 members
 # RG2:  A member name cannot be empty
 # RG3:  Member names must be unique within a group
@@ -17,7 +17,7 @@ tags:
 
 ---
 
-# ── Setup: launch the app fresh ──────────────────────────────────────────────
+# Setup: launch the app fresh
 - launchApp:
     clearState: true
 
@@ -25,7 +25,7 @@ tags:
 - waitForAnimationToEnd:
     timeout: 5000
 
-# ── Register a new user so the app is authenticated ──────────────────────────
+# Register a new user so the app is authenticated
 # The splash screen redirects to Home; from Home tap the profile icon to reach Login
 - tapOn:
     text: "Profile"
@@ -66,7 +66,7 @@ tags:
 - waitForAnimationToEnd:
     timeout: 5000
 
-# ── Navigate to "Create Group" screen ────────────────────────────────────────
+# Navigate to "Create Group" screen
 - tapOn:
     id: ".*fab.*|.*add.*|.*plus.*"
     optional: true
@@ -78,6 +78,97 @@ tags:
 
 - waitForAnimationToEnd:
     timeout: 3000
+
+# Verify we are on the "New Group" screen
+- assertVisible:
+    text: "New Group"
+
+# RG11: Validate - empty group name shows error
+- tapOn:
+    text: "Continue"
+    optional: true
+
+- tapOn:
+    text: "Create Group"
+    optional: true
+
+- assertVisible:
+    text: "Group name cannot be empty"
+
+# Enter a valid group name
+- tapOn:
+    text: "Group Name"
+- clearText
+- inputText: "Weekend Trip"
+
+# RG2: Validate - blank member name is ignored
+# The first field is pre-filled with logged-in user's name (Alice).
+# We verify it is already filled by the ViewModel.
+- assertVisible:
+    text: "Alice"
+
+# RG1: Validate - only 1 member shows error
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Create Group"
+    optional: true
+
+- assertVisible:
+    text: "At least 2 members are required"
+
+# Add second member
+- tapOn:
+    text: "Add member"
+
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Type in the second member field
+- tapOn:
+    text: "Enter member name"
+- inputText: "Bob"
+
+# RG3: Validate - duplicate member name shows error
+- tapOn:
+    text: "Add member"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    text: "Enter member name"
+- inputText: "Alice"
+
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Create Group"
+    optional: true
+
+- assertVisible:
+    text: "Duplicate member names detected"
+
+# Fix the duplicate: replace "Alice" duplicate with "Charlie"
+- clearText
+- inputText: "Charlie"
+
+# Submit the group
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Create Group"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# CA14: Verify group appears on the Home screen
+- assertVisible:
+    text: "Weekend Trip"
+
+- takeScreenshot: "scenario1_group_created"
 
 # Verify we are on the "New Group" screen
 - assertVisible:
@@ -169,4 +260,3 @@ tags:
     text: "Weekend Trip"
 
 - takeScreenshot: "scenario1_group_created"
-

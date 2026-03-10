@@ -7,28 +7,28 @@ tags:
   - ca15
   - ca16
 
-# ── Business rules verified ──────────────────────────────────────────────────
+# Business rules verified:
 # RG6:  Reimbursement algorithm minimises the number of transactions
 # RG7:  Positive balance = credit (to receive), negative = debt (to pay)
 # RG10: Balances calculated from all group expenses
 
 ---
 
-# ── Setup: continue from previous state ──────────────────────────────────────
+# Setup: continue from previous state
 - launchApp:
     clearState: false
 
 - waitForAnimationToEnd:
     timeout: 5000
 
-# ── Navigate into the "Weekend Trip" group ─────────────────────────────────────
+# Navigate into the "Weekend Trip" group
 - tapOn:
     text: "Weekend Trip"
 
 - waitForAnimationToEnd:
     timeout: 3000
 
-# ── Navigate to the Balances tab ──────────────────────────────────────────────
+# Navigate to the Balances tab
 - tapOn:
     text: "Balances"
 
@@ -40,7 +40,7 @@ tags:
 
 - takeScreenshot: "scenario3_balances_tab"
 
-# ── RG7: Verify balance labels (positive = receive, negative = pay) ───────────
+# RG7: Verify balance labels (positive = receive, negative = pay)
 - assertVisible:
     text: "should receive"
     optional: true
@@ -51,30 +51,29 @@ tags:
 
 # CA17: Handle case where all balances are zero
 - assertVisible:
-    text: "Everyone is balanced ✓"
+    text: "Everyone is balanced"
     optional: true
 
-# ── RG6: Verify "Suggested reimbursements" section ───────────────────────────
+# RG6: Verify "Suggested reimbursements" section
 - assertVisible:
     text: "Suggested reimbursements"
 
 - takeScreenshot: "scenario3_suggested_reimbursements"
 
-# ── RG6: Verify at most n-1 transactions for n participants ───────────────────
+# RG6: Verify at most n-1 transactions for n participants
 # With 3 participants (Alice, Bob, Charlie) there should be at most 2 reimbursements
-# We verify the "owes to" text appears (individual reimbursement row)
 - assertVisible:
     text: "owes to"
     optional: true
 
-# ── Verify "No reimbursements needed" when all settled ────────────────────────
+# Verify "No reimbursements needed" when all settled
 - assertVisible:
     text: "No reimbursements needed"
     optional: true
 
 - takeScreenshot: "scenario3_reimbursements_detail"
 
-# ── Navigate back to confirm back-stack works ─────────────────────────────────
+# Navigate back to confirm back-stack works
 - back
 
 - waitForAnimationToEnd:
@@ -82,4 +81,3 @@ tags:
 
 - assertVisible:
     text: "AppliCash"
-
