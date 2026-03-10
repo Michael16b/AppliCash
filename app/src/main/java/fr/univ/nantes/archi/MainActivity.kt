@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -164,7 +165,6 @@ private fun App() {
                             scope.launch {
                                 val loggedIn = runCatching { profileUseCase.isLoggedIn() }.getOrDefault(false)
                                 if (loggedIn) {
-                                    expenseViewModel.loadGroup(group.id)
                                     navController.navigate(AddExpenseRoute(groupId = group.id))
                                 } else {
                                     navController.navigate(Login) {
@@ -188,10 +188,16 @@ private fun App() {
                     )
                 }
             }
-            composable<AddExpenseRoute> {
+            composable<AddExpenseRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<AddExpenseRoute>()
+                LaunchedEffect(route.groupId) {
+                    expenseViewModel.loadGroup(route.groupId)
+                }
                 AddExpenseScreen(
                     viewModel = expenseViewModel,
                     navigateBack = { navController.popBackStack() }
+                )
+            }
             composable<EditGroup> { backStackEntry ->
                 val route = backStackEntry.toRoute<EditGroup>()
                 EditGroupScreen(
