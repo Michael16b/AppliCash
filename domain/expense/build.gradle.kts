@@ -4,8 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation(platform(libs.koin.bom))
-    implementation(libs.koin.core.coroutines)
+    // Pure Kotlin — no Android dependencies allowed in the domain layer.
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockito.core)
