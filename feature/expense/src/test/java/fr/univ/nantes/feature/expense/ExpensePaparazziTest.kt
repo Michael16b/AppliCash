@@ -1,15 +1,16 @@
 package fr.univ.nantes.feature.expense
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
-import androidx.test.ext.junit4.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import fr.univ.nantes.core.ui.AppliCashTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.text.NumberFormat
@@ -17,24 +18,28 @@ import java.util.Currency
 import java.util.Locale
 
 /**
- * Tests snapshot pour les écrans expense.
- * RG1 : thème clair. RG2 : composants testés en isolation. CA1+CA2 : tous les états.
+ * Snapshot tests for the expense module screens.
+ *
+ * RG1: light theme.
+ * RG2: reusable components tested in isolation (BalanceContent, MemberBalanceCard).
+ * CA1: covers balance screen and group creation screen.
+ * CA2: with debts, all settled, creditor card, debtor card, empty form, pre-filled form.
  */
-@RunWith(AndroidJUnit4::class)
+@RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w411dp-h891dp-xhdpi")
 class ExpensePaparazziTest {
 
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-    // CA1 + CA2 : écran balance avec dettes
+    /** CA1 + CA2: balance screen with debts */
     @Test
-    fun balanceContent_avecDettes() {
+    fun balanceContent_withDebts() {
         composeRule.setContent {
             AppliCashTheme(dynamicColor = false) {
                 BalanceContent(
-                    groupName = "Vacances à Nantes",
+                    groupName = "Vacation",
                     balances = listOf(
                         Balance("Alice", 25.50),
                         Balance("Bob", -10.00),
@@ -51,13 +56,13 @@ class ExpensePaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
-    // CA2 : balance — tout réglé
+    /** CA2: balance screen -- all settled */
     @Test
-    fun balanceContent_toutRegle() {
+    fun balanceContent_allSettled() {
         composeRule.setContent {
             AppliCashTheme(dynamicColor = false) {
                 BalanceContent(
-                    groupName = "Dîner Pizza",
+                    groupName = "Pizza Dinner",
                     balances = listOf(Balance("Alice", 0.0), Balance("Bob", 0.0)),
                     reimbursements = emptyList(),
                     userCurrencyCode = "EUR"
@@ -67,10 +72,10 @@ class ExpensePaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
-    // RG2 : composant MemberBalanceCard — créancier
+    /** RG2: MemberBalanceCard component -- creditor */
     @Test
-    fun memberBalanceCard_creancier() {
-        val formatter = NumberFormat.getCurrencyInstance(Locale.FRANCE).apply {
+    fun memberBalanceCard_creditor() {
+        val formatter = NumberFormat.getCurrencyInstance(Locale.US).apply {
             currency = Currency.getInstance("EUR")
         }
         composeRule.setContent {
@@ -81,10 +86,10 @@ class ExpensePaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
-    // RG2 : composant MemberBalanceCard — débiteur
+    /** RG2: MemberBalanceCard component -- debtor */
     @Test
-    fun memberBalanceCard_debiteur() {
-        val formatter = NumberFormat.getCurrencyInstance(Locale.FRANCE).apply {
+    fun memberBalanceCard_debtor() {
+        val formatter = NumberFormat.getCurrencyInstance(Locale.US).apply {
             currency = Currency.getInstance("EUR")
         }
         composeRule.setContent {
@@ -95,9 +100,9 @@ class ExpensePaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
-    // CA1 + CA2 : formulaire création de groupe — vide
+    /** CA1 + CA2: group creation form -- empty */
     @Test
-    fun groupScreenContent_formulaireVide() {
+    fun groupScreenContent_emptyForm() {
         composeRule.setContent {
             AppliCashTheme(dynamicColor = false) {
                 GroupScreenContent(groupName = "", modifier = Modifier.fillMaxSize())
@@ -106,13 +111,13 @@ class ExpensePaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
-    // CA2 : formulaire création de groupe — avec nom pré-rempli
+    /** CA2: group creation form -- pre-filled */
     @Test
-    fun groupScreenContent_avecNomPreRempli() {
+    fun groupScreenContent_preFilledForm() {
         composeRule.setContent {
             AppliCashTheme(dynamicColor = false) {
                 GroupScreenContent(
-                    groupName = "Vacances été 2025",
+                    groupName = "Summer Vacation 2025",
                     currentUserName = "Alice",
                     modifier = Modifier.fillMaxSize()
                 )

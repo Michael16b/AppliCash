@@ -1,38 +1,42 @@
 package fr.univ.nantes.home
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
-import androidx.test.ext.junit4.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.feature.expense.Expense
 import fr.univ.nantes.feature.expense.GroupData
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
-import org.robolectric.annotation.GraphicsMode
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /**
- * Tests snapshot pour HomeScreen et GroupDetailScreen.
- * RG1 : thème clair. CA1 : couverture accueil + détail. CA2 : liste vide, groupes, dépenses, soldes.
+ * Snapshot tests for HomeScreen and GroupDetailScreen.
+ *
+ * RG1: light theme.
+ * CA1: covers home screen and group detail screen.
+ * CA2: empty list, groups list, expenses tab, balances tab (with debts, all settled).
  */
-@RunWith(AndroidJUnit4::class)
+@RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w411dp-h891dp-xhdpi")
 class HomePaparazziTest {
 
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-    // CA2 : accueil sans groupe (état vide)
+    /** CA2: home screen with no groups (empty state) */
     @Test
-    fun homeScreen_listeVide() {
+    fun homeScreen_emptyList() {
         composeRule.setContent {
             AppliCashTheme(dynamicColor = false) {
                 HomeScreen(modifier = Modifier.fillMaxSize(), viewModel = null)
@@ -41,24 +45,24 @@ class HomePaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
-    // CA1 + CA2 : accueil avec groupes (état succès)
+    /** CA1 + CA2: home screen with groups (success state) */
     @Test
-    fun homeScreen_avecGroupes() {
+    fun homeScreen_withGroups() {
         val groups = listOf(
             GroupData(
                 id = 1L,
-                groupName = "Vacances été 2025",
+                groupName = "Summer Vacation 2025",
                 participants = listOf("Alice", "Bob", "Charlie"),
                 expenses = listOf(
-                    Expense(1, "Hôtel", 300.0, "Alice"),
+                    Expense(1, "Hotel", 300.0, "Alice"),
                     Expense(2, "Restaurant", 80.0, "Bob")
                 )
             ),
             GroupData(
                 id = 2L,
-                groupName = "Week-end ski",
+                groupName = "Ski Weekend",
                 participants = listOf("Julie", "Marc"),
-                expenses = listOf(Expense(3, "Location chalet", 200.0, "Julie"))
+                expenses = listOf(Expense(3, "Chalet rental", 200.0, "Julie"))
             )
         )
         composeRule.setContent {
@@ -69,16 +73,16 @@ class HomePaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
-    // CA1 + CA2 : détail groupe — onglet dépenses
+    /** CA1 + CA2: group detail screen -- expenses tab */
     @Test
-    fun groupDetailScreen_ongletDepenses() {
+    fun groupDetailScreen_expensesTab() {
         val group = GroupData(
             id = 1L,
-            groupName = "Vacances été 2025",
+            groupName = "Summer Vacation 2025",
             participants = listOf("Alice", "Bob", "Charlie"),
             expenses = listOf(
-                Expense(1, "Essence", 80.0, "Alice"),
-                Expense(2, "Hôtel", 300.0, "Bob"),
+                Expense(1, "Gas", 80.0, "Alice"),
+                Expense(2, "Hotel", 300.0, "Bob"),
                 Expense(3, "Restaurant", 120.0, "Charlie")
             )
         )
@@ -90,20 +94,20 @@ class HomePaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
-    // CA2 : onglet soldes avec dettes
+    /** CA2: balances tab with debts */
     @Test
-    fun groupDetailScreen_ongletSoldes_avecDettes() {
+    fun groupDetailScreen_balancesTab_withDebts() {
         val group = GroupData(
             id = 2L,
-            groupName = "Week-end ski",
+            groupName = "Ski Weekend",
             participants = listOf("Julie", "Marc", "Sophie"),
             expenses = listOf(
-                Expense(1, "Location chalet", 300.0, "Marc"),
-                Expense(2, "Forfait ski", 150.0, "Julie"),
-                Expense(3, "Courses", 60.0, "Sophie")
+                Expense(1, "Chalet rental", 300.0, "Marc"),
+                Expense(2, "Ski pass", 150.0, "Julie"),
+                Expense(3, "Groceries", 60.0, "Sophie")
             )
         )
-        val fmt = NumberFormat.getCurrencyInstance(Locale.FRANCE).apply {
+        val fmt = NumberFormat.getCurrencyInstance(Locale.US).apply {
             currency = Currency.getInstance("EUR")
         }
         composeRule.setContent {
@@ -120,19 +124,19 @@ class HomePaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
-    // CA2 : onglet soldes — tout réglé
+    /** CA2: balances tab -- all settled */
     @Test
-    fun groupDetailScreen_ongletSoldes_toutRegle() {
+    fun groupDetailScreen_balancesTab_allSettled() {
         val group = GroupData(
             id = 3L,
-            groupName = "Dîner d'équipe",
+            groupName = "Team Dinner",
             participants = listOf("Alice", "Bob"),
             expenses = listOf(
                 Expense(1, "Restaurant", 60.0, "Alice"),
                 Expense(2, "Dessert", 60.0, "Bob")
             )
         )
-        val fmt = NumberFormat.getCurrencyInstance(Locale.FRANCE).apply {
+        val fmt = NumberFormat.getCurrencyInstance(Locale.US).apply {
             currency = Currency.getInstance("EUR")
         }
         composeRule.setContent {

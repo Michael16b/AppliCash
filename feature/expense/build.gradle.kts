@@ -4,17 +4,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.roborazzi)
 }
-
 android {
     namespace = "fr.univ.nantes.feature.expense"
     compileSdk = 36
-
     defaultConfig {
         minSdk = 27
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -37,13 +33,11 @@ android {
         }
     }
 }
-
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
-
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -60,30 +54,32 @@ dependencies {
     implementation(libs.androidx.foundation)
     testImplementation(libs.junit)
     testImplementation(libs.androidx.junit)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test)
+    testImplementation(libs.androidx.compose.ui.test.junit4.android)
+    testImplementation(libs.androidx.activity.compose)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.androidx.compose.material3)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
     testImplementation(libs.robolectric)
-    testImplementation(libs.androidx.compose.ui.test.junit4.android)
-    testImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-
     // koin
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.android)
     implementation(libs.koin.compose)
-
     // Nav
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.compose.navigation)
-
     implementation(project(":core:ui"))
     implementation(project(":data:expense"))
     implementation(project(":domain:profil"))
     implementation(project(":data:currency"))
+}
+// CA4/RG3: reference images versioned in /snapshots/
+roborazzi {
+    outputDir.set(rootProject.layout.projectDirectory.dir("snapshots/feature-expense"))
 }

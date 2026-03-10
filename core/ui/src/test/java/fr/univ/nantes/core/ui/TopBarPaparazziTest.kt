@@ -1,30 +1,34 @@
 package fr.univ.nantes.core.ui
 
+import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
-import androidx.test.ext.junit4.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Tests snapshot pour le composant AppTopBar (RG2 — composants réutilisables testés en isolation).
- * RG1 : thème clair.
+ * Snapshot tests for the AppTopBar component.
+ *
+ * RG2: reusable components tested in isolation.
+ * RG1: light theme.
  */
-@RunWith(AndroidJUnit4::class)
+@RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w411dp-h891dp-xhdpi")
 class TopBarPaparazziTest {
 
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
+    /** Title only */
     @Test
-    fun topBar_titreSeul() {
+    fun topBar_titleOnly() {
         composeRule.setContent {
             MaterialTheme {
                 AppTopBar(title = "AppliCash")
@@ -33,26 +37,28 @@ class TopBarPaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
+    /** Title with subtitle */
     @Test
-    fun topBar_avecSousTitre() {
+    fun topBar_withSubtitle() {
         composeRule.setContent {
             MaterialTheme {
                 AppTopBar(
-                    title = "Accueil",
-                    subtitle = "Gérez vos dépenses"
+                    title = "Home",
+                    subtitle = "Manage your expenses"
                 )
             }
         }
         composeRule.onRoot().captureRoboImage()
     }
 
+    /** Title with back button */
     @Test
-    fun topBar_avecBoutonRetour() {
+    fun topBar_withBackButton() {
         composeRule.setContent {
             MaterialTheme {
                 AppTopBar(
-                    title = "Détail du groupe",
-                    subtitle = "3 membres",
+                    title = "Group detail",
+                    subtitle = "3 members",
                     showBack = true,
                     onBack = {}
                 )

@@ -58,11 +58,15 @@ dependencies {
     testImplementation(libs.androidx.junit)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test)
+    testImplementation(libs.androidx.compose.ui.test.junit4.android)
+    testImplementation(libs.androidx.activity.compose)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
     testImplementation(libs.robolectric)
-    testImplementation(libs.androidx.compose.ui.test.junit4.android)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
+roborazzi {
+    outputDir.set(rootProject.layout.projectDirectory.dir("snapshots/core-ui"))
+}

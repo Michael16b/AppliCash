@@ -1,33 +1,37 @@
 package fr.univ.nantes.feature.profil
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
-import androidx.test.ext.junit4.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import fr.univ.nantes.core.ui.AppliCashTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Tests snapshot pour ProfileScreen.
- * RG1 : thème clair. CA1 : couverture profil. CA2 : chargement, succès, erreurs validation.
+ * Snapshot tests for ProfileScreen.
+ *
+ * RG1: light theme for each state.
+ * CA1: covers the profile screen.
+ * CA2: loading state, success (profile loaded), validation errors.
  */
-@RunWith(AndroidJUnit4::class)
+@RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w411dp-h891dp-xhdpi")
 class ProfilPaparazziTest {
 
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-    // CA2 : état chargement
+    /** CA2: loading state */
     @Test
-    fun profileScreen_enChargement() {
+    fun profileScreen_loading() {
         composeRule.setContent {
             AppliCashTheme(dynamicColor = false) {
                 ProfileScreenContent(
@@ -39,9 +43,9 @@ class ProfilPaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
-    // CA1 + CA2 : état succès — profil chargé
+    /** CA1 + CA2: success state -- profile loaded */
     @Test
-    fun profileScreen_profilCharge() {
+    fun profileScreen_profileLoaded() {
         composeRule.setContent {
             AppliCashTheme(dynamicColor = false) {
                 ProfileScreenContent(
@@ -52,8 +56,8 @@ class ProfilPaparazziTest {
                         currency = "EUR",
                         currencies = listOf(
                             "EUR" to "Euro",
-                            "USD" to "Dollar américain",
-                            "GBP" to "Livre sterling"
+                            "USD" to "US Dollar",
+                            "GBP" to "British Pound"
                         ),
                         isExistingProfile = true,
                         isLoading = false
@@ -65,23 +69,23 @@ class ProfilPaparazziTest {
         composeRule.onRoot().captureRoboImage()
     }
 
-    // CA2 : état erreur — erreurs de validation
+    /** CA2: error state -- validation errors */
     @Test
-    fun profileScreen_avecErreursValidation() {
+    fun profileScreen_validationErrors() {
         composeRule.setContent {
             AppliCashTheme(dynamicColor = false) {
                 ProfileScreenContent(
                     state = ProfileUiState(
                         firstName = "",
                         lastName = "",
-                        email = "invalide",
+                        email = "invalid",
                         currency = "EUR",
                         currencies = listOf("EUR" to "Euro"),
                         isLoading = false,
                         errors = mapOf(
-                            "firstName" to "Le prénom est requis",
-                            "lastName" to "Le nom est requis",
-                            "email" to "Email invalide"
+                            "firstName" to "First name is required",
+                            "lastName" to "Last name is required",
+                            "email" to "Invalid email"
                         )
                     ),
                     modifier = Modifier.fillMaxSize()

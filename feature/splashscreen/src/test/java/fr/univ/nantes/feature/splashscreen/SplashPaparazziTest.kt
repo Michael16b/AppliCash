@@ -1,32 +1,35 @@
 package fr.univ.nantes.feature.splashscreen
 
+import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
-import androidx.test.ext.junit4.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Tests snapshot pour SplashScreen.
- * RG1 : thème clair. CA1 : couverture écran de démarrage.
- * splashDurationMs = Long.MAX_VALUE pour figer l'affichage (pas de navigation automatique).
+ * Snapshot tests for SplashScreen.
+ *
+ * RG1: light theme.
+ * CA1: covers the splash screen.
+ * splashDurationMs is set to Long.MAX_VALUE to freeze the display (no auto-navigation).
  */
-@RunWith(AndroidJUnit4::class)
+@RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w411dp-h891dp-xhdpi")
 class SplashPaparazziTest {
 
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-    // CA1 : splash screen affiché (état statique, pas de navigation)
+    /** CA1: splash screen displayed (static state, no navigation) */
     @Test
-    fun splashScreen_affiche() {
+    fun splashScreen_displayed() {
         composeRule.setContent {
             MaterialTheme {
                 SplashScreen(

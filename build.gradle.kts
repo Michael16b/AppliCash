@@ -8,13 +8,28 @@ plugins {
     alias(libs.plugins.roborazzi) apply false
 }
 
-// Configure le répertoire de sortie des snapshots Roborazzi pour tous les sous-projets (CA4/RG3)
-subprojects {
-    tasks.withType<Test>().configureEach {
-        systemProperty(
-            "roborazzi.output.dir",
-            "${rootProject.projectDir}/snapshots/${project.name}"
-        )
-    }
+/**
+ * Aggregates snapshot verification across all feature modules (RG4/CA3).
+ * Equivalent of verifyPaparazziDebug using Roborazzi.
+ * Usage: ./gradlew verifyPaparazziDebug
+ */
+val snapshotModules = listOf(
+    ":core:ui",
+    ":feature:login",
+    ":feature:home",
+    ":feature:expense",
+    ":feature:profil",
+    ":feature:splashscreen",
+)
+
+tasks.register("verifyPaparazziDebug") {
+    group = "verification"
+    description = "Verifies that all Roborazzi snapshots match the reference images."
+    dependsOn(snapshotModules.map { "$it:verifyRoborazziDebug" })
 }
 
+tasks.register("recordPaparazziDebug") {
+    group = "verification"
+    description = "Records / updates all Roborazzi reference images in /snapshots/."
+    dependsOn(snapshotModules.map { "$it:recordRoborazziDebug" })
+}
