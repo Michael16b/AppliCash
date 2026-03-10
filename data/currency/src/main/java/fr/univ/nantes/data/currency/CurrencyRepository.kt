@@ -13,10 +13,10 @@ import kotlinx.coroutines.CancellationException
  * it is returned immediately without a network call. If the network is unavailable,
  * the last known cached rate is returned as a fallback to ensure offline display.
  */
-class CurrencyRepository(
+open class CurrencyRepository(
     private val api: FrankfurterApi,
     private val dao: ExchangeRateDao
-) {
+) : ICurrencyRepository {
     companion object {
         /** Cache time-to-live: 1 hour in milliseconds. */
         private const val CACHE_TTL_MS = 60 * 60 * 1000L
@@ -29,7 +29,7 @@ class CurrencyRepository(
      * Returns 1.0 if [from] and [to] are the same currency.
      * Returns null only if no rate is available (neither from cache nor from network).
      */
-    suspend fun getRate(from: String, to: String): Double? {
+    override suspend fun getRate(from: String, to: String): Double? {
         if (from == to) return 1.0
 
         val normalizedFrom = from.uppercase()
@@ -85,7 +85,7 @@ class CurrencyRepository(
      *
      * Returns null if the exchange rate is unavailable.
      */
-    suspend fun convert(amount: Double, from: String, to: String): Double? {
+    override suspend fun convert(amount: Double, from: String, to: String): Double? {
         val rate = getRate(from, to) ?: return null
         return amount * rate
     }

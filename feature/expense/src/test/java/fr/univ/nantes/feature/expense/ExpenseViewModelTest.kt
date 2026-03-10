@@ -2,6 +2,7 @@ package fr.univ.nantes.feature.expense
 
 import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import fr.univ.nantes.data.expense.model.GroupWithDetails
+import fr.univ.nantes.data.currency.ICurrencyRepository
 import fr.univ.nantes.domain.profil.ProfileUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -56,12 +57,17 @@ class FakeExpenseRepository : ExpenseRepository {
 private fun fakeProfileUseCase(): ProfileUseCase {
     val fakeRepository = object : ProfileRepository {
         override fun observeProfile(): Flow<Profile?> = flowOf(null)
-        override fun observeCurrencies(): Flow<List<String>> = flowOf(listOf("EUR - Euro"))
+        override fun observeCurrencies(): Flow<List<Pair<String, String>>> = flowOf(listOf("EUR" to "Euro"))
         override suspend fun saveProfile(profile: Profile) = Unit
         override suspend fun clearProfile() = Unit
         override suspend fun isLoggedIn(): Boolean = false
     }
     return ProfileUseCase(fakeRepository)
+}
+
+private fun fakeCurrencyRepository(): ICurrencyRepository = object : ICurrencyRepository {
+    override suspend fun getRate(from: String, to: String): Double = 1.0
+    override suspend fun convert(amount: Double, from: String, to: String): Double = amount
 }
 
 
@@ -74,6 +80,7 @@ class ExpenseViewModelTest {
     private lateinit var viewModel: ExpenseViewModel
     private lateinit var fakeRepository: ExpenseRepository
     private lateinit var fakeProfileUseCase: ProfileUseCase
+    private lateinit var fakeCurrencyRepo: ICurrencyRepository
     private val mainDispatcher = StandardTestDispatcher()
 
     @Before
@@ -81,7 +88,8 @@ class ExpenseViewModelTest {
         Dispatchers.setMain(mainDispatcher)
         fakeRepository = FakeExpenseRepository()
         fakeProfileUseCase = fakeProfileUseCase()
-        viewModel = ExpenseViewModel(fakeRepository, fakeProfileUseCase)
+        fakeCurrencyRepo = fakeCurrencyRepository()
+        viewModel = ExpenseViewModel(fakeRepository, fakeProfileUseCase, fakeCurrencyRepo)
     }
 
     @org.junit.After

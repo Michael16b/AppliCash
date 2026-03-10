@@ -65,7 +65,8 @@ fun HomeScreen(
     onGroupClick: (GroupData) -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
-    val groups = viewModel?.state?.collectAsState()?.value?.groups ?: emptyList()
+    val groups = viewModel?.convertedGroups?.collectAsState()?.value ?: emptyList()
+    val userCurrencyCode = viewModel?.state?.collectAsState()?.value?.userCurrencyCode ?: "EUR"
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -108,6 +109,7 @@ fun HomeScreen(
         } else {
             GroupsList(
                 groups = groups,
+                userCurrencyCode = userCurrencyCode,
                 onGroupClick = onGroupClick,
                 modifier = Modifier
                     .fillMaxSize()
@@ -141,7 +143,8 @@ fun EmptyGroupsState(modifier: Modifier = Modifier) {
 fun GroupsList(
     groups: List<GroupData>,
     onGroupClick: (GroupData) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    userCurrencyCode: String = "EUR"
 ) {
     LazyColumn(
         modifier = modifier,
@@ -151,6 +154,7 @@ fun GroupsList(
         items(groups, key = { it.id }) { group ->
             GroupCard(
                 group = group,
+                userCurrencyCode = userCurrencyCode,
                 onClick = { onGroupClick(group) }
             )
         }
@@ -161,15 +165,29 @@ fun GroupsList(
 fun GroupCard(
     group: GroupData,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    userCurrencyCode: String = "EUR"
 ) {
     val totalAmount = group.expenses.sumOf { it.amount }
     val isDarkMode = isSystemInDarkTheme()
     val cardColor = if (isDarkMode) MaterialTheme.colorScheme.surfaceContainerHigh else Color.White
     var expanded by rememberSaveable { mutableStateOf(false) }
-    val currencyFormat = remember {
-        NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-            currency = java.util.Currency.getInstance("EUR")
+    val currencyFormat = remember(userCurrencyCode) {
+        val currency = java.util.Currency.getInstance(userCurrencyCode)
+        val locale = when (userCurrencyCode) {
+            "EUR" -> Locale.FRANCE
+            "USD" -> Locale.US
+            "GBP" -> Locale.UK
+            "JPY" -> Locale.JAPAN
+            "CNY" -> Locale.CHINA
+            "CAD" -> Locale.CANADA
+            else -> Locale.getAvailableLocales().find { locale ->
+                locale.country.isNotEmpty() &&
+                try { java.util.Currency.getInstance(locale).currencyCode == userCurrencyCode } catch (_: Exception) { false }
+            } ?: Locale.getDefault()
+        }
+        NumberFormat.getCurrencyInstance(locale).apply {
+            this.currency = currency
         }
     }
 

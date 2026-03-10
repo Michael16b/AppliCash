@@ -115,13 +115,7 @@ private fun App() {
             }
             composable<BalanceRoute> {
                 BalanceScreen(
-                    viewModel = expenseViewModel,
-                    navigateToGroup = {
-                        expenseViewModel.reset()
-                        navController.navigate(Group) {
-                            popUpTo<Group> { inclusive = true }
-                        }
-                    }
+                    viewModel = expenseViewModel
                 )
             }
             composable<Home> {
