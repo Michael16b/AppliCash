@@ -754,15 +754,26 @@ fun AddExpenseScreen(
                                             }
                                             if (filtered.isEmpty() || filtered.any { it.isDigit() }) {
                                                 participantAmounts[participant] = filtered
+                                                val entered = filtered.toDoubleOrNull() ?: 0.0
+                                                val others = selectedParticipants.filter { it != participant }
+                                                if (others.isNotEmpty()) {
+                                                    val remaining = (amountValue - entered).coerceAtLeast(0.0)
+                                                    val share = remaining / others.size
+                                                    others.forEach { other ->
+                                                        participantAmounts[other] = "%.2f".format(share)
+                                                    }
+                                                }
                                             }
                                         },
                                         placeholder = {
                                             Text(
                                                 "%.2f".format(equalShare),
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                             )
                                         },
-                                        modifier = Modifier.width(110.dp),
+                                        modifier = Modifier.width(130.dp),
                                         shape = fieldShape,
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
