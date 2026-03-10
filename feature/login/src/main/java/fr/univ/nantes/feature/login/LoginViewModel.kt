@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val DEFAULT_CURRENCY = "EUR - Euro"
+private const val DEFAULT_CURRENCY = "EUR"
 
 data class LoginUiState(
     val email: String = "",
@@ -19,7 +19,7 @@ data class LoginUiState(
     val firstName: String = "",
     val lastName: String = "",
     val currency: String = DEFAULT_CURRENCY,
-    val currencies: List<String> = emptyList(),
+    val currencies: List<Pair<String, String>> = emptyList(),
     val isRegister: Boolean = false,
     val errorMessage: String? = null,
     val isLoading: Boolean = false
@@ -41,14 +41,18 @@ class LoginViewModel(
         viewModelScope.launch {
             try {
                 profileUseCase.observeCurrencies().collect { list ->
-                    val currencies = if (list.isEmpty()) listOf(DEFAULT_CURRENCY) else list
                     _uiState.update { state ->
-                        val selected = if (state.currency == DEFAULT_CURRENCY && currencies.isNotEmpty()) currencies.first() else state.currency
-                        state.copy(currencies = currencies, currency = selected)
+                        val selected = if (state.currency == DEFAULT_CURRENCY && list.isNotEmpty()) {
+                            list.firstOrNull { it.first == DEFAULT_CURRENCY }?.first
+                                ?: list.first().first
+                        } else {
+                            state.currency
+                        }
+                        state.copy(currencies = list, currency = selected)
                     }
                 }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(currencies = listOf(DEFAULT_CURRENCY), currency = DEFAULT_CURRENCY) }
+            } catch (_: Exception) {
+                // Keep the current state on error, BD will retry on next collect
             }
         }
     }

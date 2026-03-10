@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,10 +38,10 @@ import java.util.Locale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowForward
 import fr.univ.nantes.core.ui.Green700
 import fr.univ.nantes.core.ui.TealBg50
 import fr.univ.nantes.core.ui.GreenBg50
+
 @Serializable
 data object BalanceRoute
 
@@ -91,7 +92,7 @@ fun SettlementCard(reimbursement: Reimbursement, formatter: NumberFormat) {
                 Text(reimbursement.from, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "Remboursement",
+                    contentDescription = stringResource(R.string.reimbursement_arrow),
                     tint = Green700
                 )
                 Text(reimbursement.to, modifier = Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
@@ -114,7 +115,6 @@ fun SettlementCard(reimbursement: Reimbursement, formatter: NumberFormat) {
     }
 }
 
-// Vue quand tout est réglé
 @Composable
 fun AllSettledView() {
     Box(
@@ -126,26 +126,28 @@ fun AllSettledView() {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Tous les comptes sont réglés !", color = Green700, fontWeight = FontWeight.Bold)
+            Text(
+                text = stringResource(R.string.all_settled),
+                color = Green700,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
 
 @Composable
 fun BalanceScreen(
-    viewModel: ExpenseViewModel,
-    navigateToGroup: () -> Unit
+    viewModel: ExpenseViewModel
 ) {
-    // On extrait les données du ViewModel
     val state by viewModel.state.collectAsState()
     val balances by viewModel.balances.collectAsState()
     val reimbursements by viewModel.reimbursements.collectAsState()
 
-    // On appelle la version "Stateless"
     BalanceContent(
         groupName = state.groupName,
         balances = balances,
-        reimbursements = reimbursements
+        reimbursements = reimbursements,
+        userCurrencyCode = state.userCurrencyCode
     )
 }
 
@@ -153,16 +155,38 @@ fun BalanceScreen(
 fun BalanceContent(
     groupName: String,
     balances: List<Balance>,
-    reimbursements: List<Reimbursement>
+    reimbursements: List<Reimbursement>,
+    userCurrencyCode: String = "EUR"
 ) {
-    val currencyFormatter = remember { NumberFormat.getCurrencyInstance(Locale.FRANCE) }
+    val currencyFormatter = remember(userCurrencyCode) {
+        val currency = java.util.Currency.getInstance(userCurrencyCode)
+        val locale = when (userCurrencyCode) {
+            "EUR" -> Locale.FRANCE
+            "USD" -> Locale.US
+            "GBP" -> Locale.UK
+            "JPY" -> Locale.JAPAN
+            "CNY" -> Locale.CHINA
+            "CAD" -> Locale.CANADA
+            else -> Locale.getAvailableLocales().find { locale ->
+                locale.country.isNotEmpty() &&
+                try { java.util.Currency.getInstance(locale).currencyCode == userCurrencyCode } catch (_: Exception) { false }
+            } ?: Locale.getDefault()
+        }
+        NumberFormat.getCurrencyInstance(locale).apply {
+            this.currency = currency
+        }
+    }
 
     Scaffold(
         containerColor = Color.White,
         topBar = {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = groupName, style = MaterialTheme.typography.headlineMedium)
-                Text(text = "Résumé des comptes", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                Text(
+                    text = stringResource(R.string.balance_summary),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
             }
         }
     ) { innerPadding ->
@@ -174,7 +198,10 @@ fun BalanceContent(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                Text("Soldes des membres", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    text = stringResource(R.string.member_balances),
+                    style = MaterialTheme.typography.titleLarge
+                )
             }
 
             items(balances) { balance ->
@@ -183,11 +210,15 @@ fun BalanceContent(
 
             item {
                 Text(
-                    "Les soldes positifs indiquent les montants à recevoir, les négatifs les montants à payer",
-                    style = MaterialTheme.typography.bodySmall, color = Color.Gray
+                    text = stringResource(R.string.balances_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Remboursements suggérés", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    text = stringResource(R.string.suggested_reimbursements),
+                    style = MaterialTheme.typography.titleLarge
+                )
             }
 
             if (reimbursements.isEmpty()) {
@@ -197,14 +228,11 @@ fun BalanceContent(
                     SettlementCard(reimbursement, currencyFormatter)
                 }
             }
-
         }
     }
 }
 
 
-
-// Preview avec des dettes actives
 @Preview(showBackground = true, name = "Dettes en cours")
 @Composable
 fun PreviewBalanceWithDebts() {
@@ -224,7 +252,6 @@ fun PreviewBalanceWithDebts() {
     }
 }
 
-//Preview quand tout le monde est à l'équilibre
 @Preview(showBackground = true, name = "Tout est réglé")
 @Composable
 fun PreviewBalanceSettled() {
@@ -235,12 +262,11 @@ fun PreviewBalanceSettled() {
                 Balance("Alice", 0.0),
                 Balance("Bob", 0.0)
             ),
-            reimbursements = emptyList() // Liste vide pour déclencher AllSettledView
+            reimbursements = emptyList()
         )
     }
 }
 
-// Preview d'une seule carte de membre (pour tester le design d'un composant précis)
 @Preview(widthDp = 300)
 @Composable
 fun PreviewMemberCard() {

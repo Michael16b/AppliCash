@@ -2,16 +2,25 @@ package fr.univ.nantes.feature.expense
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.univ.nantes.data.currency.ICurrencyRepository
 import fr.univ.nantes.data.expense.repository.ExpenseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import fr.univ.nantes.domain.profil.ProfileUseCase
+import fr.univ.nantes.domain.profil.normalizeCurrencyCode
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Represents an expense in the group.
@@ -46,7 +55,10 @@ data class ExpenseState(
     val groups: List<GroupData> = emptyList(),
     val currentGroupId: Long? = null,
     val currentUserName: String? = null,
-    val isLoggedIn: Boolean = false
+    val isLoggedIn: Boolean = false,
+    val userCurrencyCode: String = "EUR",
+    /** Age in minutes of the cached exchange rates, null if no cache or same currency. */
+    val cacheAgeMinutes: Long? = null
 )
 
 data class Balance(
@@ -60,6 +72,10 @@ data class Reimbursement(
     val amount: Double
 )
 
+sealed class ExpenseEvent {
+    data class ShowSnackbar(val message: String) : ExpenseEvent()
+}
+
 /**
  * ViewModel for managing group expenses and calculating balances.
  *
@@ -67,9 +83,11 @@ data class Reimbursement(
  * the group name, list of participants, and individual expenses. It provides
  * functionality to calculate balances and determine optimal reimbursements.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ExpenseViewModel(
     private val repository: ExpenseRepository,
-    private val profileUseCase: ProfileUseCase
+    private val profileUseCase: ProfileUseCase,
+    private val currencyRepository: ICurrencyRepository
 ) : ViewModel() {
 
     companion object {
@@ -79,13 +97,71 @@ class ExpenseViewModel(
          * when comparing monetary amounts.
          */
         private const val BALANCE_THRESHOLD = 0.01
+
+        /**
+         * The currency in which expenses are stored in the database.
+         * All stored amounts are in this currency and will be converted to the user's preferred currency for display.
+         */
+        const val STORAGE_CURRENCY = "EUR"
     }
 
     private val _state = MutableStateFlow(ExpenseState())
     val state: StateFlow<ExpenseState> = _state.asStateFlow()
 
+    private val _events = MutableSharedFlow<ExpenseEvent>()
+    val events: SharedFlow<ExpenseEvent> = _events.asSharedFlow()
+
+    /**
+     * Groups with amounts converted to the user's preferred currency.
+     * Uses flatMapLatest so that each time groups or currency changes, a new suspend
+     * conversion is triggered and the old one is cancelled.
+     */
+    val convertedGroups: StateFlow<List<GroupData>> = _state
+        .map { it.groups to it.userCurrencyCode }
+        .flatMapLatest { (groups, targetCurrency) ->
+            flow {
+                if (targetCurrency == STORAGE_CURRENCY) {
+                    _state.update { it.copy(cacheAgeMinutes = null) }
+                    emit(groups)
+                } else {
+                    var hadConversionError = false
+                    val converted = groups.map { group ->
+                        group.copy(
+                            expenses = group.expenses.map { expense ->
+                                val c = currencyRepository.convert(expense.amount, STORAGE_CURRENCY, targetCurrency)
+                                if (c != null) {
+                                    expense.copy(amount = c)
+                                } else {
+                                    hadConversionError = true
+                                    expense
+                                }
+                            }
+                        )
+                    }
+                    val ageMinutes = currencyRepository.getCacheAgeMinutes(STORAGE_CURRENCY)
+                    _state.update { it.copy(cacheAgeMinutes = ageMinutes) }
+                    if (hadConversionError) {
+                        viewModelScope.launch {
+                            val msg = if (ageMinutes != null) {
+                                "Données de conversion de il y a $ageMinutes min (hors connexion)"
+                            } else {
+                                "Impossible de convertir les devises. Vérifiez votre connexion Internet."
+                            }
+                            _events.emit(ExpenseEvent.ShowSnackbar(msg))
+                        }
+                    }
+                    emit(converted)
+                }
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     init {
-        // Charger les groupes depuis la base de données
+        // Load groups from the database
         viewModelScope.launch {
             repository.getAllGroupsWithDetails().collect { groupsWithDetails ->
                 val groups = groupsWithDetails.map { groupWithDetails ->
@@ -111,7 +187,8 @@ class ExpenseViewModel(
                 _state.update {
                     it.copy(
                         currentUserName = profile?.firstName,
-                        isLoggedIn = profile?.isLoggedIn == true
+                        isLoggedIn = profile?.isLoggedIn == true,
+                        userCurrencyCode = profile?.currency?.normalizeCurrencyCode() ?: "EUR"
                     )
                 }
             }
@@ -119,19 +196,66 @@ class ExpenseViewModel(
     }
 
     /**
-     * Derived state flow for balances, automatically recalculated when expenses or participants change.
+     * Current group's expenses converted to the user's preferred currency.
+     * Uses flatMapLatest to properly execute suspend conversion calls.
      */
-    val balances: StateFlow<List<Balance>> = _state.map { calculateBalances() }
+    val convertedCurrentExpenses: StateFlow<List<Expense>> = _state
+        .map { it.expenses to it.userCurrencyCode }
+        .flatMapLatest { (expenses, targetCurrency) ->
+            flow {
+                if (targetCurrency == STORAGE_CURRENCY) {
+                    emit(expenses)
+                } else {
+                    var hadConversionError = false
+                    val converted = expenses.map { expense ->
+                        val c = currencyRepository.convert(expense.amount, STORAGE_CURRENCY, targetCurrency)
+                        if (c != null) {
+                            expense.copy(amount = c)
+                        } else {
+                            hadConversionError = true
+                            expense
+                        }
+                    }
+                    if (hadConversionError) {
+                        val ageMinutes = currencyRepository.getCacheAgeMinutes(STORAGE_CURRENCY)
+                        viewModelScope.launch {
+                            val msg = if (ageMinutes != null) {
+                                "Données de conversion de il y a $ageMinutes min (hors connexion)"
+                            } else {
+                                "Impossible de convertir les devises. Vérifiez votre connexion Internet."
+                            }
+                            _events.emit(ExpenseEvent.ShowSnackbar(msg))
+                        }
+                    }
+                    emit(converted)
+                }
+            }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    /**
+     * Derived state flow for balances, automatically recalculated when expenses or participants change.
+     * Uses converted amounts for display consistency.
+     */
+    val balances: StateFlow<List<Balance>> = combine(
+        convertedCurrentExpenses,
+        _state.map { it.participants }
+    ) { convertedExpenses, participants ->
+        calculateBalancesFrom(convertedExpenses, participants)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     /**
      * Derived state flow for reimbursements, automatically recalculated when balances change.
      */
-    val reimbursements: StateFlow<List<Reimbursement>> = _state.map { calculateReimbursements() }
+    val reimbursements: StateFlow<List<Reimbursement>> = balances.map { calculateReimbursementsFrom(it) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -139,8 +263,10 @@ class ExpenseViewModel(
         )
 
     /**
-     * Charge un groupe existant depuis Room et met à jour l'état actuel
-     * pour permettre l'ajout de dépenses à ce groupe.
+     * Loads an existing group from Room and updates the current state
+     * to allow adding expenses to that group.
+     *
+     * @param groupId The ID of the group to load
      */
     fun loadGroup(groupId: Long) {
         viewModelScope.launch {
@@ -150,12 +276,12 @@ class ExpenseViewModel(
                     it.copy(
                         groupName = groupWithDetails.group.groupName,
                         participants = groupWithDetails.participants.map { participant -> participant.name },
-                        expenses = groupWithDetails.expenses.map { expense ->
+                        expenses = groupWithDetails.expenses.map {
                             Expense(
-                                id = expense.id,
-                                description = expense.description,
-                                amount = expense.amount,
-                                paidBy = expense.paidBy
+                                id = it.id,
+                                description = it.description,
+                                amount = it.amount,
+                                paidBy = it.paidBy
                             )
                         },
                         currentGroupId = groupId
@@ -166,7 +292,7 @@ class ExpenseViewModel(
     }
 
     /**
-     * Retourne l'ID du groupe actuellement chargé
+     * Returns the ID of the currently loaded group, or null if no group is loaded.
      */
     fun getCurrentGroupId(): Long? {
         return _state.value.currentGroupId
@@ -249,18 +375,9 @@ class ExpenseViewModel(
     }
 
     /**
-     * Calculates the balance for each participant.
-     *
-     * The balance represents how much each participant has overpaid (positive balance)
-     * or underpaid (negative balance) relative to their fair share of the total expenses.
-     * The fair share is calculated by dividing the total expenses equally among all participants.
-     *
-     * @return A list of Balance objects, one for each participant
+     * Calculates the balance for each participant from the given [expenses] and [participants].
      */
-    fun calculateBalances(): List<Balance> {
-        val participants = _state.value.participants
-        val expenses = _state.value.expenses
-
+    private fun calculateBalancesFrom(expenses: List<Expense>, participants: List<String>): List<Balance> {
         if (participants.isEmpty()) return emptyList()
 
         val total = expenses.sumOf { it.amount }
@@ -276,19 +393,16 @@ class ExpenseViewModel(
     }
 
     /**
-     * Calculates optimal reimbursements to settle all balances.
-     *
-     * This method uses a greedy algorithm to minimize the number of transactions needed
-     * to settle all debts within the group. It matches debtors (those who owe money) with
-     * creditors (those who are owed money) to determine the most efficient payment plan.
-     *
-     * Only reimbursements above the BALANCE_THRESHOLD are included to avoid trivial transactions
-     * caused by floating-point precision issues.
-     *
-     * @return A list of Reimbursement objects representing the payments needed to settle all balances
+     * Calculates balances using the raw (non-converted) state values.
+     * Used by unit tests.
      */
-    fun calculateReimbursements(): List<Reimbursement> {
-        val balances = calculateBalances().toMutableList()
+    fun calculateBalances(): List<Balance> =
+        calculateBalancesFrom(_state.value.expenses, _state.value.participants)
+
+    /**
+     * Calculates optimal reimbursements from the given [balances].
+     */
+    private fun calculateReimbursementsFrom(balances: List<Balance>): List<Reimbursement> {
         val reimbursements = mutableListOf<Reimbursement>()
 
         val debtors = balances.filter { it.amount < 0 }.sortedBy { it.amount }.toMutableList()
@@ -316,6 +430,14 @@ class ExpenseViewModel(
 
         return reimbursements
     }
+
+    /**
+     * Calculates reimbursements using the raw (non-converted) state values.
+     * Used by unit tests.
+     */
+    fun calculateReimbursements(): List<Reimbursement> =
+        calculateReimbursementsFrom(calculateBalances())
+
 
     /**
      * Resets the ViewModel to its initial state.
@@ -367,6 +489,15 @@ class ExpenseViewModel(
                 ) }
             }
         }
+    }
+
+    /**
+     * Converts [amount] from currency [from] to the user's preferred currency.
+     * Returns null if the exchange rate is unavailable.
+     */
+    suspend fun convertAmount(amount: Double, from: String): Double? {
+        val targetCurrency = _state.value.userCurrencyCode
+        return currencyRepository.convert(amount, from, targetCurrency)
     }
 
     /**

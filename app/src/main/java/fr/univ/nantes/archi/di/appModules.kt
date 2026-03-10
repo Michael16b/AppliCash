@@ -8,6 +8,7 @@ import fr.univ.nantes.data.expense.di.dataExpenseModule
 import fr.univ.nantes.data.profil.di.profileDataModule
 import fr.univ.nantes.domain.profil.di.profileDomainModule
 import fr.univ.nantes.feature.profil.di.profileFeatureModule
+import fr.univ.nantes.data.currency.di.currencyDataModule
 import org.koin.core.module.Module
 
 val appModules: List<Module> =
@@ -20,5 +21,5 @@ val appModules: List<Module> =
         profileDataModule,
         profileDomainModule,
         profileFeatureModule,
-        // Add your Koin modules here, e.g., networkModule, featureXModule, CoreModule, etc.
+        currencyDataModule,
     )

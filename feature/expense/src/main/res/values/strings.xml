@@ -44,6 +44,12 @@
     <string name="no_reimbursement">No reimbursement needed</string>
     <string name="owes_format">%1$s owes %2$s to %3$s</string>
     <string name="new_group_button">New group</string>
+    <string name="balance_summary">Account summary</string>
+    <string name="member_balances">Member balances</string>
+    <string name="balances_hint">Positive balances indicate amounts to receive, negative amounts to pay</string>
+    <string name="suggested_reimbursements">Suggested reimbursements</string>
+    <string name="all_settled">All accounts are settled!</string>
+    <string name="reimbursement_arrow">Reimbursement</string>
 
     <!-- Currency -->
     <string name="currency_code">EUR</string>
