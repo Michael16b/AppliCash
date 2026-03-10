@@ -56,6 +56,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -90,6 +92,7 @@ import fr.univ.nantes.core.ui.Teal600
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -179,6 +182,15 @@ fun AddExpenseScreen(
 
     val isFormValid = title.isNotBlank() && amountValue > 0 && selectedPayer.isNotBlank()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(viewModel) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is ExpenseEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             AppTopBar(
@@ -186,7 +198,8 @@ fun AddExpenseScreen(
                 showBack = true,
                 onBack = navigateBack
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -212,7 +225,7 @@ fun AddExpenseScreen(
                         color = Color.White,
                         fontSize = 36.sp
                     )
-                    if (convertedInBase != null && selectedCurrency != userCurrency) {
+                    if (convertedInBase != null && selectedCurrency != ExpenseViewModel.STORAGE_CURRENCY) {
                         Spacer(Modifier.height(4.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -225,7 +238,7 @@ fun AddExpenseScreen(
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = stringResource(R.string.converted_amount, userCurrency, "%.2f".format(convertedInBase)),
+                                text = stringResource(R.string.converted_amount, ExpenseViewModel.STORAGE_CURRENCY, "%.2f".format(convertedInBase)),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
@@ -1080,7 +1093,6 @@ private fun AddExpenseScreenContent(
     previewSplitType: Int = 0
 ) {
     val participants = state.participants
-    val userCurrency = state.userCurrencyCode
     val selectedCurrency = previewCurrency
     val amount = previewAmount
     val amountValue = amount.toDoubleOrNull() ?: 0.0
@@ -1136,7 +1148,7 @@ private fun AddExpenseScreenContent(
                         color = Color.White,
                         fontSize = 36.sp
                     )
-                    if (convertedInBase != null && selectedCurrency != userCurrency) {
+                    if (convertedInBase != null && selectedCurrency != ExpenseViewModel.STORAGE_CURRENCY) {
                         Spacer(Modifier.height(4.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -1149,7 +1161,7 @@ private fun AddExpenseScreenContent(
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = stringResource(R.string.converted_amount, userCurrency, "%.2f".format(convertedInBase)),
+                                text = stringResource(R.string.converted_amount, ExpenseViewModel.STORAGE_CURRENCY, "%.2f".format(convertedInBase)),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.White.copy(alpha = 0.85f)
                             )

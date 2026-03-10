@@ -241,38 +241,35 @@ class ExpenseViewModel(
     /**
      * Converts [amount] from [fromCurrency] to the user's base currency and stores the
      * result in [ExpenseState.convertedAmountInBase] for live preview in the form.
-     * Clears the preview if [fromCurrency] equals the user base currency.
+     * The target currency is always [STORAGE_CURRENCY] (the group's base currency).
+     * Clears the preview if [fromCurrency] already equals [STORAGE_CURRENCY].
+     * Emits a [ExpenseEvent.ShowSnackbar] if the conversion rate is unavailable.
      */
     fun updateLiveConversion(amount: Double, fromCurrency: String) {
-        val baseCurrency = _state.value.userCurrencyCode
-        if (fromCurrency == baseCurrency || amount <= 0.0) {
+        // Target is always the group storage currency (EUR)
+        val targetCurrency = STORAGE_CURRENCY
+        if (fromCurrency == targetCurrency || amount <= 0.0) {
             _state.update { it.copy(convertedAmountInBase = null) }
             return
         }
         viewModelScope.launch {
-            // Try direct conversion first
-            var converted = currencyRepository.convert(amount, fromCurrency, baseCurrency)
-
-            // If direct rate is unavailable, use EUR (STORAGE_CURRENCY) as pivot.
-            // The cache is populated with EUR as base, so EUR→X rates are always available.
-            if (converted == null) {
-                // fromCurrency → EUR : use inverse of EUR→fromCurrency rate
-                val amountInEur: Double? = if (fromCurrency == STORAGE_CURRENCY) {
-                    amount
-                } else {
-                    val eurToFrom = currencyRepository.getRate(STORAGE_CURRENCY, fromCurrency)
-                    if (eurToFrom != null && eurToFrom != 0.0) amount / eurToFrom else null
-                }
-                // EUR → baseCurrency
-                if (amountInEur != null) {
-                    converted = if (baseCurrency == STORAGE_CURRENCY) {
-                        amountInEur
-                    } else {
-                        currencyRepository.convert(amountInEur, STORAGE_CURRENCY, baseCurrency)
-                    }
-                }
+            // The EUR-based rate cache contains EUR→X entries.
+            // To convert X→EUR, use the inverse: 1/rate(EUR→X).
+            val eurToFrom = currencyRepository.getRate(targetCurrency, fromCurrency)
+            val converted: Double? = if (eurToFrom != null && eurToFrom != 0.0) {
+                amount / eurToFrom
+            } else {
+                // Fallback: try direct network-based conversion
+                currencyRepository.convert(amount, fromCurrency, targetCurrency)
             }
 
+            if (converted == null) {
+                _events.emit(
+                    ExpenseEvent.ShowSnackbar(
+                        "Impossible de convertir $fromCurrency → $targetCurrency. Vérifiez votre connexion Internet."
+                    )
+                )
+            }
             _state.update { it.copy(convertedAmountInBase = converted) }
         }
     }
