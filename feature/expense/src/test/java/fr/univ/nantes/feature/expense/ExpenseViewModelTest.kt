@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -58,7 +57,7 @@ class ExpenseViewModelTest {
         viewModel = ExpenseViewModel(fakeRepository, fakeProfileUseCase, fakeCurrencyRepo)
     }
 
-    @After
+    @org.junit.After
     fun tearDown() {
         Dispatchers.resetMain()
     }
@@ -102,8 +101,11 @@ class ExpenseViewModelTest {
         viewModel.addParticipant("Bob")
         viewModel.addExpense("Dinner", 50.0, "Alice")
         viewModel.addExpense("Lunch", 30.0, "Bob")
+
         assertEquals(2, viewModel.state.value.expenses.size)
+
         viewModel.removeParticipant("Alice")
+
         assertEquals(1, viewModel.state.value.expenses.size)
         assertEquals("Lunch", viewModel.state.value.expenses[0].description)
         assertEquals("Bob", viewModel.state.value.expenses[0].paidBy)
@@ -142,9 +144,12 @@ class ExpenseViewModelTest {
         viewModel.addParticipant("Bob")
         viewModel.addExpense("Dinner", 60.0, "Alice")
         viewModel.addExpense("Lunch", 60.0, "Bob")
+
         val balances = viewModel.calculateBalances()
         assertEquals(2, balances.size)
-        balances.forEach { balance -> assertEquals(0.0, balance.amount, 0.01) }
+        balances.forEach { balance ->
+            assertEquals(0.0, balance.amount, 0.01)
+        }
     }
 
     @Test
@@ -152,9 +157,11 @@ class ExpenseViewModelTest {
         viewModel.addParticipant("Alice")
         viewModel.addParticipant("Bob")
         viewModel.addExpense("Dinner", 60.0, "Alice")
+
         val balances = viewModel.calculateBalances()
         val aliceBalance = balances.find { it.participant == "Alice" }
         val bobBalance = balances.find { it.participant == "Bob" }
+
         assertNotNull(aliceBalance)
         assertNotNull(bobBalance)
         assertEquals(30.0, aliceBalance!!.amount, 0.01)
@@ -168,13 +175,16 @@ class ExpenseViewModelTest {
         viewModel.addParticipant("Charlie")
         viewModel.addExpense("Dinner", 90.0, "Alice")
         viewModel.addExpense("Lunch", 60.0, "Bob")
+
         val balances = viewModel.calculateBalances()
         assertEquals(3, balances.size)
+
         val total = 150.0
         val share = total / 3
         val aliceBalance = balances.find { it.participant == "Alice" }
         val bobBalance = balances.find { it.participant == "Bob" }
         val charlieBalance = balances.find { it.participant == "Charlie" }
+
         assertNotNull(aliceBalance)
         assertNotNull(bobBalance)
         assertNotNull(charlieBalance)
@@ -194,6 +204,7 @@ class ExpenseViewModelTest {
         viewModel.addParticipant("Alice")
         viewModel.addParticipant("Bob")
         viewModel.addExpense("Dinner", 60.0, "Alice")
+
         val reimbursements = viewModel.calculateReimbursements()
         assertEquals(1, reimbursements.size)
         assertEquals("Bob", reimbursements[0].from)
@@ -207,6 +218,7 @@ class ExpenseViewModelTest {
         viewModel.addParticipant("Bob")
         viewModel.addExpense("Dinner", 60.0, "Alice")
         viewModel.addExpense("Lunch", 60.0, "Bob")
+
         val reimbursements = viewModel.calculateReimbursements()
         assertTrue(reimbursements.isEmpty())
     }
@@ -217,6 +229,7 @@ class ExpenseViewModelTest {
         viewModel.addParticipant("Bob")
         viewModel.addParticipant("Charlie")
         viewModel.addExpense("Dinner", 90.0, "Alice")
+
         val reimbursements = viewModel.calculateReimbursements()
         val totalReimbursements = reimbursements.sumOf { it.amount }
         assertEquals(60.0, totalReimbursements, 0.01)
@@ -228,7 +241,9 @@ class ExpenseViewModelTest {
         viewModel.addParticipant("Alice")
         viewModel.addParticipant("Bob")
         viewModel.addExpense("Dinner", 60.0, "Alice")
+
         viewModel.reset()
+
         assertEquals("", viewModel.state.value.groupName)
         assertTrue(viewModel.state.value.participants.isEmpty())
         assertTrue(viewModel.state.value.expenses.isEmpty())
@@ -238,6 +253,7 @@ class ExpenseViewModelTest {
     fun updateGroupName_invokesRepositoryWithCorrectParams() {
         viewModel.updateGroupName(42L, "New Name")
         mainDispatcher.scheduler.advanceUntilIdle()
+
         assertEquals(42L, fakeRepository.lastUpdatedGroupNameId)
         assertEquals("New Name", fakeRepository.lastUpdatedGroupName)
     }
@@ -245,10 +261,14 @@ class ExpenseViewModelTest {
     @Test
     fun updateGroupName_doesNotUpdateStateWhenCurrentGroupIdDoesNotMatch() {
         viewModel.setGroupName("Old Name")
+        // currentGroupId is null (never set via loadGroup), so the state update branch is skipped
         viewModel.updateGroupName(42L, "New Name")
         mainDispatcher.scheduler.advanceUntilIdle()
+
+        // Repository is still called with the correct params
         assertEquals(42L, fakeRepository.lastUpdatedGroupNameId)
         assertEquals("New Name", fakeRepository.lastUpdatedGroupName)
+        // But state.groupName must remain unchanged because currentGroupId != 42L
         assertEquals("Old Name", viewModel.state.value.groupName)
     }
 
@@ -256,6 +276,7 @@ class ExpenseViewModelTest {
     fun addParticipantToGroup_invokesRepositoryWithCorrectParams() {
         viewModel.addParticipantToGroup(10L, "Alice")
         mainDispatcher.scheduler.advanceUntilIdle()
+
         assertEquals(10L, fakeRepository.lastAddedParticipantGroupId)
         assertEquals("Alice", fakeRepository.lastAddedParticipantName)
     }
@@ -264,6 +285,7 @@ class ExpenseViewModelTest {
     fun addParticipantToGroup_trimsParticipantName() {
         viewModel.addParticipantToGroup(10L, "  Alice  ")
         mainDispatcher.scheduler.advanceUntilIdle()
+
         assertEquals("Alice", fakeRepository.lastAddedParticipantName)
     }
 
@@ -271,6 +293,7 @@ class ExpenseViewModelTest {
     fun addParticipantToGroup_ignoresBlankName() {
         viewModel.addParticipantToGroup(10L, "   ")
         mainDispatcher.scheduler.advanceUntilIdle()
+
         assertNull(fakeRepository.lastAddedParticipantName)
     }
 
@@ -278,6 +301,7 @@ class ExpenseViewModelTest {
     fun removeParticipantFromGroup_invokesRepositoryWithCorrectParams() {
         viewModel.removeParticipantFromGroup(10L, "Alice")
         mainDispatcher.scheduler.advanceUntilIdle()
+
         assertEquals(10L, fakeRepository.lastRemovedParticipantGroupId)
         assertEquals("Alice", fakeRepository.lastRemovedParticipantName)
     }
@@ -291,6 +315,7 @@ class ExpenseViewModelTest {
             removeParticipants = listOf("Dave")
         )
         mainDispatcher.scheduler.advanceUntilIdle()
+
         assertEquals(5L, fakeRepository.lastUpdateGroupId)
         assertEquals("Renamed", fakeRepository.lastUpdateNewName)
         assertEquals(listOf("Charlie"), fakeRepository.lastUpdateAddParticipants)
@@ -306,6 +331,7 @@ class ExpenseViewModelTest {
             removeParticipants = emptyList()
         )
         mainDispatcher.scheduler.advanceUntilIdle()
+
         assertNull(fakeRepository.lastUpdateNewName)
         assertEquals(listOf("Charlie"), fakeRepository.lastUpdateAddParticipants)
     }
