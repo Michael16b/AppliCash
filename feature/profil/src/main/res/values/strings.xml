@@ -13,6 +13,8 @@
     <string name="profile_save_changes">Enregistrer les modifications</string>
     <string name="profile_logout">Se déconnecter</string>
     <string name="profile_saved_success">Le profil a été enregistré</string>
+    <string name="profile_currency_search_placeholder">Rechercher une devise…</string>
+    <string name="profile_currency_no_result">Aucune devise trouvée</string>
     <string name="currency_aud">AUD - Dollar australien</string>
     <string name="currency_bgn">BGN - Lev bulgare</string>
     <string name="currency_brl">BRL - Real brésilien</string>

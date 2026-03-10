@@ -11,9 +11,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,12 +27,14 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -197,9 +202,21 @@ fun ProfileScreen(
             }
 
             ProfileSectionCard(title = stringResource(id = R.string.profile_preferences)) {
+                var currencySearch by remember { mutableStateOf("") }
+                val filteredCurrencies = remember(currencies, currencySearch) {
+                    if (currencySearch.isBlank()) currencies
+                    else currencies.filter { (code, name) ->
+                        code.contains(currencySearch, ignoreCase = true) ||
+                        name.contains(currencySearch, ignoreCase = true)
+                    }
+                }
+
                 ExposedDropdownMenuBox(
                     expanded = currencyMenuExpanded,
-                    onExpandedChange = { currencyMenuExpanded = !currencyMenuExpanded }
+                    onExpandedChange = { expanded ->
+                        currencyMenuExpanded = expanded
+                        if (!expanded) currencySearch = ""
+                    }
                 ) {
                     OutlinedTextField(
                         value = selectedCurrencyLabel,
@@ -214,16 +231,46 @@ fun ProfileScreen(
                     )
                     ExposedDropdownMenu(
                         expanded = currencyMenuExpanded,
-                        onDismissRequest = { currencyMenuExpanded = false }
+                        onDismissRequest = {
+                            currencyMenuExpanded = false
+                            currencySearch = ""
+                        }
                     ) {
-                        currencies.forEach { (code, name) ->
-                            DropdownMenuItem(
-                                text = { Text("$code — $name") },
-                                onClick = {
-                                    viewModel.onCurrencyChange(code)
-                                    currencyMenuExpanded = false
+                        // Champ de recherche fixe en haut du menu
+                        OutlinedTextField(
+                            value = currencySearch,
+                            onValueChange = { currencySearch = it },
+                            placeholder = { Text(stringResource(id = R.string.profile_currency_search_placeholder)) },
+                            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                        HorizontalDivider()
+                        // Liste filtrée avec hauteur max pour rester dans l'écran
+                        LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
+                            if (filteredCurrencies.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = stringResource(id = R.string.profile_currency_no_result),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(16.dp)
+                                    )
                                 }
-                            )
+                            } else {
+                                items(filteredCurrencies, key = { it.first }) { (code, name) ->
+                                    DropdownMenuItem(
+                                        text = { Text("$code — $name") },
+                                        onClick = {
+                                            viewModel.onCurrencyChange(code)
+                                            currencyMenuExpanded = false
+                                            currencySearch = ""
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 }

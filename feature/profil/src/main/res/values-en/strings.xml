@@ -13,6 +13,8 @@
     <string name="profile_save_changes">Save Changes</string>
     <string name="profile_logout">Log Out</string>
     <string name="profile_saved_success">Profile saved successfully</string>
+    <string name="profile_currency_search_placeholder">Search a currency…</string>
+    <string name="profile_currency_no_result">No currency found</string>
     <!-- Currency names -->
     <string name="currency_aud">AUD - Australian Dollar</string>
     <string name="currency_bgn">BGN - Bulgarian Lev</string>
