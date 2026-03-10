@@ -92,5 +92,7 @@ class ExpenseRepositoryImpl(
     override suspend fun removeParticipantFromGroup(groupId: Long, participantName: String) {
         participantDao.deleteParticipantByName(groupId, participantName)
     }
+
+
 }
 

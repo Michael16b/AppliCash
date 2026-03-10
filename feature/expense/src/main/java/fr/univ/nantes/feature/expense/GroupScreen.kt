@@ -60,6 +60,7 @@ fun GroupScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val groupNameError = stringResource(R.string.error_group_name)
     val membersError = stringResource(R.string.error_members)
+    val duplicateMembersError = stringResource(R.string.error_duplicate_members)
     val currentUserName = state.currentUserName
     LaunchedEffect(currentUserName) {
         if (!currentUserName.isNullOrBlank() && memberFields.size == 1 && memberFields[0].value.isBlank()) {
@@ -222,12 +223,20 @@ fun GroupScreen(
                 Button(
                     onClick = {
                         val members = memberFields.filter { it.value.isNotBlank() }
+                        // Normaliser les noms : trim et vérifier les doublons
+                        val normalizedMembers = members.map { it.copy(value = it.value.trim()) }
+                        val uniqueNames = normalizedMembers.map { it.value }.distinct()
+
                         when {
                             state.groupName.isBlank() -> errorMessage = groupNameError
-                            members.size < 2 -> errorMessage = membersError
+                            normalizedMembers.size < 2 -> errorMessage = membersError
+                            uniqueNames.size < normalizedMembers.size -> {
+                                // Doublons détectés
+                                errorMessage = duplicateMembersError
+                            }
                             else -> {
                                 errorMessage = null
-                                members.forEach { viewModel.addParticipant(it.value) }
+                                uniqueNames.forEach { viewModel.addParticipant(it) }
                                 viewModel.saveGroup()
                                 navigateToHome()
                             }

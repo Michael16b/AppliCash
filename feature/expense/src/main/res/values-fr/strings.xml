@@ -22,6 +22,7 @@
     <string name="edit_group">Modifier le groupe</string>
     <string name="save_changes">Enregistrer les modifications</string>
     <string name="error_cannot_remove_member_with_expenses">Impossible de supprimer un membre ayant des dépenses</string>
+    <string name="error_duplicate_members">Des noms de membres dupliqués détectés. Veuillez utiliser des noms uniques.</string>
 
     <!-- ExpenseScreen -->
     <string name="description">Description</string>

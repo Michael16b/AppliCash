@@ -22,6 +22,7 @@
     <string name="edit_group">Edit Group</string>
     <string name="save_changes">Save Changes</string>
     <string name="error_cannot_remove_member_with_expenses">Cannot remove member with expenses</string>
+    <string name="error_duplicate_members">Duplicate member names detected. Please use unique names.</string>
 
     <!-- ExpenseScreen -->
     <string name="description">Description</string>

@@ -65,6 +65,7 @@ fun EditGroupScreen(
     val groupNameError = stringResource(R.string.error_group_name)
     val membersError = stringResource(R.string.error_members)
     val cannotRemoveMemberError = stringResource(R.string.error_cannot_remove_member_with_expenses)
+    val duplicateMembersError = stringResource(R.string.error_duplicate_members)
 
     // Charger les données du groupe
     LaunchedEffect(group) {
@@ -255,9 +256,17 @@ fun EditGroupScreen(
                 Button(
                     onClick = {
                         val members = memberFields.filter { it.value.isNotBlank() }
+                        // Normaliser les noms : trim et vérifier les doublons
+                        val normalizedMembers = members.map { it.copy(value = it.value.trim()) }
+                        val uniqueNames = normalizedMembers.map { it.value }.distinct()
+
                         when {
                             groupName.isBlank() -> errorMessage = groupNameError
-                            members.size < 2 -> errorMessage = membersError
+                            normalizedMembers.size < 2 -> errorMessage = membersError
+                            uniqueNames.size < normalizedMembers.size -> {
+                                // Doublons détectés
+                                errorMessage = duplicateMembersError
+                            }
                             else -> {
                                 errorMessage = null
 
@@ -268,7 +277,7 @@ fun EditGroupScreen(
 
                                 // Gérer les participants
                                 val existingMembers = group.participants
-                                val newMembers = members.map { it.value }
+                                val newMembers = uniqueNames
 
                                 // Ajouter les nouveaux membres
                                 newMembers.filter { it !in existingMembers }.forEach { newMember ->
