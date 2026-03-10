@@ -7,15 +7,15 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
 import fr.univ.nantes.core.ui.AppliCashTheme
+import java.text.NumberFormat
+import java.util.Currency
+import java.util.Locale
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.text.NumberFormat
-import java.util.Currency
-import java.util.Locale
 
 /**
  * Snapshot tests for the expense module screens.
