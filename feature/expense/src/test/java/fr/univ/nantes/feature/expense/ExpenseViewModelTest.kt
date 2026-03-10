@@ -52,6 +52,12 @@ class FakeExpenseRepository : ExpenseRepository {
     override suspend fun deleteExpense(expenseId: Long) {
         // No-op for testing
     }
+
+    override suspend fun updateGroupName(groupId: Long, groupName: String) {
+    }
+
+    override suspend fun removeParticipantFromGroup(groupId: Long, participantName: String) {
+    }
 }
 private fun fakeProfileUseCase(): ProfileUseCase {
     val fakeRepository = object : ProfileRepository {
