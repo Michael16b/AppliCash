@@ -39,6 +39,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -68,7 +70,6 @@ import fr.univ.nantes.core.ui.GreenBg50
 import fr.univ.nantes.core.ui.Teal600
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     modifier: Modifier = Modifier,
@@ -143,7 +144,7 @@ fun ProfileScreenContent(
         return
     }
 
-    androidx.compose.material3.Scaffold(
+    Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
@@ -248,15 +249,20 @@ fun ProfileScreenContent(
                         trailingIcon = { Icon(Icons.Outlined.ArrowDropDown, contentDescription = null) },
                         label = { Text(stringResource(id = R.string.profile_preferred_currency)) },
                         modifier = Modifier
-                            .menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
-                            .fillMaxWidth()
+                            .menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.outline,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        )
                     )
                     ExposedDropdownMenu(
                         expanded = currencyMenuExpanded,
                         onDismissRequest = {
                             currencyMenuExpanded = false
                             currencySearch = ""
-                        }
+                        },
+                        modifier = Modifier.fillMaxWidth(0.9f)
                     ) {
                         OutlinedTextField(
                             value = currencySearch,
@@ -269,16 +275,12 @@ fun ProfileScreenContent(
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                         HorizontalDivider()
-                        LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
-                        // Scrollable Column instead of LazyColumn — LazyColumn (SubcomposeLayout)
-                        // cannot be used inside ExposedDropdownMenu because the parent ScrollNode
-                        // requests intrinsic measurements, which SubcomposeLayout does not support.
+
                         Column(
                             modifier = Modifier
                                 .heightIn(max = 240.dp)
                                 .verticalScroll(rememberScrollState())
                         ) {
-                        LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
                             if (filteredCurrencies.isEmpty()) {
                                 Text(
                                     text = stringResource(id = R.string.profile_currency_no_result),
