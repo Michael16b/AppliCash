@@ -193,4 +193,3 @@ class LoginRepositoryRoomImplTest {
         assertEquals("bob@mail.com", user.username)
     }
 }
-
