@@ -1,4 +1,4 @@
-name: Maestro E2E Tests (Oracle AMD Self-Hosted)
+name: Maestro E2E Tests
 
 on:
     push:
@@ -21,7 +21,7 @@ env:
 jobs:
     maestro-e2e:
         name: Maestro E2E - Scenario Tests
-        runs-on: self-hosted
+        runs-on: ubuntu-latest
         timeout-minutes: 60
 
         steps:
