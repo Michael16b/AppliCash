@@ -250,7 +250,29 @@ class ExpenseViewModel(
             return
         }
         viewModelScope.launch {
-            val converted = currencyRepository.convert(amount, fromCurrency, baseCurrency)
+            // Try direct conversion first
+            var converted = currencyRepository.convert(amount, fromCurrency, baseCurrency)
+
+            // If direct rate is unavailable, use EUR (STORAGE_CURRENCY) as pivot.
+            // The cache is populated with EUR as base, so EUR→X rates are always available.
+            if (converted == null) {
+                // fromCurrency → EUR : use inverse of EUR→fromCurrency rate
+                val amountInEur: Double? = if (fromCurrency == STORAGE_CURRENCY) {
+                    amount
+                } else {
+                    val eurToFrom = currencyRepository.getRate(STORAGE_CURRENCY, fromCurrency)
+                    if (eurToFrom != null && eurToFrom != 0.0) amount / eurToFrom else null
+                }
+                // EUR → baseCurrency
+                if (amountInEur != null) {
+                    converted = if (baseCurrency == STORAGE_CURRENCY) {
+                        amountInEur
+                    } else {
+                        currencyRepository.convert(amountInEur, STORAGE_CURRENCY, baseCurrency)
+                    }
+                }
+            }
+
             _state.update { it.copy(convertedAmountInBase = converted) }
         }
     }

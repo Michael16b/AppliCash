@@ -1,4 +1,4 @@
-package fr.univ.nantes.feature.expense
+﻿package fr.univ.nantes.feature.expense
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -52,7 +52,6 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -119,11 +118,8 @@ fun AddExpenseScreen(
     val availableCurrencies = state.availableCurrencies.ifEmpty { fallbackCurrencies }
 
     val userCurrency = state.userCurrencyCode
-    var selectedCurrency by remember(userCurrency, availableCurrencies) {
-        mutableStateOf(
-            if (availableCurrencies.contains(userCurrency)) userCurrency
-            else availableCurrencies.firstOrNull() ?: "EUR"
-        )
+    var selectedCurrency by remember(userCurrency) {
+        mutableStateOf(userCurrency.ifBlank { "EUR" })
     }
     var currencyExpanded by remember { mutableStateOf(false) }
 
@@ -229,7 +225,7 @@ fun AddExpenseScreen(
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = stringResource(R.string.converted_amount, userCurrency, convertedInBase),
+                                text = stringResource(R.string.converted_amount, userCurrency, "%.2f".format(convertedInBase)),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
@@ -612,23 +608,24 @@ fun AddExpenseScreen(
                                         modifier = Modifier.weight(1f),
                                         style = MaterialTheme.typography.bodyMedium
                                     )
-                                    IconButton(
-                                        onClick = {
-                                            val current = participantShares[participant] ?: 1
-                                            if (current > 1) participantShares[participant] = current - 1
-                                        },
+                                    Box(
                                         modifier = Modifier
-                                            .size(32.dp)
+                                            .size(28.dp)
                                             .background(
                                                 MaterialTheme.colorScheme.surfaceVariant,
                                                 CircleShape
                                             )
+                                            .clickable {
+                                                val current = participantShares[participant] ?: 1
+                                                if (current > 1) participantShares[participant] = current - 1
+                                            },
+                                        contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             Icons.Outlined.Remove,
                                             contentDescription = stringResource(R.string.decrease_share),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(16.dp)
+                                            modifier = Modifier.size(14.dp)
                                         )
                                     }
                                     Box(
@@ -645,19 +642,20 @@ fun AddExpenseScreen(
                                             color = Green500
                                         )
                                     }
-                                    IconButton(
-                                        onClick = {
-                                            participantShares[participant] = (participantShares[participant] ?: 1) + 1
-                                        },
+                                    Box(
                                         modifier = Modifier
-                                            .size(32.dp)
+                                            .size(28.dp)
                                             .background(Green500, CircleShape)
+                                            .clickable {
+                                                participantShares[participant] = (participantShares[participant] ?: 1) + 1
+                                            },
+                                        contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             Icons.Outlined.Add,
                                             contentDescription = stringResource(R.string.increase_share),
                                             tint = Color.White,
-                                            modifier = Modifier.size(16.dp)
+                                            modifier = Modifier.size(14.dp)
                                         )
                                     }
                                     Surface(
@@ -704,7 +702,7 @@ fun AddExpenseScreen(
                                 modifier = Modifier.align(Alignment.End)
                             ) {
                                 Text(
-                                    stringResource(R.string.split_equally_quick, selectedCurrency, equalShare),
+                                    stringResource(R.string.split_equally_quick, selectedCurrency, "%.2f".format(equalShare)),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Green500
                                 )
@@ -1151,7 +1149,7 @@ private fun AddExpenseScreenContent(
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = stringResource(R.string.converted_amount, userCurrency, convertedInBase),
+                                text = stringResource(R.string.converted_amount, userCurrency, "%.2f".format(convertedInBase)),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.White.copy(alpha = 0.85f)
                             )

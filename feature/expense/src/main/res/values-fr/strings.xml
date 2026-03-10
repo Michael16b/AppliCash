@@ -83,7 +83,7 @@
     <string name="me_label">Moi</string>
     <string name="decrease_share">Diminuer</string>
     <string name="increase_share">Augmenter</string>
-    <string name="split_equally_quick">Répartir équitablement (%1$s %.2f/pers.)</string>
+    <string name="split_equally_quick">Répartir équitablement (%1$s %2$s/pers.)</string>
     <string name="remaining_to_split">Reste à répartir</string>
-    <string name="converted_amount">≈ %1$s %.2f</string>
+    <string name="converted_amount">≈ %1$s %2$s</string>
 </resources>
