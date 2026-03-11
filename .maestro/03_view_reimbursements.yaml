@@ -30,46 +30,46 @@ tags:
 
 # ── Navigate to the Balances tab ──────────────────────────────────────────────
 - tapOn:
-    text: "Balances"
+    text: "Soldes"
 
 - waitForAnimationToEnd:
     timeout: 2000
 
 - assertVisible:
-    text: "Member balances"
+    text: "Soldes des membres"
 
 - takeScreenshot: "scenario3_balances_tab"
 
 # ── RG7: Verify balance labels (positive = receive, negative = pay) ───────────
 - assertVisible:
-    text: "should receive"
+    text: "doit recevoir"
     optional: true
 
 - assertVisible:
-    text: "should reimburse"
+    text: "doit rembourser"
     optional: true
 
 # CA17: Handle case where all balances are zero
 - assertVisible:
-    text: "Everyone is balanced ✓"
+    text: "Tout le monde est à l'équilibre ✓"
     optional: true
 
 # ── RG6: Verify "Suggested reimbursements" section ───────────────────────────
 - assertVisible:
-    text: "Suggested reimbursements"
+    text: "Remboursements suggérés"
 
 - takeScreenshot: "scenario3_suggested_reimbursements"
 
 # ── RG6: Verify at most n-1 transactions for n participants ───────────────────
 # With 3 participants (Alice, Bob, Charlie) there should be at most 2 reimbursements
-# We verify the "owes to" text appears (individual reimbursement row)
+# We verify the "doit payer à" text appears (individual reimbursement row)
 - assertVisible:
-    text: "owes to"
+    text: "doit payer à"
     optional: true
 
 # ── Verify "No reimbursements needed" when all settled ────────────────────────
 - assertVisible:
-    text: "No reimbursements needed"
+    text: "Aucun remboursement nécessaire"
     optional: true
 
 - takeScreenshot: "scenario3_reimbursements_detail"
@@ -82,4 +82,3 @@ tags:
 
 - assertVisible:
     text: "AppliCash"
-

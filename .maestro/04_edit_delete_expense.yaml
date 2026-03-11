@@ -39,7 +39,7 @@ tags:
 
 # ── Delete the "Food" expense ─────────────────────────────────────────────────
 - tapOn:
-    text: "Delete expense"
+    text: "Supprimer la dépense"
     index: 1
 
 - waitForAnimationToEnd:
@@ -53,13 +53,13 @@ tags:
 
 # ── RG13: Verify balances update after deletion ───────────────────────────────
 - tapOn:
-    text: "Balances"
+    text: "Soldes"
 
 - waitForAnimationToEnd:
     timeout: 2000
 
 - assertVisible:
-    text: "Member balances"
+    text: "Soldes des membres"
 
 # With only Hotel=90 (Alice), 3 members, share=30 each
 # Alice net = +60 (should receive), Bob = -30, Charlie = -30
@@ -74,9 +74,9 @@ tags:
 - waitForAnimationToEnd:
     timeout: 2000
 
-# Tap the edit group button (pencil icon / "Edit Group" action)
+# Tap the edit group button (pencil icon / "Modifier le groupe" action)
 - tapOn:
-    text: "Edit Group"
+    text: "Modifier le groupe"
     optional: true
 
 - waitForAnimationToEnd:
@@ -84,7 +84,7 @@ tags:
 
 # ── RG5: Try to remove Alice (who has the Hotel expense) ─────────────────────
 - tapOn:
-    description: "Remove member"
+    description: "Supprimer le membre"
     index: 0
     optional: true
 
@@ -93,22 +93,22 @@ tags:
 
 # RG5: Error — cannot remove a member with expenses
 - assertVisible:
-    text: "Cannot remove member with expenses"
+    text: "Impossible de supprimer un membre ayant des dépenses"
     optional: true
 
 - takeScreenshot: "scenario4_cannot_remove_member_with_expenses"
 
 # ── RG13: Edit the group name ─────────────────────────────────────────────────
 - tapOn:
-    text: "Group Name"
+    text: "Nom du groupe"
     optional: true
 
-- clearText
+- eraseText: 50
 
 - inputText: "Summer Trip"
 
 - tapOn:
-    text: "Save Changes"
+    text: "Enregistrer les modifications"
     optional: true
 
 - waitForAnimationToEnd:
@@ -128,7 +128,7 @@ tags:
     timeout: 2000
 
 - tapOn:
-    text: "Delete expense"
+    text: "Supprimer la dépense"
     index: 0
     optional: true
 
@@ -137,19 +137,18 @@ tags:
 
 # After deleting all expenses, balance section should show "Everyone is balanced"
 - tapOn:
-    text: "Balances"
+    text: "Soldes"
     optional: true
 
 - waitForAnimationToEnd:
     timeout: 2000
 
 - assertVisible:
-    text: "Everyone is balanced ✓"
+    text: "Tout le monde est à l'équilibre ✓"
     optional: true
 
 - assertVisible:
-    text: "No reimbursements needed"
+    text: "Aucun remboursement nécessaire"
     optional: true
 
 - takeScreenshot: "scenario4_all_expenses_deleted"
-

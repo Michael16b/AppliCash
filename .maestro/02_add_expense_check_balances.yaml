@@ -32,14 +32,14 @@ tags:
 
 # Verify we see the group detail screen (tab bar with Expenses / Balances)
 - assertVisible:
-    text: "Expenses"
+    text: "Dépenses"
 
 # ── RG14: Verify "Add an expense" button is visible ──────────────────────────
 - assertVisible:
-    text: "Add an expense"
+    text: "Ajouter une dépense"
 
 - tapOn:
-    text: "Add an expense"
+    text: "Ajouter une dépense"
 
 - waitForAnimationToEnd:
     timeout: 3000
@@ -47,7 +47,7 @@ tags:
 # ── RG4: Validate — zero amount shows error ───────────────────────────────────
 # We land on AddExpenseScreen
 - assertVisible:
-    text: "Nouvelle dépense"
+    text: "Ajouter une dépense"
 
 - tapOn:
     text: "Ajouter la dépense"
@@ -59,12 +59,12 @@ tags:
 # ── Enter valid expense details ───────────────────────────────────────────────
 - tapOn:
     text: "Titre de la dépense"
-- clearText
+- eraseText: 50
 - inputText: "Hotel"
 
 - tapOn:
     text: "Montant"
-- clearText
+- eraseText: 50
 - inputText: "90"
 
 # Payer is pre-selected (Alice logged in) — verify dropdown shows Alice
@@ -86,28 +86,26 @@ tags:
 
 # ── Add a second expense (paid by Bob) to verify multi-expense balances ───────
 - tapOn:
-    text: "Add an expense"
+    text: "Ajouter une dépense"
 
 - waitForAnimationToEnd:
     timeout: 3000
 
 - tapOn:
     text: "Titre de la dépense"
-- clearText
+- eraseText: 50
 - inputText: "Food"
 
 - tapOn:
     text: "Montant"
-- clearText
+- eraseText: 50
 - inputText: "30"
 
 # Change payer to Bob
 - tapOn:
     text: "Alice"
-    optional: true
 - tapOn:
     text: "Bob"
-    optional: true
 
 - tapOn:
     text: "Ajouter la dépense"
@@ -117,14 +115,14 @@ tags:
 
 # ── Navigate to Balances tab ──────────────────────────────────────────────────
 - tapOn:
-    text: "Balances"
+    text: "Soldes"
 
 - waitForAnimationToEnd:
     timeout: 2000
 
 # CA17: Verify balances screen loaded
 - assertVisible:
-    text: "Member balances"
+    text: "Soldes des membres"
 
 # RG10: With Hotel=90 (Alice) and Food=30 (Bob), total=120, share=40 each
 # Alice paid 90, owes 40 → net +50 (should receive)
@@ -137,7 +135,6 @@ tags:
     text: "Bob"
 
 - assertVisible:
-    text: "Suggested reimbursements"
+    text: "Remboursements suggérés"
 
 - takeScreenshot: "scenario2_balances_verified"
-
