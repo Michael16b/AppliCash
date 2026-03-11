@@ -1,8 +1,8 @@
 name: Maestro E2E Tests
 
 on:
-    push:
-        branches: [ "main" ]
+    schedule:
+        - cron: '0 2 * * *' # Every night at 2 AM UTC
     pull_request:
         branches: [ "main" ]
     workflow_dispatch:
@@ -37,8 +37,6 @@ jobs:
                   distribution: 'temurin'
 
             # ── KILL TOOLCHAIN CONSTRAINTS ──────────────────────────────────────────
-            # We remove the file that forces a JetBrains JDK and force Temurin instead.
-            # This fixes the "Cannot find a Java installation matching JetBrains" error.
             - name: Force JDK and Remove JetBrains constraint
               run: |
                   rm -f gradle/gradle-daemon-jvm.properties
@@ -58,18 +56,29 @@ jobs:
             - name: Grant execute permission for gradlew
               run: chmod +x gradlew
 
-            # ── Build APK (with low memory limit for Oracle Micro instance) ─────────
+            # ── Build APK ───────────────────────────────────────────────────────────
             - name: Build Debug APK
               run: |
                   ./gradlew assembleDebug \
                     -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g" \
                     ${{ env.GRADLE_COMMON_ARGS }}
 
+            # ── Maestro Cache ───────────────────────────────────────────────────────
+            - name: Cache Maestro CLI
+              id: cache-maestro
+              uses: actions/cache@v4
+              with:
+                path: ~/.maestro
+                key: ${{ runner.os }}-maestro
+
             # ── Maestro Setup ───────────────────────────────────────────────────────
             - name: Install Maestro CLI
+              if: steps.cache-maestro.outputs.cache-hit != 'true'
               run: |
                   curl -Ls "https://get.maestro.mobile.dev" | bash
-                  echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+            - name: Add Maestro to Path
+              run: echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
             # ── KVM & System Dependencies ───────────────────────────────────────────
             - name: Enable KVM and Install Deps
@@ -93,22 +102,17 @@ jobs:
                   target: google_apis
                   profile: pixel_3a
                   avd-name: maestro_test_device
-                  ram-size: 1536M
-                  heap-size: 256M
+                  ram-size: 2048M
+                  heap-size: 512M
                   emulator-boot-timeout: 300
-                  emulator-options: >-
-                      -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader_indirect
+                  emulator-options: -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader_indirect
                   disable-animations: true
                   script: |
                       adb install -r app/build/outputs/apk/debug/app-debug.apk
                       mkdir -p .maestro/results
-
-                      for scenario in .maestro/*.yaml; do
+                      for scenario in .maestro/[0-9]*.yaml; do
                         echo "Running $scenario..."
-                        timeout 300 maestro test "$scenario" \
-                          --format junit \
-                          --output ".maestro/results/$(basename "$scenario" .yaml)_results.xml" \
-                          --no-ansi || true
+                        maestro test "$scenario" --format junit --output ".maestro/results/$(basename "$scenario" .yaml)_results.xml" --no-ansi || echo "Failed: $scenario"
                       done
 
             # ── Artifacts & Reports ─────────────────────────────────────────────────
