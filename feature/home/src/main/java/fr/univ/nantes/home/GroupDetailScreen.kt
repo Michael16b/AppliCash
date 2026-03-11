@@ -1,6 +1,7 @@
 package fr.univ.nantes.home
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -60,6 +62,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -83,9 +86,6 @@ import java.util.Currency
 import java.util.Locale
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import android.content.Intent
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.material.icons.filled.Share
 
 /** Source currency for all expenses entered in the app. */
 private const val EXPENSE_CURRENCY = "EUR"
@@ -200,8 +200,8 @@ fun GroupDetailScreen(
                             clipboardManager.setText(AnnotatedString(group.shareCode))
                         }
                     },
-                        onShareCode = {
-                            val sendIntent: Intent = Intent().apply {
+                    onShareCode = {
+                        val sendIntent: Intent = Intent().apply {
                             action = Intent.ACTION_SEND
                             putExtra(Intent.EXTRA_TEXT, shareMessage)
                             type = "text/plain"
@@ -1026,7 +1026,7 @@ private fun ShareCodeCard(
                     Text(text = stringResource(R.string.share))
                 }
                 TextButton(
-                    onClick = onCopyCode,
+                    onClick = onCopyCode
                 ) {
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
