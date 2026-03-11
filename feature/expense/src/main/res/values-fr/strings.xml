@@ -107,4 +107,6 @@
     <string name="per_person_amount">%s par personne</string>
     <string name="per_person_suffix">/pers.</string>
     <string name="expense">Dépense</string>
+    <string name="join_group_success_message">Succès</string>
+
 </resources>

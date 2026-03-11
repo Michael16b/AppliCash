@@ -28,6 +28,7 @@
     <string name="join_group_section_title">Join a group</string>
     <string name="join_group_code_label">Group code</string>
     <string name="join_group_code_placeholder">Enter the code (e.g., ABC123)</string>
+    <string name="join_group_success_message">Success</string>
     <string name="join_group_button">Join Group</string>
     <string name="or_create_new_group">Or create a new group</string>
     <string name="share_code_title">Share this group</string>

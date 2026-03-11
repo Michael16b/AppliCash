@@ -154,7 +154,11 @@ fun GroupScreenContent(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = joinGroupMessage,
-                    color = if (joinGroupMessage.contains("succès", ignoreCase = true)) Green500 else MaterialTheme.colorScheme.error,
+                    color = if (joinGroupMessage == stringResource(R.string.join_group_success_message)) {
+                        Green500
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(start = 4.dp)
                 )

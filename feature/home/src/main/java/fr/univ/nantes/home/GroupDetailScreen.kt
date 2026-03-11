@@ -190,7 +190,7 @@ fun GroupDetailScreen(
                 convertAmount = convertAmount
             )
 
-            if (group.shareCode.isNotBlank() && group.shareCode.isNotBlank()) {
+            if (group.shareCode.isNotBlank()) {
                 val shareMessage = stringResource(R.string.share_message, group.groupName, group.shareCode)
 
                 ShareCodeCard(
