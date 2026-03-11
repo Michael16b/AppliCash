@@ -8,5 +8,5 @@ plugins {
 
 }
 
-
-
+// Include shared Gradle test tasks and JaCoCo collection
+apply(from = "gradle/test-tasks.gradle.kts")
