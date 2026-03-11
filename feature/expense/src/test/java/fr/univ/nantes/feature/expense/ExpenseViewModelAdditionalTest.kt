@@ -347,7 +347,6 @@ class FakeExpenseRepository : ExpenseRepository {
     var lastUpdateAddParticipants: List<String>? = null
     var lastUpdateRemoveParticipants: List<String>? = null
 
-
     override fun getAllGroupsWithDetails(): Flow<List<GroupWithDetails>> = flowOf(emptyList())
 
     override suspend fun getGroupWithDetails(groupId: Long): GroupWithDetails? = null
@@ -407,8 +406,5 @@ class FakeExpenseRepository : ExpenseRepository {
         userName: String?
     ): JoinGroupResult {
         TODO("Not yet implemented")
-
     }
-
-
 }
