@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ktlint)
 }
 
 android {
@@ -27,6 +28,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 kotlin {
@@ -36,6 +41,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":domain:login")) // Needed for some types if any
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.serialization.json)
 
