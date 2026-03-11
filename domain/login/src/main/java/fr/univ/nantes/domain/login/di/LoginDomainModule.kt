@@ -4,6 +4,6 @@ import fr.univ.nantes.domain.login.LoginUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.module
 
-val LoginDomainModule = module {
+val loginDomainModule = module {
     factoryOf(::LoginUseCase)
 }
