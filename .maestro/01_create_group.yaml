@@ -1,133 +1,134 @@
 appId: fr.univ.nantes.archi
 name: "Scenario 1 - Create group and add members"
 tags:
-  - rg1
-  - rg2
-  - rg3
-  - ca14
-  - ca15
-  - ca16
+    - rg1
+    - rg2
+    - rg3
+    - ca14
+    - ca15
+    - ca16
 
 ---
-
 # ── Setup ─────────────────────────────────────────────────────────────────────
 - launchApp:
-    clearState: true
+      clearState: true
 
 - waitForAnimationToEnd:
-    timeout: 5000
+      timeout: 5000
 
 # ── Register ──────────────────────────────────────────────────────────────────
 - tapOn:
-    text: "Profil"
-    optional: true
+      text: "Profil"
+      optional: true
 
 - waitForAnimationToEnd:
-    timeout: 3000
+      timeout: 3000
+
+# If on Login screen, create an account
+- tapOn:
+      text: "Créer un compte"
+      optional: true
 
 - tapOn:
-    text: "Créer un compte"
-    optional: true
-
-- tapOn:
-    text: "Email"
+      text: "Email"
 - eraseText: 50
 - inputText: "test@appli.cash"
 
 - tapOn:
-    text: "Mot de passe"
+      text: "Mot de passe"
 - eraseText: 50
 - inputText: "test1234"
 
 - tapOn:
-    text: "Prénom"
+      text: "Prénom"
 - eraseText: 50
 - inputText: "Alice"
 
 - tapOn:
-    text: "Nom"
+      text: "Nom"
 - eraseText: 50
 - inputText: "Test"
 
 - tapOn:
-    text: "Créer un compte"
+      text: "Créer un compte"
 
+# Wait for navigation to Home after registration
 - waitForAnimationToEnd:
-    timeout: 5000
+      timeout: 5000
 
 # ── Navigate to Create Group ──────────────────────────────────────────────────
 - tapOn:
-    text: "Ajouter un groupe"
+      text: "Ajouter un groupe"
 
 - waitForAnimationToEnd:
-    timeout: 3000
+      timeout: 3000
 
 - assertVisible:
-    text: "Nouveau Groupe"
+      text: "Nouveau Groupe"
 
 # ── RG11: Empty name error ────────────────────────────────────────────────────
 - tapOn:
-    text: "Créer le groupe"
+      text: "Créer le groupe"
 
 - assertVisible:
-    text: "Veuillez entrer un nom de groupe"
+      text: "Veuillez entrer un nom de groupe"
 
 # ── Enter group name ──────────────────────────────────────────────────────────
-# Index 1 car "Nom du groupe" est présent en titre (index 0) et en label (index 1)
+# Index 1 because "Nom du groupe" is present as title (0) and label (1)
 - tapOn:
-    text: "Nom du groupe"
-    index: 1
+      text: "Nom du groupe"
+      index: 1
 - eraseText: 50
 - inputText: "Weekend Trip"
 
 # ── RG1: Minimum 2 members error ──────────────────────────────────────────────
 - tapOn:
-    text: "Créer le groupe"
+      text: "Créer le groupe"
 
 - assertVisible:
-    text: "Ajoutez au moins 2 membres"
+      text: "Ajoutez au moins 2 membres"
 
 # ── Add members ───────────────────────────────────────────────────────────────
 - tapOn:
-    text: "Ajouter un membre"
+      text: "Ajouter un membre"
 
 - tapOn:
-    text: "Membre"
-    index: 1 # Le champ vide ajouté
+      text: "Membre"
+      index: 1
 - eraseText: 50
 - inputText: "Bob"
 
 # ── RG3: Duplicate name error ─────────────────────────────────────────────────
 - tapOn:
-    text: "Ajouter un membre"
+      text: "Ajouter un membre"
 
 - tapOn:
-    text: "Membre"
-    index: 2
+      text: "Membre"
+      index: 2
 - eraseText: 50
 - inputText: "Alice"
 
 - tapOn:
-    text: "Créer le groupe"
+      text: "Créer le groupe"
 
 - assertVisible:
-    text: "Des noms de membres dupliqués détectés. Veuillez utiliser des noms uniques."
+      text: "Des noms de membres dupliqués détectés. Veuillez utiliser des noms uniques."
 
 # ── Fix and Submit ────────────────────────────────────────────────────────────
 - tapOn:
-    text: "Alice"
-    index: 2
+      text: "Alice"
+      index: 2
 - eraseText: 50
 - inputText: "Charlie"
 
 - tapOn:
-    text: "Créer le groupe"
+      text: "Créer le groupe"
 
 - waitForAnimationToEnd:
-    timeout: 5000
+      timeout: 5000
 
 # ── Verify result ─────────────────────────────────────────────────────────────
 - assertVisible:
-    text: "Weekend Trip"
+      text: "Weekend Trip"
 
 - takeScreenshot: "scenario1_group_created"

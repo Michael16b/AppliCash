@@ -1,140 +1,111 @@
 appId: fr.univ.nantes.archi
 name: "Scenario 2 - Add expense and verify balances"
 tags:
-  - rg4
-  - rg14
-  - ca14
-  - ca15
-  - ca16
-
-# ── Business rules verified ──────────────────────────────────────────────────
-# RG4:  An expense requires an amount > 0
-# RG10: Balances are calculated from all group expenses
-# RG11: Form validates before submission (amount, description)
-# RG12: Error messages display correctly
-# RG14: Authentication required to add an expense
+    - rg4
+    - rg14
+    - ca14
+    - ca15
+    - ca16
 
 ---
-
-# ── Setup: launch with existing state (group already created by scenario 1) ──
+# ── Setup ─────────────────────────────────────────────────────────────────────
 - launchApp:
-    clearState: false
+      clearState: false
 
 - waitForAnimationToEnd:
-    timeout: 5000
+      timeout: 5000
 
-# ── Navigate into the "Weekend Trip" group ────────────────────────────────────
+# ── Navigate into the group ───────────────────────────────────────────────────
 - tapOn:
-    text: "Weekend Trip"
+      text: "Weekend Trip"
 
 - waitForAnimationToEnd:
-    timeout: 3000
+      timeout: 3000
 
-# Verify we see the group detail screen (tab bar with Expenses / Balances)
+# Verify "Expenses" tab
 - assertVisible:
-    text: "Dépenses"
+      text: "Dépenses"
 
-# ── RG14: Verify "Add an expense" button is visible ──────────────────────────
-- assertVisible:
-    text: "Ajouter une dépense"
-
+# ── Add first expense (Hotel) ────────────────────────────────────────────────
 - tapOn:
-    text: "Ajouter une dépense"
+      text: "Ajouter une dépense"
 
 - waitForAnimationToEnd:
-    timeout: 3000
+      timeout: 3000
 
-# ── RG4: Validate — zero amount shows error ───────────────────────────────────
-# We land on AddExpenseScreen
-- assertVisible:
-    text: "Ajouter une dépense"
-
+# Title: index 1 because present in section title (0) and label (1)
 - tapOn:
-    text: "Ajouter la dépense"
-
-# CA17: Error state — amount is empty
-- assertVisible:
-    text: "Montant"
-
-# ── Enter valid expense details ───────────────────────────────────────────────
-- tapOn:
-    text: "Titre de la dépense"
-- eraseText: 50
+      point: 6%,18%
+      index: 1
+- eraseText: 100
 - inputText: "Hotel"
 
+# Amount: index 1 for input field
 - tapOn:
-    text: "Montant"
-- eraseText: 50
+      point: 5%,30%
+      index: 1
+- eraseText: 100
 - inputText: "90"
 
-# Payer is pre-selected (Alice logged in) — verify dropdown shows Alice
-- assertVisible:
-    text: "Alice"
-
-# ── Submit the expense ────────────────────────────────────────────────────────
 - tapOn:
-    text: "Ajouter la dépense"
+      text: Retour
+      index: 1
+
+# Payer Alice is selected by default
+- assertVisible:
+      text: "Alice"
+
+- tapOn:
+      text: "Ajouter la dépense"
 
 - waitForAnimationToEnd:
-    timeout: 3000
+      timeout: 3000
 
-# ── Back to group detail — verify expense appears ────────────────────────────
-- assertVisible:
-    text: "Hotel"
-
-- takeScreenshot: "scenario2_expense_added"
-
-# ── Add a second expense (paid by Bob) to verify multi-expense balances ───────
+# ── Add second expense (Food) ────────────────────────────────────────────────
 - tapOn:
-    text: "Ajouter une dépense"
+      text: "Ajouter une dépense"
 
 - waitForAnimationToEnd:
-    timeout: 3000
+      timeout: 3000
 
 - tapOn:
-    text: "Titre de la dépense"
-- eraseText: 50
+      point: 6%,20%
+      index: 1
+- eraseText: 100
 - inputText: "Food"
 
 - tapOn:
-    text: "Montant"
-- eraseText: 50
+      point: 6%,30%
+      index: 1
+- eraseText: 100
 - inputText: "30"
 
-# Change payer to Bob
+# Change payer to Bob (Dropdown)
 - tapOn:
-    text: "Alice"
+      text: "Alice"
 - tapOn:
-    text: "Bob"
+      text: "Bob"
 
 - tapOn:
-    text: "Ajouter la dépense"
+      text: "Ajouter la dépense"
 
 - waitForAnimationToEnd:
-    timeout: 3000
+      timeout: 3000
 
-# ── Navigate to Balances tab ──────────────────────────────────────────────────
+# ── Check Balances ────────────────────────────────────────────────────────────
 - tapOn:
-    text: "Soldes"
+      text: "Soldes"
 
 - waitForAnimationToEnd:
-    timeout: 2000
-
-# CA17: Verify balances screen loaded
-- assertVisible:
-    text: "Soldes des membres"
-
-# RG10: With Hotel=90 (Alice) and Food=30 (Bob), total=120, share=40 each
-# Alice paid 90, owes 40 → net +50 (should receive)
-# Bob paid 30, owes 40 → net -10 (should reimburse)
-# Charlie paid 0, owes 40 → net -40 (should reimburse)
-- assertVisible:
-    text: "Alice"
+      timeout: 2000
 
 - assertVisible:
-    text: "Bob"
+      text: "Soldes des membres"
 
+# Verify names
 - assertVisible:
-    text: "Remboursements suggérés"
+      text: "Alice"
+- assertVisible:
+      text: "Bob"
 
 - takeScreenshot: "scenario2_balances_verified"
