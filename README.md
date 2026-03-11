@@ -90,6 +90,8 @@ The repository includes a workflow at `.github/workflows/test.yml` which:
 - Deploys aggregated HTML to GitHub Pages for public access
 - Runs instrumented UI tests in a nightly job using an Android emulator / Maestro
 
+Note: The `android.yml` CI workflow no longer runs unit tests (it runs `assembleDebug` only). All unit/VM tests are executed by `test.yml` (Tests & Coverage) to avoid duplicated work and speed up PR checks.
+
 Artifacts produced by the workflow:
 - `coverage-report-html` (module-level HTML)
 - `coverage-report-aggregate` (aggregated HTML)

@@ -14,8 +14,8 @@ subprojects {
             tasks.withType(Test::class.java).configureEach {
                 extensions.configure(org.gradle.testing.jacoco.plugins.JacocoTaskExtension::class.java) {
                     isEnabled = true
-                    // set module-specific exec file
-                    destinationFile = file("${buildDir}/jacoco/jacoco.exec")
+                    // set module-specific exec file using non-deprecated API
+                    destinationFile = layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile
                 }
             }
 
@@ -25,8 +25,8 @@ subprojects {
                 group = "verification"
                 description = "Generate JaCoCo report for this module"
 
-                val javaClasses = files("${buildDir}/classes/kotlin/main", "${buildDir}/classes/java/main")
-                val execFiles = files("${buildDir}/jacoco/jacoco.exec")
+                val javaClasses = files(layout.buildDirectory.dir("classes/kotlin/main").get().asFile, layout.buildDirectory.dir("classes/java/main").get().asFile)
+                val execFiles = files(layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile)
                 val sourceDirs = files("src/main/kotlin", "src/main/java")
 
                 executionData.setFrom(execFiles)
@@ -56,12 +56,12 @@ tasks.register("jacocoAggregate", JacocoReport::class.java) {
     description = "Aggregate JaCoCo exec files from subprojects"
 
     // Collect exec files from subprojects
-    val execFiles = files(subprojects.map { project -> file("${project.buildDir}/jacoco/jacoco.exec") })
+    val execFiles = files(subprojects.map { p -> p.layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile })
     executionData.setFrom(execFiles)
 
     // Collect class dirs and source dirs across subprojects
-    val classDirs = subprojects.map { project -> file("${project.buildDir}/classes/kotlin/main") } + subprojects.map { project -> file("${project.buildDir}/classes/java/main") }
-    val srcDirs = subprojects.map { project -> file("${project.projectDir}/src/main/kotlin") } + subprojects.map { project -> file("${project.projectDir}/src/main/java") }
+    val classDirs = subprojects.map { p -> p.layout.buildDirectory.dir("classes/kotlin/main").get().asFile } + subprojects.map { p -> p.layout.buildDirectory.dir("classes/java/main").get().asFile }
+    val srcDirs = subprojects.map { p -> file("${p.projectDir}/src/main/kotlin") } + subprojects.map { p -> file("${p.projectDir}/src/main/java") }
 
     additionalClassDirs.setFrom(files(classDirs))
     sourceDirectories.setFrom(files(srcDirs))
@@ -81,16 +81,16 @@ tasks.register("jacocoHtmlAggregate") {
 
     doLast {
         // Create output dir for aggregated reports
-        val outDir = file("${buildDir}/reports/jacoco/html")
+        val outDir = layout.buildDirectory.dir("reports/jacoco/html").get().asFile
         outDir.mkdirs()
 
         // Copy per-module HTML reports if present
-        subprojects.forEach { project ->
-            val moduleHtml = file("${project.buildDir}/reports/jacoco/html")
+        subprojects.forEach { p ->
+            val moduleHtml = p.layout.buildDirectory.dir("reports/jacoco/html").get().asFile
             if (moduleHtml.exists()) {
                 copy {
                     from(moduleHtml)
-                    into(File(outDir, project.name))
+                    into(File(outDir, p.name))
                 }
             }
         }
@@ -98,10 +98,10 @@ tasks.register("jacocoHtmlAggregate") {
         // Create a simple index.html summary referencing modules that produced reports
         val indexFile = File(outDir, "index.html")
         indexFile.writeText("<html><body><h1>Aggregated coverage reports</h1><ul>")
-        subprojects.forEach { project ->
-            val moduleDir = File(outDir, project.name)
+        subprojects.forEach { p ->
+            val moduleDir = File(outDir, p.name)
             if (moduleDir.exists()) {
-                indexFile.appendText("<li><a href=\"${project.name}/index.html\">${project.name}</a></li>")
+                indexFile.appendText("<li><a href=\"${p.name}/index.html\">${p.name}</a></li>")
             }
         }
         indexFile.appendText("</ul></body></html>")
@@ -121,7 +121,7 @@ tasks.register("coverageEnforce") {
     dependsOn("jacocoAggregate")
 
     doLast {
-        val xmlFile = file("${buildDir}/reports/jacoco/jacoco.xml")
+        val xmlFile = layout.buildDirectory.file("reports/jacoco/jacoco.xml").get().asFile
         if (!xmlFile.exists()) {
             logger.warn("Aggregated JaCoCo XML report not found at: ${xmlFile.absolutePath}")
             return@doLast
