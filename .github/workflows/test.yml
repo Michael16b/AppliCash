@@ -32,12 +32,22 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper/
+            ~/.gradle/caches/build-cache-1
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
       - name: Run unit tests and generate aggregated coverage
-        run: ./gradlew testAll jacocoAggregate jacocoHtmlAggregate coverageEnforce --no-daemon --stacktrace
+        # For PRs run faster subset (if desired) else run full on pushes to main/master
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Fast PR path: use build-cache & configuration-cache to leverage cached results and speed up runs
+            ./gradlew testAll --no-daemon --parallel --console=plain --configuration-cache --build-cache || exit 1
+            ./gradlew jacocoAggregate jacocoHtmlAggregate --no-daemon --stacktrace
+          else
+            # Push to main/master: run full including coverage enforcement
+            ./gradlew testAll jacocoAggregate jacocoHtmlAggregate coverageEnforce --no-daemon --stacktrace
+          fi
 
       - name: Upload module-level coverage HTML reports
         uses: actions/upload-artifact@v4
@@ -55,6 +65,7 @@ jobs:
     name: Publish coverage to GitHub Pages
     runs-on: ubuntu-latest
     needs: unit-tests
+    if: github.event_name != 'pull_request' # Do not deploy Pages on PRs
     steps:
       - name: Checkout
         uses: actions/checkout@v4
