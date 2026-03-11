@@ -501,7 +501,7 @@ private fun ExpenseItem(
 }
 
 @Composable
-private fun BalancesTab(
+internal fun BalancesTab(
     group: GroupData,
     originalFormat: NumberFormat,
     userFormat: NumberFormat,
