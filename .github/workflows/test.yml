@@ -12,9 +12,38 @@ on:
     - cron: '0 2 * * *' # Nightly at 02:00 UTC for instrumented UI tests
 
 jobs:
+  detect-affected:
+    name: Detect affected modules
+    runs-on: ubuntu-latest
+    outputs:
+      affectedModules: ${{ steps.detect.outputs.affectedModules }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect
+        id: detect
+        run: |
+          echo "Computing affected modules from git diff..."
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "not a PR, leaving affectedModules empty"
+            echo "affectedModules=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          git fetch --no-tags --depth=1 origin ${{ github.event.pull_request.base.ref }}
+          DIFF_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...${{ github.sha }})
+          echo "Files changed:"$DIFF_FILES
+          AFFECTED=$(echo "$DIFF_FILES" | awk -F/ '{print $1"/"$2}' | sort -u | tr '\n' ',')
+          if [ -z "$AFFECTED" ]; then
+            AFFECTED=$(echo "$DIFF_FILES" | awk -F/ '{print $1}' | sort -u | tr '\n' ',')
+          fi
+          AFFECTED=${AFFECTED%,}
+          echo "affectedModules=$AFFECTED" >> $GITHUB_OUTPUT
+
   unit-tests:
     name: Run unit tests and generate coverage
     runs-on: ubuntu-latest
+    needs: [ detect-affected ]
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -38,14 +67,20 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Run unit tests and generate aggregated coverage
-        # For PRs run faster subset (if desired) else run full on pushes to main/master
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # Fast PR path: use build-cache & configuration-cache to leverage cached results and speed up runs
-            ./gradlew testAll --no-daemon --parallel --console=plain --configuration-cache --build-cache || exit 1
+            AFFECTED=${{ needs.detect-affected.outputs.affectedModules }}
+            if [ -n "$AFFECTED" ]; then
+              echo "Running fastTests for affected modules: $AFFECTED"
+              ./gradlew fastTests -PaffectedModules="$AFFECTED" --no-daemon --parallel --console=plain --configuration-cache --build-cache || exit 1
+            else
+              echo "No affected modules detected, running full testAll"
+              ./gradlew testAll --no-daemon --parallel --console=plain --configuration-cache --build-cache || exit 1
+            fi
+            # Generate aggregation in a separate run without configuration-cache to avoid serialization issues
             ./gradlew jacocoAggregate jacocoHtmlAggregate --no-daemon --stacktrace
           else
-            # Push to main/master: run full including coverage enforcement
+            # Push to main/master: run full including coverage enforcement (do not use configuration-cache for aggregate tasks)
             ./gradlew testAll jacocoAggregate jacocoHtmlAggregate coverageEnforce --no-daemon --stacktrace
           fi
 
@@ -59,7 +94,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-aggregate
-          path: build/reports/jacoco/html/**
+          path: 'build/reports/jacoco/html/**'
 
   publish-pages:
     name: Publish coverage to GitHub Pages

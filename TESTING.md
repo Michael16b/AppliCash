@@ -72,6 +72,12 @@ Common commands (PowerShell):
 start build\reports\jacoco\html\index.html
 ```
 
+## 4.1 fastTests (PR optimization)
+
+- A new Gradle task `fastTests` was added to run tests only for affected modules. It accepts a Gradle property `-PaffectedModules` containing a comma-separated list of module paths (for example `feature/expense,domain/login`).
+- The CI computes the affected modules using a `git diff` between the PR branch and the base branch, maps changed files to top-level module folders, and calls `./gradlew fastTests -PaffectedModules=...` on PRs when possible.
+- If no affected modules are detected or mapping fails, CI falls back to `testAll`.
+
 ## 5. CI strategy (GitHub Actions)
 
 Workflows present:
@@ -109,6 +115,12 @@ Planned enhancement (optional):
 - `test.yml` contains `nightly-instrumented` job which installs an Android emulator and runs `connectedAndroidTest` (Maestro/Espresso).
 - This job runs only on schedule (cron at 02:00 UTC) and uploads Android test reports as an artifact `instrumented-tests-report`.
 
+## 7.1 Instrumented tests on PRs
+
+- Instrumented UI tests are normally executed in the nightly job to keep PRs fast.
+- However, CI will run instrumented UI tests on PRs when the changed files include `app`, any `feature/*` module or `core/ui`. This is implemented in the `pr-instrumented` job.
+- To force instrumented tests on a PR regardless of file paths, add a commit message tag `[run-instrumented]` or manually rerun the workflow and select the `pr-instrumented` job.
+
 ## 8. Reports availability
 
 - Public Pages: aggregated coverage is published to `gh-pages` branch. We configured the deploy action to create the branch if missing (`allow_empty_commit: true`).
@@ -139,4 +151,3 @@ If you want, I can now:
 - Configure a nightly job that publishes instrumented UI test HTML to Pages/another site.
 
 Tell me which you'd like next and I will implement and validate it.
-

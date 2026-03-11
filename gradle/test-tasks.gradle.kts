@@ -49,22 +49,69 @@ tasks.register("testAll") {
     dependsOn(subprojects.flatMap { sp -> sp.tasks.matching { it.name == "test" }.toList() })
 }
 
+// Root task to run only tests in affected modules supplied via -PaffectedModules=module1,module2
+// Example: ./gradlew fastTests -PaffectedModules=feature/expense,domain/login
+tasks.register("fastTests") {
+    group = "verification"
+    description = "Run tests only for affected modules (pass -PaffectedModules=path1,path2). If empty, runs testAll."
+
+    // Read property (available during configuration when passed via -P)
+    val affectedProp = providers.gradleProperty("affectedModules").orNull
+    val modulesList: List<String> = affectedProp?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+
+    if (modulesList.isEmpty()) {
+        // No modules specified: run full test suite
+        dependsOn("testAll")
+    } else {
+        // Build a collection of test tasks from the specified modules
+        val deps = modulesList.flatMap { mod ->
+            val projectPath = ":" + mod.replace('/', ':')
+            val p = rootProject.findProject(projectPath)
+            if (p == null) {
+                logger.warn("fastTests: project $projectPath not found, falling back to testAll for this entry")
+                listOf(rootProject.tasks.named("testAll"))
+            } else {
+                val matching = p.tasks.matching { t -> t.name == "test" || t.name == "testDebugUnitTest" }
+                if (matching.isEmpty) {
+                    logger.warn("fastTests: no test tasks found in $projectPath, skipping")
+                    listOf<TaskProvider<*>>()
+                } else {
+                    matching.map { it as TaskProvider<*> }
+                }
+            }
+        }.filter { it != null }
+
+        if (deps.isNotEmpty()) dependsOn(deps)
+        else dependsOn("testAll")
+    }
+}
+
 // JaCoCo aggregation: collect exec/xml files from modules and create aggregated XML report
 // Each module is expected to produce ${buildDir}/jacoco/jacoco.exec
 tasks.register("jacocoAggregate", JacocoReport::class.java) {
     group = "verification"
     description = "Aggregate JaCoCo exec files from subprojects"
 
-    // Collect exec files from subprojects
-    val execFiles = files(subprojects.map { p -> p.layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile })
+    // Ensure compile/test tasks are executed before aggregation to avoid implicit dependency errors
+    dependsOn(subprojects.flatMap { sp ->
+        sp.tasks.matching { it.name == "test" || it.name == "compileKotlin" || it.name == "compileJava" }.toList()
+    })
+
+    // Collect exec files from subprojects using serializable paths (configuration-cache friendly)
+    val execFilePaths: List<String> = subprojects.map { p -> File(p.buildDir, "jacoco/jacoco.exec").absolutePath }
+    val execFiles = files(execFilePaths.map { File(it) })
     executionData.setFrom(execFiles)
 
-    // Collect class dirs and source dirs across subprojects
-    val classDirs = subprojects.map { p -> p.layout.buildDirectory.dir("classes/kotlin/main").get().asFile } + subprojects.map { p -> p.layout.buildDirectory.dir("classes/java/main").get().asFile }
-    val srcDirs = subprojects.map { p -> file("${p.projectDir}/src/main/kotlin") } + subprojects.map { p -> file("${p.projectDir}/src/main/java") }
+    // Collect class dirs and source dirs across subprojects (use plain File paths)
+    val classDirsFiles = subprojects.flatMap { p ->
+        listOf(File(p.buildDir, "classes/kotlin/main"), File(p.buildDir, "classes/java/main"))
+    }.filter { it.exists() }
+    val srcDirsFiles = subprojects.flatMap { p ->
+        listOf(File(p.projectDir, "src/main/kotlin"), File(p.projectDir, "src/main/java"))
+    }
 
-    additionalClassDirs.setFrom(files(classDirs))
-    sourceDirectories.setFrom(files(srcDirs))
+    additionalClassDirs.setFrom(files(classDirsFiles))
+    sourceDirectories.setFrom(files(srcDirsFiles))
 
     reports {
         xml.required.set(true)
@@ -79,18 +126,21 @@ tasks.register("jacocoHtmlAggregate") {
     dependsOn("testAll")
     dependsOn("jacocoAggregate")
 
+    // Pre-compute module report paths as simple strings to avoid capturing Project instances in the task action
+    val moduleReportPaths: List<String> = subprojects.map { p -> File(p.buildDir, "reports/jacoco/html").absolutePath }
+
     doLast {
         // Create output dir for aggregated reports
-        val outDir = layout.buildDirectory.dir("reports/jacoco/html").get().asFile
+        val outDir = File(layout.buildDirectory.dir("reports/jacoco/html").get().asFile.absolutePath)
         outDir.mkdirs()
 
         // Copy per-module HTML reports if present
-        subprojects.forEach { p ->
-            val moduleHtml = p.layout.buildDirectory.dir("reports/jacoco/html").get().asFile
+        moduleReportPaths.forEach { path ->
+            val moduleHtml = File(path)
             if (moduleHtml.exists()) {
                 copy {
                     from(moduleHtml)
-                    into(File(outDir, p.name))
+                    into(File(outDir, moduleHtml.name))
                 }
             }
         }
@@ -98,10 +148,12 @@ tasks.register("jacocoHtmlAggregate") {
         // Create a simple index.html summary referencing modules that produced reports
         val indexFile = File(outDir, "index.html")
         indexFile.writeText("<html><body><h1>Aggregated coverage reports</h1><ul>")
-        subprojects.forEach { p ->
-            val moduleDir = File(outDir, p.name)
+        moduleReportPaths.forEach { path ->
+            val moduleDir = File(path)
             if (moduleDir.exists()) {
-                indexFile.appendText("<li><a href=\"${p.name}/index.html\">${p.name}</a></li>")
+                // moduleDir.name may not be the original project name; we try to infer from folder name
+                val moduleName = moduleDir.parentFile?.name ?: moduleDir.name
+                indexFile.appendText("<li><a href=\"${moduleName}/index.html\">${moduleName}</a></li>")
             }
         }
         indexFile.appendText("</ul></body></html>")
@@ -120,8 +172,11 @@ tasks.register("coverageEnforce") {
     description = "Enforce aggregated coverage thresholds: fail if <80%, warn if >=80% and <95%"
     dependsOn("jacocoAggregate")
 
+    // Pre-compute aggregated XML path to avoid capturing Project in the action
+    val aggXmlPath = File(layout.buildDirectory.file("reports/jacoco/jacoco.xml").get().asFile.absolutePath).absolutePath
+
     doLast {
-        val xmlFile = layout.buildDirectory.file("reports/jacoco/jacoco.xml").get().asFile
+        val xmlFile = File(aggXmlPath)
         if (!xmlFile.exists()) {
             logger.warn("Aggregated JaCoCo XML report not found at: ${xmlFile.absolutePath}")
             return@doLast
