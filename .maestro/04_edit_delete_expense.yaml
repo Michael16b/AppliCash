@@ -1,0 +1,155 @@
+appId: fr.univ.nantes.archi
+name: "Scenario 4 - Edit and delete expense"
+tags:
+  - rg5
+  - rg13
+  - ca14
+  - ca15
+  - ca16
+
+# ── Business rules verified ──────────────────────────────────────────────────
+# RG5:  Cannot remove a member who has expenses
+# RG13: Lists reload after modification
+# RG11: Group edit form validates before submission
+
+---
+
+# ── Setup ─────────────────────────────────────────────────────────────────────
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ── Navigate into the "Weekend Trip" group ────────────────────────────────────
+- tapOn:
+    text: "Weekend Trip"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── Verify expense list is visible ────────────────────────────────────────────
+- assertVisible:
+    text: "Hotel"
+
+- assertVisible:
+    text: "Food"
+
+- takeScreenshot: "scenario4_initial_expenses"
+
+# ── Delete the "Food" expense ─────────────────────────────────────────────────
+- tapOn:
+    text: "Delete expense"
+    index: 1
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# RG13: Verify "Food" is no longer visible after deletion
+- assertNotVisible:
+    text: "Food"
+
+- takeScreenshot: "scenario4_expense_deleted"
+
+# ── RG13: Verify balances update after deletion ───────────────────────────────
+- tapOn:
+    text: "Balances"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- assertVisible:
+    text: "Member balances"
+
+# With only Hotel=90 (Alice), 3 members, share=30 each
+# Alice net = +60 (should receive), Bob = -30, Charlie = -30
+- assertVisible:
+    text: "Alice"
+
+- takeScreenshot: "scenario4_balances_after_delete"
+
+# ── Go back and navigate to Edit Group ────────────────────────────────────────
+- back
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Tap the edit group button (pencil icon / "Edit Group" action)
+- tapOn:
+    text: "Edit Group"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── RG5: Try to remove Alice (who has the Hotel expense) ─────────────────────
+- tapOn:
+    description: "Remove member"
+    index: 0
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# RG5: Error — cannot remove a member with expenses
+- assertVisible:
+    text: "Cannot remove member with expenses"
+    optional: true
+
+- takeScreenshot: "scenario4_cannot_remove_member_with_expenses"
+
+# ── RG13: Edit the group name ─────────────────────────────────────────────────
+- tapOn:
+    text: "Group Name"
+    optional: true
+
+- clearText
+
+- inputText: "Summer Trip"
+
+- tapOn:
+    text: "Save Changes"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# RG13: Verify the group name update is reflected
+- assertVisible:
+    text: "Summer Trip"
+    optional: true
+
+- takeScreenshot: "scenario4_group_renamed"
+
+# ── Go back then delete the remaining "Hotel" expense ─────────────────────────
+- back
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- tapOn:
+    text: "Delete expense"
+    index: 0
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# After deleting all expenses, balance section should show "Everyone is balanced"
+- tapOn:
+    text: "Balances"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- assertVisible:
+    text: "Everyone is balanced ✓"
+    optional: true
+
+- assertVisible:
+    text: "No reimbursements needed"
+    optional: true
+
+- takeScreenshot: "scenario4_all_expenses_deleted"
+
