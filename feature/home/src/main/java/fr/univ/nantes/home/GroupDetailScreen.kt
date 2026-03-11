@@ -1,7 +1,10 @@
 package fr.univ.nantes.home
 
+import android.annotation.SuppressLint
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
@@ -37,12 +41,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,7 +59,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -77,6 +83,9 @@ import java.util.Currency
 import java.util.Locale
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material.icons.filled.Share
 
 /** Source currency for all expenses entered in the app. */
 private const val EXPENSE_CURRENCY = "EUR"
@@ -84,6 +93,7 @@ private const val EXPENSE_CURRENCY = "EUR"
 @Serializable
 data class GroupDetail(val groupId: Long)
 
+@SuppressLint("RememberReturnType")
 @Composable
 fun GroupDetailScreen(
     group: GroupData,
@@ -96,6 +106,10 @@ fun GroupDetailScreen(
     userCurrencyCode: String = EXPENSE_CURRENCY,
     convertAmount: suspend (Double, String) -> Double? = { amount, _ -> amount }
 ) {
+    @Suppress("DEPRECATION")
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+
     val originalFormat = remember(EXPENSE_CURRENCY) {
         NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
             currency = Currency.getInstance(EXPENSE_CURRENCY)
@@ -135,7 +149,6 @@ fun GroupDetailScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             if (selectedTab == 0) {
                 FloatingActionButton(
@@ -176,6 +189,28 @@ fun GroupDetailScreen(
                 showConversion = showConversion,
                 convertAmount = convertAmount
             )
+
+            if (group.shareCode.isNotBlank() && group.shareCode.isNotBlank()) {
+                val shareMessage = stringResource(R.string.share_message, group.groupName, group.shareCode)
+
+                ShareCodeCard(
+                    shareCode = group.shareCode,
+                    onCopyCode = {
+                        scope.launch {
+                            clipboardManager.setText(AnnotatedString(group.shareCode))
+                        }
+                    },
+                        onShareCode = {
+                            val sendIntent: Intent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(Intent.EXTRA_TEXT, shareMessage)
+                            type = "text/plain"
+                        }
+                        val shareIntent = Intent.createChooser(sendIntent, null)
+                        context.startActivity(shareIntent)
+                    }
+                )
+            }
             SecondaryTabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
@@ -933,5 +968,75 @@ private fun BalancesTabSettledPreview() {
             showConversion = false,
             convertAmount = { amount, _ -> amount }
         )
+    }
+}
+
+@Composable
+private fun ShareCodeCard(
+    shareCode: String,
+    onCopyCode: () -> Unit,
+    onShareCode: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.share_code_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = stringResource(R.string.share_code_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = shareCode,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = Teal400,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp))
+                    .padding(vertical = 12.dp),
+                textAlign = TextAlign.Center
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onShareCode) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = stringResource(R.string.share_code_title),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(R.string.share))
+                }
+                TextButton(
+                    onClick = onCopyCode,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = stringResource(R.string.copy_share_code_content_description),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(R.string.copy_share_code_button))
+                }
+            }
+        }
     }
 }

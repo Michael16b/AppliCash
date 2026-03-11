@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.univ.nantes.data.currency.ICurrencyRepository
 import fr.univ.nantes.data.expense.repository.ExpenseRepository
+import fr.univ.nantes.data.expense.repository.JoinGroupResult
 import fr.univ.nantes.domain.profil.ProfileUseCase
 import fr.univ.nantes.domain.profil.normalizeCurrencyCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -48,7 +49,8 @@ data class GroupData(
     val id: Long = 0,
     val groupName: String = "",
     val participants: List<String> = emptyList(),
-    val expenses: List<Expense> = emptyList()
+    val expenses: List<Expense> = emptyList(),
+    val shareCode: String = ""
 )
 
 data class ExpenseState(
@@ -65,7 +67,10 @@ data class ExpenseState(
     /** List of currency codes available from the local DB cache. */
     val availableCurrencies: List<String> = emptyList(),
     /** Converted amount from selected expense currency to user base currency (for live preview). */
-    val convertedAmountInBase: Double? = null
+    val convertedAmountInBase: Double? = null,
+    val shareCode: String? = null,
+    val joinGroupCodeInput: String = "",
+    val joinGroupMessage: String? = null
 )
 
 data class Balance(
@@ -212,7 +217,8 @@ class ExpenseViewModel(
                                 splitType = it.splitType,
                                 splitDetails = parseSplitDetails(it.splitDetails)
                             )
-                        }
+                        },
+                        shareCode = groupWithDetails.group.shareCode
                     )
                 }
                 _state.update { it.copy(groups = groups) }
@@ -657,6 +663,45 @@ class ExpenseViewModel(
             repository.updateGroup(groupId, newName, addParticipants, removeParticipants)
             if (newName != null && _state.value.currentGroupId == groupId) {
                 _state.update { it.copy(groupName = newName) }
+            }
+        }
+    }
+
+    fun setJoinGroupCodeInput(value: String) {
+        _state.update { it.copy(joinGroupCodeInput = value.uppercase(), joinGroupMessage = null) }
+    }
+
+    fun clearJoinGroupMessage() {
+        _state.update { it.copy(joinGroupMessage = null) }
+    }
+
+    fun joinGroupByCode(onSuccess: (Long) -> Unit = {}) {
+        val shareCode = _state.value.joinGroupCodeInput.trim()
+        if (shareCode.isBlank()) {
+            _state.update { it.copy(joinGroupMessage = "Veuillez saisir un code de groupe.") }
+            return
+        }
+
+        viewModelScope.launch {
+            when (val result = repository.joinGroupByShareCode(shareCode, _state.value.currentUserName)) {
+                is JoinGroupResult.Success -> {
+                    _state.update {
+                        it.copy(
+                            joinGroupCodeInput = "",
+                            joinGroupMessage = "Groupe rejoint avec succès."
+                        )
+                    }
+                    onSuccess(result.groupId)
+                }
+                JoinGroupResult.InvalidCode -> {
+                    _state.update { it.copy(joinGroupMessage = "Code de groupe introuvable.") }
+                }
+                JoinGroupResult.MissingUserName -> {
+                    _state.update { it.copy(joinGroupMessage = "Connectez-vous pour rejoindre un groupe.") }
+                }
+                JoinGroupResult.AlreadyMember -> {
+                    _state.update { it.copy(joinGroupMessage = "Vous faites déjà partie de ce groupe.") }
+                }
             }
         }
     }

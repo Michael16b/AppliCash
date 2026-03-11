@@ -24,11 +24,22 @@
     <string name="save_changes">Enregistrer les modifications</string>
     <string name="error_cannot_remove_member_with_expenses">Impossible de supprimer un membre ayant des dépenses</string>
     <string name="error_duplicate_members">Des noms de membres dupliqués détectés. Veuillez utiliser des noms uniques.</string>
+    <string name="share_code_label">Code de partage du groupe</string>
+    <string name="join_group_section_title">Rejoindre un groupe</string>
+    <string name="join_group_code_label">Code du groupe</string>
+    <string name="join_group_code_placeholder">Saisissez le code (ex: ABC123)</string>
+    <string name="join_group_button">Rejoindre le groupe</string>
+    <string name="or_create_new_group">Ou créer un nouveau groupe</string>
+    <string name="share_code_title">Partagez ce groupe</string>
+    <string name="share_code_description">Partagez le code ci-dessous avec les autres pour les ajouter à ce groupe</string>
+    <string name="share_code_copied">Code copié dans le presse-papiers</string>
+    <string name="copy_share_code_button">Copier</string>
+    <string name="copy_share_code_content_description">Copier le code de partage</string>
 
     <!-- ExpenseScreen -->
     <string name="description">Description</string>
     <string name="amount">Montant</string>
-    <string name="paid_by">Payé par</string>
+    <string name="paid_by">Payé par %s</string>
     <string name="add_expense">Ajouter une dépense</string>
     <string name="expenses">Dépenses</string>
     <string name="expenses_count">Dépenses (%d)</string>
@@ -86,4 +97,14 @@
     <string name="split_equally_quick">Répartir équitablement (%1$s %2$s/pers.)</string>
     <string name="remaining_to_split">Reste à répartir</string>
     <string name="converted_amount">≈ %1$s %2$s</string>
+    <string name="total_expenses">Total des dépenses</string>
+    <string name="original_amount">Original: %s</string>
+    <string name="currency_label">%s</string>
+    <string name="no_expenses">Aucune dépense pour l\'instant</string>
+    <string name="balance_to_receive">À recevoir</string>
+    <string name="balance_to_pay">À payer</string>
+    <string name="balance_settled">Réglé</string>
+    <string name="per_person_amount">%s par personne</string>
+    <string name="per_person_suffix">/pers.</string>
+    <string name="expense">Dépense</string>
 </resources>

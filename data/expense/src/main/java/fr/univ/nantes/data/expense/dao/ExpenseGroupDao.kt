@@ -30,5 +30,12 @@ interface ExpenseGroupDao {
 
     @Query("UPDATE expense_groups SET groupName = :groupName WHERE id = :groupId")
     suspend fun updateGroupName(groupId: Long, groupName: String)
+
+    @Transaction
+    @Query("SELECT * FROM expense_groups WHERE shareCode = :shareCode")
+    suspend fun getGroupWithDetailsByShareCode(shareCode: String): GroupWithDetails?
+
+    @Query("SELECT * FROM expense_groups WHERE shareCode = :shareCode")
+    suspend fun getGroupByShareCode(shareCode: String): ExpenseGroupEntity?
 }
 
