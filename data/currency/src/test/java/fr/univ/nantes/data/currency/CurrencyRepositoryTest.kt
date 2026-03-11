@@ -33,7 +33,7 @@ class CurrencyRepositoryTest {
     private lateinit var repository: CurrencyRepository
 
     // TTL = 1 h = 3_600_000 ms
-    private val TTL_MS = 60 * 60 * 1000L
+    private val ttlMs = 60 * 60 * 1000L
     private val now = System.currentTimeMillis()
 
     @Before
@@ -65,7 +65,7 @@ class CurrencyRepositoryTest {
 
     @Test
     fun `getRate returns the cached rate when cache is valid`() = runTest {
-        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (TTL_MS / 2)) // 30-min-old cache
+        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (ttlMs / 2)) // 30-min-old cache
         whenever(dao.getRate("EUR", "USD")).thenReturn(1.08)
 
         val result = repository.getRate("EUR", "USD")
@@ -88,7 +88,7 @@ class CurrencyRepositoryTest {
 
     @Test
     fun `getRate calls the API when cache is expired`() = runTest {
-        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (TTL_MS * 2)) // 2-h-old cache → expired
+        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (ttlMs * 2)) // 2-h-old cache → expired
         val response = FrankfurterResponse(
             base = "EUR",
             date = "2026-03-10",
@@ -146,7 +146,7 @@ class CurrencyRepositoryTest {
 
     @Test
     fun `getRate returns stale cache when network fails`() = runTest {
-        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (TTL_MS * 3)) // expired
+        whenever(dao.getLastFetchTime("EUR")).thenReturn(now - (ttlMs * 3)) // expired
         whenever(api.getLatestRates("EUR")).thenThrow(RuntimeException("No network"))
         whenever(dao.getRate("EUR", "USD")).thenReturn(1.07) // stale cache
 

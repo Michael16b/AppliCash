@@ -16,10 +16,12 @@ val currencyDataModule = module {
     single {
         HttpClient(Android) {
             install(ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                    coerceInputValues = true
-                })
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        coerceInputValues = true
+                    }
+                )
             }
         }
     }
@@ -40,4 +42,3 @@ val currencyDataModule = module {
 
     single { CurrencyRepository(get(), get()) }
 }
-

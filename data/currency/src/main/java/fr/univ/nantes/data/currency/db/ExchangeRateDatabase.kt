@@ -8,5 +8,3 @@ import androidx.room.RoomDatabase
 abstract class ExchangeRateDatabase : RoomDatabase() {
     abstract fun exchangeRateDao(): ExchangeRateDao
 }
-
-

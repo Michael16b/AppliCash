@@ -13,4 +13,3 @@ data class ExchangeRateEntity(
     @ColumnInfo(name = "rate") val rate: Double,
     @ColumnInfo(name = "fetched_at") val fetchedAt: Long
 )
-

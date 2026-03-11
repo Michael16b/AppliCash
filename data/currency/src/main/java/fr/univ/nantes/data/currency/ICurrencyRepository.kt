@@ -30,4 +30,3 @@ interface ICurrencyRepository {
      */
     suspend fun getAvailableCurrencies(base: String): List<String>
 }
-
