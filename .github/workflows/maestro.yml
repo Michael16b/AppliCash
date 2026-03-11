@@ -110,10 +110,7 @@ jobs:
                   script: |
                       adb install -r app/build/outputs/apk/debug/app-debug.apk
                       mkdir -p .maestro/results
-                      for scenario in .maestro/[0-9]*.yaml; do
-                        echo "Running $scenario..."
-                        maestro test "$scenario" --format junit --output ".maestro/results/$(basename "$scenario" .yaml)_results.xml" --no-ansi || echo "Failed: $scenario"
-                      done
+                      for scenario in .maestro/[0-9]*.yaml; do echo "Running $scenario..."; maestro test "$scenario" --format junit --output ".maestro/results/$(basename "$scenario" .yaml)_results.xml" --no-ansi || echo "Failed: $scenario"; done
 
             # ── Artifacts & Reports ─────────────────────────────────────────────────
             - name: Upload Results
