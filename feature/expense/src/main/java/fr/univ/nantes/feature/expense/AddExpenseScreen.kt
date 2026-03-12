@@ -88,6 +88,7 @@ import androidx.compose.ui.unit.sp
 import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.Green500
+import fr.univ.nantes.core.ui.Green700
 import fr.univ.nantes.core.ui.GreenBg50
 import fr.univ.nantes.core.ui.Teal600
 import java.io.File
@@ -924,8 +925,8 @@ fun AddExpenseScreen(
                             modifier = Modifier.weight(1f).height(46.dp),
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = GreenBg50,
-                                contentColor = Green500
+                                containerColor = Green500,
+                                contentColor = Color.White
                             ),
                             elevation = ButtonDefaults.buttonElevation(0.dp)
                         ) {
@@ -973,9 +974,25 @@ fun AddExpenseScreen(
                                  Text(text = path, style = MaterialTheme.typography.bodySmall)
                             }
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                                Button(onClick = { onStartCamera() }) { Text(stringResource(R.string.retake_photo)) }
-                                Button(onClick = onClearReceipt) { Text(stringResource(R.string.remove_photo)) }
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp)
+                            ) {
+                                Button(
+                                    onClick = { onStartCamera() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Green500)
+                                ) {
+                                    Text(stringResource(R.string.retake_photo))
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                Button(
+                                    onClick = onClearReceipt,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Green500)
+                                ) {
+                                    Text(stringResource(R.string.remove_photo))
+                                }
                             }
                         }
                     }
@@ -991,14 +1008,12 @@ fun AddExpenseScreen(
                                     val totalShares = selectedParticipants.sumOf {
                                         (participantShares[it] ?: 1).toDouble()
                                     }
-                                    selectedParticipants.associate { p ->
+                                    selectedParticipants.associateWith { p ->
                                         val shares = (participantShares[p] ?: 1).toDouble()
-                                        p to if (totalShares > 0) shares / totalShares * amountValue else 0.0
+                                        if (totalShares > 0) shares / totalShares * amountValue else 0.0
                                     }
                                 }
-                                2 -> selectedParticipants.associate { p ->
-                                    p to (participantAmounts[p]?.toDoubleOrNull() ?: 0.0)
-                                }
+                                2 -> selectedParticipants.associateWith { p -> (participantAmounts[p]?.toDoubleOrNull() ?: 0.0) }
                                 else -> emptyMap()
                             }
                             // Ensure payer exists in the ViewModel state participants list.
@@ -1563,7 +1578,10 @@ private fun AddExpenseScreenContent(
                                     Box(modifier = Modifier.size(32.dp).background(Green500, CircleShape), contentAlignment = Alignment.Center) {
                                         Icon(Icons.Outlined.Add, null, tint = Color.White, modifier = Modifier.size(16.dp))
                                     }
-                                    Surface(color = GreenBg50, shape = RoundedCornerShape(8.dp)) {
+                                    Surface(
+                                        color = GreenBg50,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
                                         Text(text = "$selectedCurrency ${"%.2f".format(computed)}", style = MaterialTheme.typography.labelMedium, color = Teal600, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                                     }
                                 }
