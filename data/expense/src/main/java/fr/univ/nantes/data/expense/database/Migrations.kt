@@ -35,7 +35,6 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
-// Migration 3->4: idempotente, pour installations déjà en v3 qui n'ont pas l'index unique.
 val MIGRATION_3_4 = object : Migration(3, 4) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
