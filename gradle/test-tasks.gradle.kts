@@ -2,6 +2,7 @@
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import javax.xml.parsers.DocumentBuilderFactory
+import org.gradle.api.tasks.Sync
 
 // Apply JaCoCo plugin to subprojects that expose test tasks
 subprojects {
@@ -97,6 +98,11 @@ tasks.register("jacocoAggregate", JacocoReport::class.java) {
         sp.tasks.matching { it.name == "test" || it.name == "compileKotlin" || it.name == "compileJava" }.toList()
     })
 
+    // Ensure jacoco classpath is set (required by newer Gradle/Jacoco task validation)
+    val jacocoCfg = rootProject.configurations.findByName("jacoco") ?: rootProject.configurations.maybeCreate("jacoco")
+    // Use explicit setter to avoid Kotlin resolution issues
+    setJacocoClasspath(rootProject.files(jacocoCfg))
+
     // Collect exec files from subprojects using serializable paths (configuration-cache friendly)
     val execFilePaths: List<String> = subprojects.map { p -> p.layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile.absolutePath }
     val execFiles = files(execFilePaths.map { File(it) })
@@ -115,51 +121,30 @@ tasks.register("jacocoAggregate", JacocoReport::class.java) {
 
     reports {
         xml.required.set(true)
+        // Explicitly set xml output location using layout (configuration-cache friendly)
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/jacoco.xml"))
         html.required.set(false)
     }
 }
 
 // Task that produces aggregated HTML reports by copying per-module HTML and creating an index
-tasks.register("jacocoHtmlAggregate") {
+// Replace HTML aggregation with a Sync task that copies per-module HTML reports into a single folder.
+// Keep this task configuration-cache friendly by avoiding doLast actions that capture Project instances.
+tasks.register<Sync>("jacocoHtmlAggregate") {
     group = "verification"
-    description = "Generate aggregated JaCoCo HTML report (depends on jacocoAggregate and per-module reports)"
-    dependsOn("testAll")
+    description = "Collect per-module JaCoCo HTML reports into a single directory"
     dependsOn("jacocoAggregate")
 
-    // Pre-compute module report paths as simple strings to avoid capturing Project instances in the task action
-    val moduleReportPaths: List<String> = subprojects.map { p -> p.layout.buildDirectory.dir("reports/jacoco/html").get().asFile.absolutePath }
+    // Destination directory for aggregated HTML
+    val outDir = layout.buildDirectory.dir("reports/jacoco/html")
+    into(outDir)
 
-    doLast {
-        // Create output dir for aggregated reports
-        val outDir = File(layout.buildDirectory.dir("reports/jacoco/html").get().asFile.absolutePath)
-        outDir.mkdirs()
+    // Collect per-module report directories as Provider<Directory> to avoid storing Project references directly
+    val moduleReportDirs = subprojects.map { sp -> sp.layout.buildDirectory.dir("reports/jacoco/html") }
+    // Add all module report dirs as sources; Sync will only copy existing files
+    from(moduleReportDirs)
 
-        // Copy per-module HTML reports if present
-        moduleReportPaths.forEach { path ->
-            val moduleHtml = File(path)
-            if (moduleHtml.exists()) {
-                copy {
-                    from(moduleHtml)
-                    into(File(outDir, moduleHtml.name))
-                }
-            }
-        }
-
-        // Create a simple index.html summary referencing modules that produced reports
-        val indexFile = File(outDir, "index.html")
-        indexFile.writeText("<html><body><h1>Aggregated coverage reports</h1><ul>")
-        moduleReportPaths.forEach { path ->
-            val moduleDir = File(path)
-            if (moduleDir.exists()) {
-                // moduleDir.name may not be the original project name; we try to infer from folder name
-                val moduleName = moduleDir.parentFile?.name ?: moduleDir.name
-                indexFile.appendText("<li><a href=\"${moduleName}/index.html\">${moduleName}</a></li>")
-            }
-        }
-        indexFile.appendText("</ul></body></html>")
-
-        println("Aggregated JaCoCo HTML report available at: ${outDir.absolutePath}")
-    }
+    includeEmptyDirs = false
 }
 
 // Enforce aggregated coverage thresholds by parsing the aggregated JaCoCo XML report
