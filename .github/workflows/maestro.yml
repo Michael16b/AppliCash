@@ -17,6 +17,7 @@ permissions:
 
 env:
     GRADLE_COMMON_ARGS: "--build-cache --no-configuration-cache --parallel --console=plain"
+    MAESTRO_CLI_NO_ANALYTICS: "1"
 
 jobs:
     maestro-e2e:
@@ -107,10 +108,16 @@ jobs:
                   emulator-boot-timeout: 300
                   emulator-options: -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader_indirect
                   disable-animations: true
+                  locale: fr_FR
                   script: |
                       adb install -r app/build/outputs/apk/debug/app-debug.apk
                       mkdir -p .maestro/results
-                      for scenario in .maestro/[0-9]*.yaml; do echo "Running $scenario..."; maestro test "$scenario" --format junit --output ".maestro/results/$(basename "$scenario" .yaml)_results.xml" --no-ansi || echo "Failed: $scenario"; done
+                      # Run individual scenarios to get separate reports, excluding the full suite master file
+                      for scenario in .maestro/[0-9]*.yaml; do
+                        if echo "$scenario" | grep -q "00_full_suite"; then continue; fi
+                        echo "Running $scenario..."
+                        maestro test "$scenario" --format junit --output ".maestro/results/$(basename "$scenario" .yaml)_results.xml" --no-ansi || echo "Failed: $scenario"
+                      done
 
             # ── Artifacts & Reports ─────────────────────────────────────────────────
             - name: Upload Results
