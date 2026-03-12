@@ -19,5 +19,4 @@ local.properties
 # mais on ignore les fichiers de delta produits lors des échecs
 **/out/failures/
 
-
-
+app/google-services.json
