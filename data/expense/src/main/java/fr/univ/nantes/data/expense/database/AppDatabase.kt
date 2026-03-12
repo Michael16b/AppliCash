@@ -15,7 +15,7 @@ import fr.univ.nantes.data.expense.entity.ParticipantEntity
         ParticipantEntity::class,
         ExpenseEntity::class
     ],
-            version = 4,
+            version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -23,6 +23,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun participantDao(): ParticipantDao
     abstract fun expenseDao(): ExpenseDao
 }
-
 
 

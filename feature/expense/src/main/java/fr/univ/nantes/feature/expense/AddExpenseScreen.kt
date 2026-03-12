@@ -1,10 +1,12 @@
 ﻿package fr.univ.nantes.feature.expense
 
+import android.graphics.BitmapFactory
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -56,7 +58,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -74,7 +75,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -87,10 +89,11 @@ import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.Green500
 import fr.univ.nantes.core.ui.GreenBg50
 import fr.univ.nantes.core.ui.Teal600
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -112,7 +115,10 @@ private val quickAmounts = listOf(5.0, 10.0, 20.0, 50.0, 100.0)
 @Composable
 fun AddExpenseScreen(
     viewModel: ExpenseViewModel,
-    navigateBack: () -> Unit
+    navigateBack: () -> Unit,
+    onStartCamera: () -> Unit = {},
+    receiptPreviewPath: String? = null,
+    onClearReceipt: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val participants = state.participants
@@ -197,10 +203,12 @@ fun AddExpenseScreen(
     val isFormValid = title.isNotBlank() && amountValue > 0 && selectedPayer.isNotBlank()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(viewModel) {
-        viewModel.events.collectLatest { event ->
-            when (event) {
-                is ExpenseEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+    val photoQualityLowMsg = stringResource(R.string.photo_quality_low)
+    LaunchedEffect(receiptPreviewPath) {
+        receiptPreviewPath?.let { path ->
+            val file = File(path)
+            if (file.exists() && !ReceiptPhotoHelper.isPhotoQualityAcceptable(file)) {
+                snackbarHostState.showSnackbar(photoQualityLowMsg)
             }
         }
     }
@@ -911,7 +919,7 @@ fun AddExpenseScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
-                            onClick = { /* TODO: camera */ },
+                            onClick = { onStartCamera() },
                             modifier = Modifier.weight(1f).height(46.dp),
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
@@ -951,6 +959,26 @@ fun AddExpenseScreen(
                             )
                         }
                     }
+
+                    // Preview + retake/remove
+                    receiptPreviewPath?.let { path ->
+                        val file = File(path)
+                        if (file.exists()) {
+                            val bitmap = BitmapFactory.decodeFile(path)
+                            if (bitmap != null) {
+                                Spacer(Modifier.height(8.dp))
+                                Image(bitmap = bitmap.asImageBitmap(), contentDescription = stringResource(R.string.receipt_preview), contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().height(160.dp))
+                            } else {
+                                 Text(text = path, style = MaterialTheme.typography.bodySmall)
+                            }
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                                Button(onClick = { onStartCamera() }) { Text(stringResource(R.string.retake_photo)) }
+                                Button(onClick = onClearReceipt) { Text(stringResource(R.string.remove_photo)) }
+                            }
+                        }
+                    }
+
                 }
 
                 Spacer(Modifier.height(4.dp))
@@ -984,7 +1012,8 @@ fun AddExpenseScreen(
                                 amount = amountValue,
                                 paidBy = selectedPayer,
                                 splitType = selectedSplitType,
-                                splitDetails = splitDetailsMap
+                                splitDetails = splitDetailsMap,
+                                receiptPath = receiptPreviewPath
                             )
                             navigateBack()
                         }
@@ -1476,13 +1505,24 @@ private fun AddExpenseScreenContent(
                                 )
                                 if (isChecked) {
                                     Box(
-                                        modifier = Modifier.size(20.dp).background(Green500, CircleShape),
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .background(Green500, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(Icons.Outlined.Check, null, tint = Color.White, modifier = Modifier.size(12.dp))
+                                        Icon(
+                                            Icons.Outlined.Check,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(12.dp)
+                                        )
                                     }
                                 } else {
-                                    Box(modifier = Modifier.size(20.dp).border(1.5.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .border(1.5.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                                    )
                                 }
                             }
                             if (idx < participants.lastIndex) {
@@ -1577,3 +1617,4 @@ private fun AddExpenseScreenContent(
         }
     }
 }
+
