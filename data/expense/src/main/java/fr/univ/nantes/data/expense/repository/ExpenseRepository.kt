@@ -235,26 +235,20 @@ class ExpenseRepositoryImpl(
         if (normalizedUser.isBlank()) return JoinGroupResult.MissingUserName
 
         try {
-            // 1. Chercher sur Firebase
             val data = firebaseDb.child(normalizedCode).get().await()
             if (!data.exists()) return JoinGroupResult.InvalidCode
 
             val snapshot = data.getValue(GroupSnapshot::class.java) ?: return JoinGroupResult.InvalidCode
 
-            // 2. Vérifier si déjà présent localement ou sur Firebase
             val alreadyMember = snapshot.participants.any { it.equals(normalizedUser, ignoreCase = true) }
 
-            // 3. Créer/Importer dans Room
-            // Note: On crée une nouvelle entrée locale, Room génère un nouvel ID UUID (String)
             val localGroupEntity = ExpenseGroupEntity(groupName = snapshot.groupName, shareCode = normalizedCode)
             groupDao.insertGroup(localGroupEntity)
             val localGroupId = localGroupEntity.id
 
-            // Import des membres (inclure le nouveau s'il n'y était pas)
             val updatedMembers = if (!alreadyMember) snapshot.participants + normalizedUser else snapshot.participants
             participantDao.insertParticipants(updatedMembers.map { ParticipantEntity(groupId = localGroupId, name = it) })
 
-            // Import des dépenses existantes
             val expensesToImport = snapshot.expenses.map {
                 ExpenseEntity(
                     groupId = localGroupId,
@@ -267,7 +261,6 @@ class ExpenseRepositoryImpl(
             }
             expenseDao.insertExpenses(expensesToImport)
 
-            // 4. Mettre à jour Firebase si c'est un nouveau membre
             if (!alreadyMember) {
                 firebaseDb.child(normalizedCode).child("participants").setValue(updatedMembers)
             }
