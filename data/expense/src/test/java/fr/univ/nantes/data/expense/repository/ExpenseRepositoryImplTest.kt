@@ -42,12 +42,18 @@ class ExpenseRepositoryImplTest {
 
     @Test
     fun `createGroup with 2 valid members returns the group id`() = runTest {
+        whenever(groupDao.getGroupByShareCode(any())).thenReturn(null)
         whenever(groupDao.insertGroup(any())).thenReturn(1L)
+        val groupCaptor = argumentCaptor<ExpenseGroupEntity>()
 
         val id = repository.createGroup("Holidays", listOf("Alice", "Bob"))
 
         assertEquals(1L, id)
-        verify(groupDao).insertGroup(any())
+        verify(groupDao).insertGroup(groupCaptor.capture())
+        assertEquals("Holidays", groupCaptor.firstValue.groupName)
+        assertTrue(groupCaptor.firstValue.shareCode.isNotBlank())
+        assertEquals(6, groupCaptor.firstValue.shareCode.length)
+        assertTrue(groupCaptor.firstValue.shareCode.all { it.isUpperCase() || it.isDigit() })
         verify(participantDao).insertParticipants(any())
     }
 
@@ -328,7 +334,7 @@ class ExpenseRepositoryImplTest {
 
     @Test
     fun `getGroupWithDetails returns the group with its details`() = runTest {
-        val group = ExpenseGroupEntity(id = 1L, groupName = "Holidays")
+        val group = ExpenseGroupEntity(id = 1L, groupName = "Holidays", shareCode = "HOL123")
         val expected = GroupWithDetails(group = group, participants = emptyList(), expenses = emptyList())
         whenever(groupDao.getGroupWithDetails(1L)).thenReturn(expected)
 

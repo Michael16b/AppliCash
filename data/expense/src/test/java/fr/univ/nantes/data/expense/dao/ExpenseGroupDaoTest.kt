@@ -29,14 +29,14 @@ class ExpenseGroupDaoTest {
     fun `insertGroup returns a positive id`() = runTest {
         whenever(dao.insertGroup(any())).thenReturn(1L)
 
-        val id = dao.insertGroup(ExpenseGroupEntity(groupName = "Holidays"))
+        val id = dao.insertGroup(ExpenseGroupEntity(groupName = "Holidays", shareCode = "HOL123"))
 
         assertEquals(1L, id)
     }
 
     @Test
     fun `insertGroup is called with the correct entity`() = runTest {
-        val entity = ExpenseGroupEntity(groupName = "Trip")
+        val entity = ExpenseGroupEntity(groupName = "Trip", shareCode = "TRP456")
         whenever(dao.insertGroup(entity)).thenReturn(2L)
 
         dao.insertGroup(entity)
@@ -67,7 +67,7 @@ class ExpenseGroupDaoTest {
 
     @Test
     fun `getGroupById returns the entity when group exists`() = runTest {
-        val entity = ExpenseGroupEntity(id = 1L, groupName = "Test")
+        val entity = ExpenseGroupEntity(id = 1L, groupName = "Test", shareCode = "TST789")
         whenever(dao.getGroupById(1L)).thenReturn(entity)
 
         val result = dao.getGroupById(1L)
@@ -86,7 +86,7 @@ class ExpenseGroupDaoTest {
 
     @Test
     fun `getGroupWithDetails returns the group with its details`() = runTest {
-        val group = ExpenseGroupEntity(id = 1L, groupName = "Friends")
+        val group = ExpenseGroupEntity(id = 1L, groupName = "Friends", shareCode = "FRD234")
         val details = GroupWithDetails(group = group, participants = emptyList(), expenses = emptyList())
         whenever(dao.getGroupWithDetails(1L)).thenReturn(details)
 

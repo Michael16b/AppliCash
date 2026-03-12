@@ -35,5 +35,8 @@ interface ParticipantDao {
         }
         removeNames.forEach { deleteParticipantByName(groupId, it) }
     }
+
+    @Query("SELECT EXISTS(SELECT 1 FROM participants WHERE groupId = :groupId AND name = :participantName)")
+    suspend fun isParticipantInGroup(groupId: Long, participantName: String): Boolean
 }
 

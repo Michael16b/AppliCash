@@ -4,6 +4,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import fr.univ.nantes.data.currency.ICurrencyRepository
 import fr.univ.nantes.data.expense.model.GroupWithDetails
 import fr.univ.nantes.data.expense.repository.ExpenseRepository
+import fr.univ.nantes.data.expense.repository.JoinGroupResult
 import fr.univ.nantes.domain.profil.Profile
 import fr.univ.nantes.domain.profil.ProfileRepository
 import fr.univ.nantes.domain.profil.ProfileUseCase
@@ -394,5 +395,16 @@ class FakeExpenseRepository : ExpenseRepository {
         lastUpdateNewName = newName
         lastUpdateAddParticipants = addParticipants
         lastUpdateRemoveParticipants = removeParticipants
+    }
+
+    override suspend fun canViewShareCode(groupId: Long, userName: String?): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun joinGroupByShareCode(
+        shareCode: String,
+        userName: String?
+    ): JoinGroupResult {
+        TODO("Not yet implemented")
     }
 }

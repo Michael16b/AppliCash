@@ -8,6 +8,7 @@ import fr.univ.nantes.data.expense.entity.ExpenseGroupEntity
 import fr.univ.nantes.data.expense.entity.ParticipantEntity
 import fr.univ.nantes.data.expense.model.GroupWithDetails
 import kotlinx.coroutines.flow.Flow
+import kotlin.random.Random
 
 // ── Business exceptions ────────────────────────────────────────────────────────
 sealed class ExpenseBusinessException(message: String) : Exception(message) {
@@ -30,6 +31,13 @@ sealed class ExpenseBusinessException(message: String) : Exception(message) {
     /** BR5: a member with expenses cannot be removed. */
     class MemberHasExpensesException(name: String) :
         ExpenseBusinessException("Member '$name' cannot be removed because they have expenses (BR5)")
+}
+
+sealed interface JoinGroupResult {
+    data class Success(val groupId: Long) : JoinGroupResult
+    data object InvalidCode : JoinGroupResult
+    data object MissingUserName : JoinGroupResult
+    data object AlreadyMember : JoinGroupResult
 }
 
 interface ExpenseRepository {
@@ -55,6 +63,9 @@ interface ExpenseRepository {
         addParticipants: List<String>,
         removeParticipants: List<String>
     )
+    suspend fun canViewShareCode(groupId: Long,userName: String?): Boolean
+    suspend fun joinGroupByShareCode(shareCode: String, userName: String?): JoinGroupResult
+
 }
 
 class ExpenseRepositoryImpl(
@@ -87,7 +98,7 @@ class ExpenseRepositoryImpl(
         }
 
         val groupId = groupDao.insertGroup(
-            ExpenseGroupEntity(groupName = groupName)
+            ExpenseGroupEntity(groupName = groupName, shareCode = generateUniqueShareCode() )
         )
         val participantEntities = participants.map { name ->
             ParticipantEntity(groupId = groupId, name = name)
@@ -190,5 +201,49 @@ class ExpenseRepositoryImpl(
             addParticipants = addParticipants.map { ParticipantEntity(groupId = groupId, name = it) },
             removeNames = removeParticipants
         )
+    }
+
+    override suspend fun joinGroupByShareCode(shareCode: String, userName: String?): JoinGroupResult {
+        val normalizedCode = shareCode.trim().uppercase()
+        val normalizedUser = userName?.trim().orEmpty()
+
+        if (normalizedUser.isBlank()) return JoinGroupResult.MissingUserName
+
+        val group = groupDao.getGroupByShareCode(normalizedCode) ?: return JoinGroupResult.InvalidCode
+
+        if ( participantDao.isParticipantInGroup(group.id, normalizedUser)) {
+            return JoinGroupResult.AlreadyMember
+        }
+
+        participantDao.insertParticipant(
+            ParticipantEntity(groupId = group.id, name = normalizedUser)
+        )
+        return JoinGroupResult.Success(group.id)
+    }
+
+    private suspend fun generateUniqueShareCode(length: Int = 6): String {
+        val alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        repeat(20) {
+            val candidate = buildString(length) {
+                repeat(length) {
+                    append(alphabet[Random.nextInt(alphabet.length)])
+                }
+            }
+            if (groupDao.getGroupByShareCode(candidate) == null) {
+                return candidate
+            }
+        }
+        return buildString(length + 2) {
+            repeat(length + 2) {
+                append(alphabet[Random.nextInt(alphabet.length)])
+            }
+        }
+    }
+
+    override suspend fun canViewShareCode(groupId: Long, userName: String?): Boolean {
+        val normalizedUser = userName?.trim().orEmpty()
+        if (normalizedUser.isBlank()) return false
+
+        return  participantDao.isParticipantInGroup(groupId, normalizedUser)
     }
 }

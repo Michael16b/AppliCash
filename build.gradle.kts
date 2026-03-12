@@ -35,3 +35,38 @@ tasks.register("recordPaparazziDebug") {
     description = "Records / updates all Roborazzi reference images in /snapshots/."
     dependsOn(snapshotModules.map { "$it:recordRoborazziDebug" })
 }
+
+// Safe aggregate task used by CI to run a quick test suite. We capture the
+// activation flag at configuration time to avoid accessing `project` during
+// task execution (which breaks the configuration cache).
+val fastTestsRunTests: Boolean = (project.findProperty("fastTestsRunTests") as? String) == "true"
+
+if (tasks.findByName("fastTests") == null) {
+    tasks.register("fastTests") {
+        group = "verification"
+        description = "Aggregate quick tests for CI. By default this is a no-op."
+
+        if (fastTestsRunTests) {
+            doLast {
+                println("fastTests: configured to run unit tests.")
+            }
+        } else {
+            doLast {
+                println("fastTests: no-op (unit tests disabled).")
+            }
+        }
+    }
+}
+
+// Wire the task dependencies after project evaluation only if the opt-in flag is set.
+gradle.projectsEvaluated {
+    if (fastTestsRunTests) {
+        tasks.named("fastTests").configure {
+            val testTasks = subprojects.flatMap { sp ->
+                sp.tasks.matching { it.name.endsWith("UnitTest") || it.name.startsWith("test") }.toList()
+            }
+            if (testTasks.isNotEmpty()) dependsOn(testTasks)
+        }
+    }
+}
+

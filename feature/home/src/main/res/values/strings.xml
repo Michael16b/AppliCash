@@ -41,4 +41,13 @@
     <string name="original_amount">orig. %1$s</string>
     <string name="per_person_suffix">per person</string>
     <string name="edit_group">Edit Group</string>
+    <string name="share_code_title">Share this group</string>
+    <string name="share_code_description">Share the code below with others to add them to this group</string>
+    <string name="share_code_copied">Code copied to clipboard</string>
+    <string name="copy_share_code_button">Copy</string>
+    <string name="copy_share_code_content_description">Copy the share code</string>
+    <string name="share_message">Join my group %1$s on AppliCash! Here\'s the invitation code:  : %2$s</string>
+    <string name="share">Share</string>
+
+
 </resources>

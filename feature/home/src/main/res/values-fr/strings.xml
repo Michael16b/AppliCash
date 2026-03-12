@@ -39,6 +39,15 @@
     <string name="balance_settled">Équilibré</string>
     <string name="reimbursement_arrow">doit payer à</string>
     <string name="all_settled">Tout le monde est à l\'équilibre ✓</string>
-    <string name="no_members">Aucun membre dans ce groupe</string>
     <string name="edit_group">Modifier le groupe</string>
+    <string name="share_code_title">Partagez ce groupe</string>
+    <string name="share_code_description">Partagez le code ci-dessous avec les autres pour les ajouter à ce groupe</string>
+    <string name="share_code_copied">Code copié dans le presse-papiers</string>
+    <string name="copy_share_code_button">Copier</string>
+    <string name="copy_share_code_content_description">Copier le code de partage</string>
+    <string name="no_members">Aucun membre dans ce groupe</string>
+    <string name="share_message">Rejoins mon groupe %1$s sur AppliCash ! Voici le code d\'invitation : %2$s</string>
+    <string name="share">Partager</string>
+
+
 </resources>
