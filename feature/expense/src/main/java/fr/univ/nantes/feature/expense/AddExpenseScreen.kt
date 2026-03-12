@@ -1057,23 +1057,6 @@ fun AddExpenseScreen(
                     )
                 }
 
-                // Add a file picker button to allow selecting image files
-                Button(
-                    onClick = {
-                        // Logic to open file picker for image files
-                    },
-                    modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Green500,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Icon(Icons.Outlined.AttachFile, contentDescription = "Attach File", modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Attach Image", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
-                }
-
                 Spacer(Modifier.height(20.dp))
             }
         }
