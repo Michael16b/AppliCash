@@ -61,7 +61,7 @@ class ProfileRepositoryImpl(
         val existing = dao.getActiveProfile()
         val hashed = existing?.password ?: ""
         val entity = profile.toEntity(
-            id = existing?.id ?: 0,
+            id = existing?.id ?: "0",
             password = hashed,
             isLoggedIn = profile.isLoggedIn || existing?.isLoggedIn == true
         )

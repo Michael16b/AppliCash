@@ -25,20 +25,20 @@ class ExpenseDaoTest {
     }
 
     @Test
-    fun `insertExpense returns a string id`() = runTest {
-        whenever(dao.insertExpense(any())).thenReturn("exp-uuid-1")
+    fun `insertExpense returns a generated row id`() = runTest {
+        whenever(dao.insertExpense(any())).thenReturn(1L)
 
         val id = dao.insertExpense(
             ExpenseEntity(groupId = "group-1", description = "Meal", amount = 25.0, paidBy = "Alice")
         )
 
-        assertEquals("exp-uuid-1", id)
+        assertEquals(1L, id)
     }
 
     @Test
     fun `insertExpense is called with the correct entity`() = runTest {
         val entity = ExpenseEntity(groupId = "group-1", description = "Taxi", amount = 15.0, paidBy = "Bob")
-        whenever(dao.insertExpense(entity)).thenReturn("exp-uuid-2")
+        whenever(dao.insertExpense(entity)).thenReturn(2L)
         val captor = argumentCaptor<ExpenseEntity>()
 
         dao.insertExpense(entity)

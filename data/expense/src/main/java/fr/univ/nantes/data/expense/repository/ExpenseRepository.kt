@@ -1,5 +1,6 @@
 package fr.univ.nantes.data.expense.repository
 
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import fr.univ.nantes.data.expense.dao.ExpenseDao
 import fr.univ.nantes.data.expense.dao.ExpenseGroupDao
@@ -75,10 +76,14 @@ interface ExpenseRepository {
 class ExpenseRepositoryImpl(
     private val groupDao: ExpenseGroupDao,
     private val participantDao: ParticipantDao,
-    private val expenseDao: ExpenseDao
+    private val expenseDao: ExpenseDao,
+    private val firebaseDbProvider: () -> DatabaseReference = {
+        FirebaseDatabase.getInstance().reference.child("shared_groups")
+    }
 ) : ExpenseRepository {
 
-    private val firebaseDb = FirebaseDatabase.getInstance().reference.child("shared_groups")
+    private val firebaseDb: DatabaseReference by lazy { firebaseDbProvider() }
+
     override fun getAllGroupsWithDetails(): Flow<List<GroupWithDetails>> {
         return groupDao.getAllGroupsWithDetails()
     }

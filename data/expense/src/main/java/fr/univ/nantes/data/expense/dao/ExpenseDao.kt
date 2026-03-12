@@ -9,7 +9,7 @@ import fr.univ.nantes.data.expense.entity.ExpenseEntity
 @Dao
 interface ExpenseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertExpense(expense: ExpenseEntity): String
+    suspend fun insertExpense(expense: ExpenseEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpenses(expenses: List<ExpenseEntity>)
@@ -20,4 +20,3 @@ interface ExpenseDao {
     @Query("DELETE FROM expenses WHERE id = :expenseId")
     suspend fun deleteExpense(expenseId: String)
 }
-

@@ -26,18 +26,18 @@ class ExpenseGroupDaoTest {
     }
 
     @Test
-    fun `insertGroup returns a positive id`() = runTest {
-        whenever(dao.insertGroup(any())).thenReturn("uuid-1")
+    fun `insertGroup returns a positive row id`() = runTest {
+        whenever(dao.insertGroup(any())).thenReturn(1L)
 
         val id = dao.insertGroup(ExpenseGroupEntity(groupName = "Holidays", shareCode = "HOL123"))
 
-        assertEquals("uuid-1", id)
+        assertEquals(1L, id)
     }
 
     @Test
     fun `insertGroup is called with the correct entity`() = runTest {
         val entity = ExpenseGroupEntity(groupName = "Trip", shareCode = "TRP456")
-        whenever(dao.insertGroup(entity)).thenReturn("uuid-2")
+        whenever(dao.insertGroup(entity)).thenReturn(2L)
 
         dao.insertGroup(entity)
 

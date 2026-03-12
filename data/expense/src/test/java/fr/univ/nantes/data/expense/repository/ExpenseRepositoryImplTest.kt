@@ -1,5 +1,6 @@
 package fr.univ.nantes.data.expense.repository
 
+import com.google.firebase.database.DatabaseReference
 import fr.univ.nantes.data.expense.dao.ExpenseDao
 import fr.univ.nantes.data.expense.dao.ExpenseGroupDao
 import fr.univ.nantes.data.expense.dao.ParticipantDao
@@ -28,13 +29,16 @@ class ExpenseRepositoryImplTest {
     private lateinit var participantDao: ParticipantDao
     private lateinit var expenseDao: ExpenseDao
     private lateinit var repository: ExpenseRepositoryImpl
+    private lateinit var firebaseRef: DatabaseReference
 
     @Before
     fun setUp() {
         groupDao = mock()
         participantDao = mock()
         expenseDao = mock()
-        repository = ExpenseRepositoryImpl(groupDao, participantDao, expenseDao)
+        firebaseRef = mock()
+        whenever(firebaseRef.child(any())).thenReturn(firebaseRef)
+        repository = ExpenseRepositoryImpl(groupDao, participantDao, expenseDao) { firebaseRef }
     }
 
     // ── createGroup ────────────────────────────────────────────────────────────
@@ -42,13 +46,14 @@ class ExpenseRepositoryImplTest {
     @Test
     fun `createGroup with 2 valid members returns the group id`() = runTest {
         whenever(groupDao.getGroupByShareCode(any())).thenReturn(null)
-        whenever(groupDao.insertGroup(any())).thenReturn("uuid-1")
+        whenever(groupDao.insertGroup(any())).thenReturn(1L)
         val groupCaptor = argumentCaptor<ExpenseGroupEntity>()
 
         val id = repository.createGroup("Holidays", listOf("Alice", "Bob"))
 
-        assertEquals("uuid-1", id)
+        assertTrue(id.isNotBlank())
         verify(groupDao).insertGroup(groupCaptor.capture())
+        assertEquals(id, groupCaptor.firstValue.id)
         assertEquals("Holidays", groupCaptor.firstValue.groupName)
         assertTrue(groupCaptor.firstValue.shareCode.isNotBlank())
         assertEquals(6, groupCaptor.firstValue.shareCode.length)
@@ -58,15 +63,17 @@ class ExpenseRepositoryImplTest {
 
     @Test
     fun `createGroup inserts exactly the provided participants`() = runTest {
-        whenever(groupDao.insertGroup(any())).thenReturn("uuid-42")
+        whenever(groupDao.insertGroup(any())).thenReturn(42L)
+        val groupCaptor = argumentCaptor<ExpenseGroupEntity>()
         val captor = argumentCaptor<List<ParticipantEntity>>()
 
         repository.createGroup("Trip", listOf("Alice", "Bob", "Charlie"))
 
+        verify(groupDao).insertGroup(groupCaptor.capture())
         verify(participantDao).insertParticipants(captor.capture())
         val inserted = captor.firstValue
         assertEquals(3, inserted.size)
-        assertTrue(inserted.all { it.groupId == "uuid-42" })
+        assertTrue(inserted.all { it.groupId == groupCaptor.firstValue.id })
         assertEquals(listOf("Alice", "Bob", "Charlie"), inserted.map { it.name })
     }
 
@@ -158,10 +165,13 @@ class ExpenseRepositoryImplTest {
         whenever(participantDao.getParticipantsByGroupId("group-1")).thenReturn(
             listOf(ParticipantEntity(id = "p-1", groupId = "group-1", name = "Alice"))
         )
+        val captor = argumentCaptor<ParticipantEntity>()
 
         repository.addParticipantToGroup("group-1", "Bob")
 
-        verify(participantDao).insertParticipant(ParticipantEntity(groupId = "group-1", name = "Bob"))
+        verify(participantDao).insertParticipant(captor.capture())
+        assertEquals("group-1", captor.firstValue.groupId)
+        assertEquals("Bob", captor.firstValue.name)
     }
 
     // ── BR4 ───────────────────────────────────────────────────────────────────

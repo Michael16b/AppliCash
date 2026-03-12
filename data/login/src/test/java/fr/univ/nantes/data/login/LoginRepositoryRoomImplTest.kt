@@ -39,7 +39,7 @@ class LoginRepositoryRoomImplTest {
         repository = LoginRepositoryRoomImpl(profileDao)
         hashedPassword = PasswordHasher.hashPassword(validPassword)
         baseProfile = ProfileEntity(
-            id = 1,
+            id = "1",
             firstName = "Alice",
             lastName = "Dupont",
             email = validEmail,

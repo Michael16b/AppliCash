@@ -20,7 +20,7 @@ interface ExpenseGroupDao {
     suspend fun getGroupWithDetails(groupId: String): GroupWithDetails?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertGroup(group: ExpenseGroupEntity): String
+    suspend fun insertGroup(group: ExpenseGroupEntity): Long
 
     @Query("DELETE FROM expense_groups WHERE id = :groupId")
     suspend fun deleteGroup(groupId: String)
@@ -38,4 +38,3 @@ interface ExpenseGroupDao {
     @Query("SELECT * FROM expense_groups WHERE shareCode = :shareCode")
     suspend fun getGroupByShareCode(shareCode: String): ExpenseGroupEntity?
 }
-

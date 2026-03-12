@@ -26,7 +26,7 @@ class ProfileRepositoryImplTest {
     private lateinit var repository: ProfileRepositoryImpl
 
     private val baseEntity = ProfileEntity(
-        id = 1,
+        id = "1",
         firstName = "Alice",
         lastName = "Dupont",
         email = "alice@mail.com",
@@ -114,7 +114,7 @@ class ProfileRepositoryImplTest {
         val saved = captor.firstValue
         assertEquals("Alicia", saved.firstName)
         assertEquals("hashed_pw", saved.password) // password preserved
-        assertEquals(1, saved.id) // existing id preserved
+        assertEquals("1", saved.id) // existing id preserved
     }
 
     @Test
