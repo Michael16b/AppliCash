@@ -1,4 +1,4 @@
-package fr.univ.nantes.feature.expense
+﻿package fr.univ.nantes.feature.expense
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -972,6 +972,13 @@ fun AddExpenseScreen(
                                 }
                                 else -> emptyMap()
                             }
+                            // Ensure payer exists in the ViewModel state participants list.
+                            // If not present, add it locally so the ViewModel's addExpense
+                            // validation (which requires the payer to be a participant) passes.
+                            if (!state.participants.contains(selectedPayer)) {
+                                viewModel.addParticipant(selectedPayer)
+                            }
+
                             viewModel.addExpense(
                                 description = title,
                                 amount = amountValue,
