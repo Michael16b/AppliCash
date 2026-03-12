@@ -8,6 +8,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
   schedule:
     - cron: '0 2 * * *' # Nightly at 02:00 UTC for instrumented UI tests
 
@@ -65,6 +66,10 @@ jobs:
   unit-tests:
     name: Run unit tests and generate coverage
     runs-on: ubuntu-latest
+    env:
+      GRADLE_REMOTE_BUILD_CACHE_URL: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_URL }}
+      GRADLE_REMOTE_BUILD_CACHE_USERNAME: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_USERNAME }}
+      GRADLE_REMOTE_BUILD_CACHE_PASSWORD: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_PASSWORD }}
     needs: [ detect-affected ]
     timeout-minutes: 30
     steps:
@@ -84,26 +89,46 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper/
             ~/.gradle/caches/build-cache-1
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}-${{ hashFiles('**/gradle.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Run unit tests and generate aggregated coverage
+      - name: Optional configure remote Gradle build cache
+        if: ${{ env.GRADLE_REMOTE_BUILD_CACHE_URL != '' }}
+        run: |
+          mkdir -p $HOME/.gradle
+          cat > $HOME/.gradle/init.gradle <<'INIT'
+          settingsEvaluated { settings ->
+              if (System.getenv('GRADLE_REMOTE_BUILD_CACHE_URL')) {
+                  settings.buildCache {
+                      remote(org.gradle.caching.http.HttpBuildCache) {
+                          url = uri(System.getenv('GRADLE_REMOTE_BUILD_CACHE_URL'))
+                          push = true
+                          credentials {
+                              username = System.getenv('GRADLE_REMOTE_BUILD_CACHE_USERNAME') ?: ''
+                              password = System.getenv('GRADLE_REMOTE_BUILD_CACHE_PASSWORD') ?: ''
+                          }
+                      }
+                  }
+              }
+          }
+          INIT
+
+      - name: Run unit tests
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             AFFECTED=${{ needs.detect-affected.outputs.affectedModules }}
             if [ -n "$AFFECTED" ]; then
               echo "Running fastTests for affected modules: $AFFECTED"
-              ./gradlew fastTests -PaffectedModules="$AFFECTED" --no-daemon --parallel --console=plain --configuration-cache --build-cache || exit 1
+              ./gradlew fastTests -PaffectedModules="$AFFECTED" --parallel --configuration-cache --build-cache --console=plain || exit 1
             else
               echo "No affected modules detected, running full testAll"
-              ./gradlew testAll --no-daemon --parallel --console=plain --configuration-cache --build-cache || exit 1
+              ./gradlew testAll --parallel --configuration-cache --build-cache --console=plain || exit 1
             fi
-            # Generate aggregation in a separate run without configuration-cache to avoid serialization issues
-            ./gradlew jacocoAggregate jacocoHtmlAggregate --no-daemon --stacktrace
+            # Skip JaCoCo aggregation on PRs to keep PR runs fast and avoid configuration-cache serialization issues.
           else
-            # Push to main/master: run full including coverage enforcement (do not use configuration-cache for aggregate tasks)
-            ./gradlew testAll jacocoAggregate jacocoHtmlAggregate coverageEnforce --no-daemon --stacktrace
+            # Push to main/master: run full including coverage aggregation and enforcement
+            ./gradlew testAll jacocoAggregate jacocoHtmlAggregate coverageEnforce --stacktrace --build-cache --console=plain
           fi
 
       - name: Upload module-level coverage HTML reports
@@ -146,6 +171,10 @@ jobs:
   nightly-instrumented:
     name: Nightly instrumented UI tests
     runs-on: ubuntu-latest
+    env:
+      GRADLE_REMOTE_BUILD_CACHE_URL: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_URL }}
+      GRADLE_REMOTE_BUILD_CACHE_USERNAME: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_USERNAME }}
+      GRADLE_REMOTE_BUILD_CACHE_PASSWORD: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_PASSWORD }}
     if: github.event_name == 'schedule'
     timeout-minutes: 120
     steps:
