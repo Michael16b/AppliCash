@@ -30,9 +30,31 @@ jobs:
             echo "affectedModules=" >> $GITHUB_OUTPUT
             exit 0
           fi
-          git fetch --no-tags --depth=1 origin ${{ github.event.pull_request.base.ref }}
-          DIFF_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...${{ github.sha }})
+
+          BASE_REF='origin/${{ github.event.pull_request.base.ref }}'
+          echo "Fetching base ref ${BASE_REF}..."
+          git fetch --no-tags --depth=50 origin ${{ github.event.pull_request.base.ref }} || git fetch --no-tags origin ${{ github.event.pull_request.base.ref }} || true
+
+          # Ensure HEAD exists
+          echo "Ensuring HEAD is available..."
+          git fetch --no-tags --depth=1 origin ${{ github.sha }} || true
+
+          # Try to find merge-base; if not found, proceed but do not fail
+          MERGE_BASE=$(git merge-base --fork-point ${BASE_REF} ${{ github.sha }} 2>/dev/null || git merge-base ${BASE_REF} ${{ github.sha }} 2>/dev/null || true)
+          if [ -n "$MERGE_BASE" ]; then
+            echo "Using merge base: $MERGE_BASE"
+            DIFF_FILES=$(git diff --name-only $MERGE_BASE ${{ github.sha }} || true)
+          else
+            echo "No merge base found, trying direct diff against ${BASE_REF}"
+            DIFF_FILES=$(git diff --name-only ${BASE_REF} ${{ github.sha }} || true)
+          fi
+
           echo "Files changed:"$DIFF_FILES
+          if [ -z "$DIFF_FILES" ]; then
+            echo "affectedModules=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           AFFECTED=$(echo "$DIFF_FILES" | awk -F/ '{print $1"/"$2}' | sort -u | tr '\n' ',')
           if [ -z "$AFFECTED" ]; then
             AFFECTED=$(echo "$DIFF_FILES" | awk -F/ '{print $1}' | sort -u | tr '\n' ',')

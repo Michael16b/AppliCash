@@ -64,24 +64,24 @@ tasks.register("fastTests") {
         dependsOn("testAll")
     } else {
         // Build a collection of test tasks from the specified modules
-        val deps = modulesList.flatMap { mod ->
+        val depsMutable = mutableListOf<TaskProvider<*>>()
+        modulesList.forEach { mod ->
             val projectPath = ":" + mod.replace('/', ':')
             val p = rootProject.findProject(projectPath)
             if (p == null) {
                 logger.warn("fastTests: project $projectPath not found, falling back to testAll for this entry")
-                listOf(rootProject.tasks.named("testAll"))
+                depsMutable.add(rootProject.tasks.named("testAll"))
             } else {
                 val matching = p.tasks.matching { t -> t.name == "test" || t.name == "testDebugUnitTest" }
-                if (matching.isEmpty) {
+                if (matching.isEmpty()) {
                     logger.warn("fastTests: no test tasks found in $projectPath, skipping")
-                    listOf<TaskProvider<*>>()
                 } else {
-                    matching.map { it as TaskProvider<*> }
+                    matching.forEach { depsMutable.add(it as TaskProvider<*>) }
                 }
             }
-        }.filter { it != null }
+        }
 
-        if (deps.isNotEmpty()) dependsOn(deps)
+        if (depsMutable.isNotEmpty()) dependsOn(depsMutable)
         else dependsOn("testAll")
     }
 }
@@ -98,13 +98,13 @@ tasks.register("jacocoAggregate", JacocoReport::class.java) {
     })
 
     // Collect exec files from subprojects using serializable paths (configuration-cache friendly)
-    val execFilePaths: List<String> = subprojects.map { p -> File(p.buildDir, "jacoco/jacoco.exec").absolutePath }
+    val execFilePaths: List<String> = subprojects.map { p -> p.layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile.absolutePath }
     val execFiles = files(execFilePaths.map { File(it) })
     executionData.setFrom(execFiles)
 
     // Collect class dirs and source dirs across subprojects (use plain File paths)
     val classDirsFiles = subprojects.flatMap { p ->
-        listOf(File(p.buildDir, "classes/kotlin/main"), File(p.buildDir, "classes/java/main"))
+        listOf(p.layout.buildDirectory.dir("classes/kotlin/main").get().asFile, p.layout.buildDirectory.dir("classes/java/main").get().asFile)
     }.filter { it.exists() }
     val srcDirsFiles = subprojects.flatMap { p ->
         listOf(File(p.projectDir, "src/main/kotlin"), File(p.projectDir, "src/main/java"))
@@ -127,7 +127,7 @@ tasks.register("jacocoHtmlAggregate") {
     dependsOn("jacocoAggregate")
 
     // Pre-compute module report paths as simple strings to avoid capturing Project instances in the task action
-    val moduleReportPaths: List<String> = subprojects.map { p -> File(p.buildDir, "reports/jacoco/html").absolutePath }
+    val moduleReportPaths: List<String> = subprojects.map { p -> p.layout.buildDirectory.dir("reports/jacoco/html").get().asFile.absolutePath }
 
     doLast {
         // Create output dir for aggregated reports
