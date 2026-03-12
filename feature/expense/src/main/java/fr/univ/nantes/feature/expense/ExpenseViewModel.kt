@@ -37,7 +37,7 @@ import org.json.JSONObject
  * as Long representing the smallest currency unit (e.g., cents).
  */
 data class Expense(
-    val id: Long = 0,
+    val id: String = "",
     val description: String,
     val amount: Double,
     val paidBy: String,
@@ -46,7 +46,7 @@ data class Expense(
 )
 
 data class GroupData(
-    val id: Long = 0,
+    val id: String = "",
     val groupName: String = "",
     val participants: List<String> = emptyList(),
     val expenses: List<Expense> = emptyList(),
@@ -58,7 +58,7 @@ data class ExpenseState(
     val participants: List<String> = emptyList(),
     val expenses: List<Expense> = emptyList(),
     val groups: List<GroupData> = emptyList(),
-    val currentGroupId: Long? = null,
+    val currentGroupId: String? = null,
     val currentUserName: String? = null,
     val isLoggedIn: Boolean = false,
     val userCurrencyCode: String = "EUR",
@@ -353,7 +353,7 @@ class ExpenseViewModel(
      *
      * @param groupId The ID of the group to load
      */
-    fun loadGroup(groupId: Long) {
+    fun loadGroup(groupId: String) {
         viewModelScope.launch {
             val groupWithDetails = repository.getGroupWithDetails(groupId)
             if (groupWithDetails != null) {
@@ -381,7 +381,7 @@ class ExpenseViewModel(
     /**
      * Returns the ID of the currently loaded group, or null if no group is loaded.
      */
-    fun getCurrentGroupId(): Long? {
+    fun getCurrentGroupId(): String? {
         return _state.value.currentGroupId
     }
 
@@ -606,7 +606,7 @@ class ExpenseViewModel(
     /**
      * Deletes an expense by id from the repository and reloads the given group.
      */
-    fun deleteExpense(expenseId: Long, groupId: Long) {
+    fun deleteExpense(expenseId: String, groupId: String) {
         viewModelScope.launch {
             repository.deleteExpense(expenseId)
             loadGroup(groupId)
@@ -616,7 +616,7 @@ class ExpenseViewModel(
     /**
      * Updates the name of an existing group in the database.
      */
-    fun updateGroupName(groupId: Long, newName: String) {
+    fun updateGroupName(groupId: String, newName: String) {
         viewModelScope.launch {
             repository.updateGroupName(groupId, newName)
             if (_state.value.currentGroupId == groupId) {
@@ -629,7 +629,7 @@ class ExpenseViewModel(
      * Adds a participant to an existing group in the database.
      * The name is trimmed and checked for duplicates before being added.
      */
-    fun addParticipantToGroup(groupId: Long, participantName: String) {
+    fun addParticipantToGroup(groupId: String, participantName: String) {
         val trimmedName = participantName.trim()
         if (trimmedName.isNotBlank() && !_state.value.participants.contains(trimmedName)) {
             viewModelScope.launch {
@@ -642,7 +642,7 @@ class ExpenseViewModel(
     /**
      * Removes a participant from an existing group in the database.
      */
-    fun removeParticipantFromGroup(groupId: Long, participantName: String) {
+    fun removeParticipantFromGroup(groupId: String, participantName: String) {
         viewModelScope.launch {
             repository.removeParticipantFromGroup(groupId, participantName)
             loadGroup(groupId)
@@ -654,16 +654,13 @@ class ExpenseViewModel(
      * then refreshes the current group state once to avoid redundant DB reads.
      */
     fun updateGroup(
-        groupId: Long,
+        groupId: String,
         newName: String?,
         addParticipants: List<String>,
         removeParticipants: List<String>
     ) {
         viewModelScope.launch {
             repository.updateGroup(groupId, newName, addParticipants, removeParticipants)
-            if (newName != null && _state.value.currentGroupId == groupId) {
-                _state.update { it.copy(groupName = newName) }
-            }
         }
     }
 
@@ -675,7 +672,7 @@ class ExpenseViewModel(
         _state.update { it.copy(joinGroupMessage = null) }
     }
 
-    fun joinGroupByCode(onSuccess: (Long) -> Unit = {}) {
+    fun joinGroupByCode(onSuccess: (String) -> Unit = {}) {
         val shareCode = _state.value.joinGroupCodeInput.trim()
         if (shareCode.isBlank()) {
             _state.update { it.copy(joinGroupMessage = "Veuillez saisir un code de groupe.") }

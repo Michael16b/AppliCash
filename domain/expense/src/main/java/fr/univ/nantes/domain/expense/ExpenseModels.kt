@@ -8,7 +8,7 @@ package fr.univ.nantes.domain.expense
  */
 @Suppress("unused")
 data class Expense(
-    val id: Long = 0,
+    val id: String = "",
     val description: String,
     val amount: Double,
     val paidBy: String,
@@ -32,7 +32,7 @@ enum class SplitType(val code: Int) {
 /** Domain model representing a group of participants sharing expenses. */
 @Suppress("unused")
 data class GroupData(
-    val id: Long = 0,
+    val id: String = "",
     val groupName: String = "",
     val participants: List<String> = emptyList(),
     val expenses: List<Expense> = emptyList()

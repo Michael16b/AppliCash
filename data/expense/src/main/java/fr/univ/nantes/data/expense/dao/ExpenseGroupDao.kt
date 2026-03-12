@@ -17,19 +17,19 @@ interface ExpenseGroupDao {
 
     @Transaction
     @Query("SELECT * FROM expense_groups WHERE id = :groupId")
-    suspend fun getGroupWithDetails(groupId: Long): GroupWithDetails?
+    suspend fun getGroupWithDetails(groupId: String): GroupWithDetails?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertGroup(group: ExpenseGroupEntity): Long
+    suspend fun insertGroup(group: ExpenseGroupEntity): String
 
     @Query("DELETE FROM expense_groups WHERE id = :groupId")
-    suspend fun deleteGroup(groupId: Long)
+    suspend fun deleteGroup(groupId: String)
 
     @Query("SELECT * FROM expense_groups WHERE id = :groupId")
-    suspend fun getGroupById(groupId: Long): ExpenseGroupEntity?
+    suspend fun getGroupById(groupId: String): ExpenseGroupEntity?
 
     @Query("UPDATE expense_groups SET groupName = :groupName WHERE id = :groupId")
-    suspend fun updateGroupName(groupId: Long, groupName: String)
+    suspend fun updateGroupName(groupId: String, groupName: String)
 
     @Transaction
     @Query("SELECT * FROM expense_groups WHERE shareCode = :shareCode")

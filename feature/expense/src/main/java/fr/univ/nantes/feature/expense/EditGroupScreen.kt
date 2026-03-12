@@ -47,13 +47,13 @@ import fr.univ.nantes.core.ui.Green500
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class EditGroup(val groupId: Long)
+data class EditGroup(val groupId: String)
 
 private data class EditMemberField(val id: Int, val value: String, val isExisting: Boolean = false)
 
 @Composable
 fun EditGroupScreen(
-    groupId: Long,
+    groupId: String,
     viewModel: ExpenseViewModel,
     onBack: () -> Unit = {}
 ) {

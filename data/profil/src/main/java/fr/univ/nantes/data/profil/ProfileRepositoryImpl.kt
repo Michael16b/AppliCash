@@ -83,9 +83,9 @@ class ProfileRepositoryImpl(
             isLoggedIn = isLoggedIn
         )
 
-    private fun Profile.toEntity(id: Int, password: String, isLoggedIn: Boolean): ProfileEntity =
+    private fun Profile.toEntity(id: Any, password: String, isLoggedIn: Boolean): ProfileEntity =
         ProfileEntity(
-            id = id,
+            id = id as String,
             firstName = firstName,
             lastName = lastName,
             email = email,

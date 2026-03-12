@@ -91,7 +91,7 @@ import kotlinx.serialization.Serializable
 private const val EXPENSE_CURRENCY = "EUR"
 
 @Serializable
-data class GroupDetail(val groupId: Long)
+data class GroupDetail(val groupId: String)
 
 @SuppressLint("RememberReturnType")
 @Composable
@@ -99,7 +99,7 @@ fun GroupDetailScreen(
     group: GroupData,
     onBack: () -> Unit,
     onAddExpense: () -> Unit = {},
-    onDeleteExpense: (Long) -> Unit = {},
+    onDeleteExpense: (String) -> Unit = {},
     onEditGroup: () -> Unit = {},
     isLoggedIn: Boolean = true,
     onRequireLogin: () -> Unit = {},
@@ -349,7 +349,7 @@ private fun ExpensesTab(
     userFormat: NumberFormat,
     showConversion: Boolean,
     convertAmount: suspend (Double, String) -> Double?,
-    onDeleteExpense: (Long) -> Unit
+    onDeleteExpense: (String) -> Unit
 ) {
     if (group.expenses.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -390,7 +390,7 @@ private fun ExpenseItem(
     userFormat: NumberFormat,
     showConversion: Boolean,
     convertAmount: suspend (Double, String) -> Double?,
-    onDeleteExpense: (Long) -> Unit
+    onDeleteExpense: (String) -> Unit
 ) {
     val sharePerPerson = if (group.participants.isNotEmpty()) {
         expense.amount / group.participants.size
@@ -910,13 +910,13 @@ private fun calculateReimbursements(balances: List<Balance>): List<Reimbursement
 @Composable
 private fun GroupDetailPreview() {
     val group = GroupData(
-        id = 1,
+        id = "1",
         groupName = "Vacances été 2025",
         participants = listOf("Alice", "Bob", "Charlie"),
         expenses = listOf(
-            Expense(1, "Essence", 80.0, "Alice"),
-            Expense(2, "Hôtel", 300.0, "Bob"),
-            Expense(3, "Restaurant", 120.0, "Alice")
+            Expense("1", "Essence", 80.0, "Alice"),
+            Expense("2", "Hôtel", 300.0, "Bob"),
+            Expense("3", "Restaurant", 120.0, "Alice")
         )
     )
     AppliCashTheme {
@@ -928,13 +928,13 @@ private fun GroupDetailPreview() {
 @Composable
 private fun BalancesTabPreview() {
     val group = GroupData(
-        id = 2,
+        id = "2",
         groupName = "Week-end ski",
         participants = listOf("Julie", "Marc", "Sophie"),
         expenses = listOf(
-            Expense(1, "Location chalet", 300.0, "Marc"),
-            Expense(2, "Forfait ski", 150.0, "Julie"),
-            Expense(3, "Courses", 60.0, "Sophie")
+            Expense("1", "Location chalet", 300.0, "Marc"),
+            Expense("2", "Forfait ski", 150.0, "Julie"),
+            Expense("3", "Courses", 60.0, "Sophie")
         )
     )
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.FRANCE).apply {
@@ -955,12 +955,12 @@ private fun BalancesTabPreview() {
 @Composable
 private fun BalancesTabSettledPreview() {
     val group = GroupData(
-        id = 3,
+        id = "3",
         groupName = "Dîner d'équipe",
         participants = listOf("Alice", "Bob"),
         expenses = listOf(
-            Expense(1, "Restaurant", 60.0, "Alice"),
-            Expense(2, "Dessert", 60.0, "Bob")
+            Expense("1", "Restaurant", 60.0, "Alice"),
+            Expense("2", "Dessert", 60.0, "Bob")
         )
     )
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.FRANCE).apply {

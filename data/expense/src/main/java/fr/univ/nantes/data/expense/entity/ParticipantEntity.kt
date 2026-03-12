@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.util.UUID
 
 @Entity(
     tableName = "participants",
@@ -21,9 +22,9 @@ import androidx.room.PrimaryKey
     ]
 )
 data class ParticipantEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    val groupId: Long,
+    @PrimaryKey
+    val id: String = UUID.randomUUID().toString(),
+    val groupId: String,
     val name: String
 )
 

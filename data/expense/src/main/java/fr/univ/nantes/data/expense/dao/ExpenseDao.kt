@@ -9,15 +9,15 @@ import fr.univ.nantes.data.expense.entity.ExpenseEntity
 @Dao
 interface ExpenseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertExpense(expense: ExpenseEntity): Long
+    suspend fun insertExpense(expense: ExpenseEntity): String
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpenses(expenses: List<ExpenseEntity>)
 
     @Query("SELECT * FROM expenses WHERE groupId = :groupId ORDER BY createdAt DESC")
-    suspend fun getExpensesByGroupId(groupId: Long): List<ExpenseEntity>
+    suspend fun getExpensesByGroupId(groupId: String): List<ExpenseEntity>
 
     @Query("DELETE FROM expenses WHERE id = :expenseId")
-    suspend fun deleteExpense(expenseId: Long)
+    suspend fun deleteExpense(expenseId: String)
 }
 

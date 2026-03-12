@@ -94,7 +94,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class AddExpenseRoute(val groupId: Long)
+data class AddExpenseRoute(val groupId: String)
 
 private val avatarColors = listOf(
     Color(0xFF6366F1),
