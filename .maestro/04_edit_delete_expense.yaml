@@ -1,0 +1,81 @@
+appId: fr.univ.nantes.archi
+name: "Scenario 4 - Edit and delete expense"
+tags:
+  - rg5
+  - rg13
+  - ca14
+  - ca15
+  - ca16
+
+---
+
+# ── Setup ─────────────────────────────────────────────────────────────────────
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ── Navigate ──────────────────────────────────────────────────────────────────
+- tapOn:
+    text: "Weekend Trip"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── Delete expense ───────────────────────────────────────────────────────────
+- tapOn:
+    text: "Supprimer la dépense"
+    index: 1
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- assertNotVisible:
+    text: "Food"
+
+# ── Edit Group ────────────────────────────────────────────────────────────────
+- tapOn:
+    text: "Modifier le groupe"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# RG5: Try to remove Alice
+- tapOn:
+    text: "Supprimer le membre"
+    index: 0
+
+- assertVisible:
+    text: "Impossible de supprimer un membre ayant des dépenses"
+
+# RG13: Change group name
+- tapOn:
+    text: "Weekend Trip"
+- eraseText: 100
+- inputText: "Summer Trip"
+
+- tapOn:
+    text: "Enregistrer les modifications"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- assertVisible:
+    text: "Summer Trip"
+
+# ── Cleanup ───────────────────────────────────────────────────────────────────
+- tapOn:
+    text: "Supprimer la dépense"
+    index: 0
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- tapOn:
+    text: "Soldes"
+
+- assertVisible:
+    text: "Tous les comptes sont réglés !"
+
+- takeScreenshot: "scenario4_all_settled"

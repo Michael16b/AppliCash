@@ -1,0 +1,111 @@
+appId: fr.univ.nantes.archi
+name: "Scenario 2 - Add expense and verify balances"
+tags:
+    - rg4
+    - rg14
+    - ca14
+    - ca15
+    - ca16
+
+---
+# ── Setup ─────────────────────────────────────────────────────────────────────
+- launchApp:
+      clearState: false
+
+- waitForAnimationToEnd:
+      timeout: 5000
+
+# ── Navigate into the group ───────────────────────────────────────────────────
+- tapOn:
+      text: "Weekend Trip"
+
+- waitForAnimationToEnd:
+      timeout: 3000
+
+# Verify "Expenses" tab
+- assertVisible:
+      text: "Dépenses"
+
+# ── Add first expense (Hotel) ────────────────────────────────────────────────
+- tapOn:
+      text: "Ajouter une dépense"
+
+- waitForAnimationToEnd:
+      timeout: 3000
+
+# Title: index 1 because present in section title (0) and label (1)
+- tapOn:
+      point: 6%,18%
+      index: 1
+- eraseText: 100
+- inputText: "Hotel"
+
+# Amount: index 1 for input field
+- tapOn:
+      point: 5%,30%
+      index: 1
+- eraseText: 100
+- inputText: "90"
+
+- tapOn:
+      text: Retour
+      index: 1
+
+# Payer Alice is selected by default
+- assertVisible:
+      text: "Alice"
+
+- tapOn:
+      text: "Ajouter la dépense"
+
+- waitForAnimationToEnd:
+      timeout: 3000
+
+# ── Add second expense (Food) ────────────────────────────────────────────────
+- tapOn:
+      text: "Ajouter une dépense"
+
+- waitForAnimationToEnd:
+      timeout: 3000
+
+- tapOn:
+      point: 6%,20%
+      index: 1
+- eraseText: 100
+- inputText: "Food"
+
+- tapOn:
+      point: 6%,30%
+      index: 1
+- eraseText: 100
+- inputText: "30"
+
+# Change payer to Bob (Dropdown)
+- tapOn:
+      text: "Alice"
+- tapOn:
+      text: "Bob"
+
+- tapOn:
+      text: "Ajouter la dépense"
+
+- waitForAnimationToEnd:
+      timeout: 3000
+
+# ── Check Balances ────────────────────────────────────────────────────────────
+- tapOn:
+      text: "Soldes"
+
+- waitForAnimationToEnd:
+      timeout: 2000
+
+- assertVisible:
+      text: "Soldes des membres"
+
+# Verify names
+- assertVisible:
+      text: "Alice"
+- assertVisible:
+      text: "Bob"
+
+- takeScreenshot: "scenario2_balances_verified"

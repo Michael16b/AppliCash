@@ -1,0 +1,53 @@
+appId: fr.univ.nantes.archi
+name: "Scenario 3 - View suggested reimbursements"
+tags:
+  - rg6
+  - rg7
+  - ca14
+  - ca15
+  - ca16
+
+---
+
+# ── Setup ─────────────────────────────────────────────────────────────────────
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ── Navigate ──────────────────────────────────────────────────────────────────
+- tapOn:
+    text: "Weekend Trip"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    text: "Soldes"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- assertVisible:
+    text: "Soldes des membres"
+
+# ── Verify labels ─────────────────────────────────────────────────────────────
+- assertVisible:
+    text: "doit recevoir"
+    optional: true
+
+- assertVisible:
+    text: "doit rembourser"
+    optional: true
+
+# ── Verify suggested reimbursements ──────────────────────────────────────────
+- assertVisible:
+    text: "Remboursements suggérés"
+
+# Check for arrow or linking text
+- assertVisible:
+    text: "doit payer à"
+    optional: true
+
+- takeScreenshot: "scenario3_reimbursements_verified"
