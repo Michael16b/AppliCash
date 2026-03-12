@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.roborazzi) apply false
+    alias(libs.plugins.google.gms.google.services) apply false
 }
 
 /**
@@ -39,17 +40,19 @@ tasks.register("recordPaparazziDebug") {
 // task execution (which breaks the configuration cache).
 val fastTestsRunTests: Boolean = (project.findProperty("fastTestsRunTests") as? String) == "true"
 
-tasks.register("fastTests") {
-    group = "verification"
-    description = "Aggregate quick tests for CI. By default this is a no-op to avoid running Android/JVM unit tests that may require the Android SDK or specific JVM setup. To enable running unit tests, invoke with -PfastTestsRunTests=true."
+if (tasks.findByName("fastTests") == null) {
+    tasks.register("fastTests") {
+        group = "verification"
+        description = "Aggregate quick tests for CI. By default this is a no-op."
 
-    if (fastTestsRunTests) {
-        doLast {
-            println("fastTests: configured to run unit tests. See logs for task dependencies configured at project evaluation time.")
-        }
-    } else {
-        doLast {
-            println("fastTests: no-op (unit tests disabled). To run tests: ./gradlew fastTests -PfastTestsRunTests=true")
+        if (fastTestsRunTests) {
+            doLast {
+                println("fastTests: configured to run unit tests.")
+            }
+        } else {
+            doLast {
+                println("fastTests: no-op (unit tests disabled).")
+            }
         }
     }
 }
