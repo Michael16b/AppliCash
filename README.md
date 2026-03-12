@@ -22,12 +22,3 @@ Team:
 A detailed, living test strategy is available in `TESTING.md`. It describes the coverage matrix (Data/Domain/Presentation), test naming conventions, local execution guide, CI configuration (GitHub Actions), coverage enforcement, where HTML reports are published (GitHub Pages) and how artifacts are uploaded.
 
 Please see `TESTING.md` for the full testing strategy and CI details.
-
----
-
-## Next steps and options
-
-If you want I can:
-- Add per-module coverage thresholds and fail the build per module
-- Add a nightly job that runs instrumented UI tests (Maestro / Espresso) and publishes its own report
-- Improve aggregation to handle Android variant-specific classes and exclusions
