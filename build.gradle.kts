@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.roborazzi) apply false
 }
 
+// Include shared Gradle test tasks and JaCoCo collection
+apply(from = "gradle/test-tasks.gradle.kts")
 /**
  * Aggregates snapshot verification across all feature modules (RG4/CA3).
  * Equivalent of verifyPaparazziDebug using Roborazzi.

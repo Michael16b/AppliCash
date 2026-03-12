@@ -1,0 +1,206 @@
+name: CI - Tests & Coverage
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *' # Nightly at 02:00 UTC for instrumented UI tests
+
+jobs:
+  detect-affected:
+    name: Detect affected modules
+    runs-on: ubuntu-latest
+    outputs:
+      affectedModules: ${{ steps.detect.outputs.affectedModules }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect
+        id: detect
+        run: |
+          echo "Computing affected modules from git diff..."
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "not a PR, leaving affectedModules empty"
+            echo "affectedModules=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          BASE_REF='origin/${{ github.event.pull_request.base.ref }}'
+          echo "Fetching base ref ${BASE_REF}..."
+          git fetch --no-tags --depth=50 origin ${{ github.event.pull_request.base.ref }} || git fetch --no-tags origin ${{ github.event.pull_request.base.ref }} || true
+
+          # Ensure HEAD exists
+          echo "Ensuring HEAD is available..."
+          git fetch --no-tags --depth=1 origin ${{ github.sha }} || true
+
+          # Try to find merge-base; if not found, proceed but do not fail
+          MERGE_BASE=$(git merge-base --fork-point ${BASE_REF} ${{ github.sha }} 2>/dev/null || git merge-base ${BASE_REF} ${{ github.sha }} 2>/dev/null || true)
+          if [ -n "$MERGE_BASE" ]; then
+            echo "Using merge base: $MERGE_BASE"
+            DIFF_FILES=$(git diff --name-only $MERGE_BASE ${{ github.sha }} || true)
+          else
+            echo "No merge base found, trying direct diff against ${BASE_REF}"
+            DIFF_FILES=$(git diff --name-only ${BASE_REF} ${{ github.sha }} || true)
+          fi
+
+          echo "Files changed:"$DIFF_FILES
+          if [ -z "$DIFF_FILES" ]; then
+            echo "affectedModules=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          AFFECTED=$(echo "$DIFF_FILES" | awk -F/ '{print $1"/"$2}' | sort -u | tr '\n' ',')
+          if [ -z "$AFFECTED" ]; then
+            AFFECTED=$(echo "$DIFF_FILES" | awk -F/ '{print $1}' | sort -u | tr '\n' ',')
+          fi
+          AFFECTED=${AFFECTED%,}
+          echo "affectedModules=$AFFECTED" >> $GITHUB_OUTPUT
+
+  unit-tests:
+    name: Run unit tests and generate coverage
+    runs-on: ubuntu-latest
+    env:
+      GRADLE_REMOTE_BUILD_CACHE_URL: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_URL }}
+      GRADLE_REMOTE_BUILD_CACHE_USERNAME: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_USERNAME }}
+      GRADLE_REMOTE_BUILD_CACHE_PASSWORD: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_PASSWORD }}
+    needs: [ detect-affected ]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper/
+            ~/.gradle/caches/build-cache-1
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}-${{ hashFiles('**/gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Optional configure remote Gradle build cache
+        if: ${{ env.GRADLE_REMOTE_BUILD_CACHE_URL != '' }}
+        run: |
+          mkdir -p $HOME/.gradle
+          cat > $HOME/.gradle/init.gradle <<'INIT'
+          settingsEvaluated { settings ->
+              if (System.getenv('GRADLE_REMOTE_BUILD_CACHE_URL')) {
+                  settings.buildCache {
+                      remote(org.gradle.caching.http.HttpBuildCache) {
+                          url = uri(System.getenv('GRADLE_REMOTE_BUILD_CACHE_URL'))
+                          push = true
+                          credentials {
+                              username = System.getenv('GRADLE_REMOTE_BUILD_CACHE_USERNAME') ?: ''
+                              password = System.getenv('GRADLE_REMOTE_BUILD_CACHE_PASSWORD') ?: ''
+                          }
+                      }
+                  }
+              }
+          }
+          INIT
+
+      - name: Run unit tests
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            AFFECTED=${{ needs.detect-affected.outputs.affectedModules }}
+            if [ -n "$AFFECTED" ]; then
+              echo "Running fastTests for affected modules: $AFFECTED"
+              ./gradlew fastTests -PaffectedModules="$AFFECTED" --parallel --configuration-cache --build-cache --console=plain || exit 1
+            else
+              echo "No affected modules detected, running full testAll"
+              ./gradlew testAll --parallel --configuration-cache --build-cache --console=plain || exit 1
+            fi
+            # Skip JaCoCo aggregation on PRs to keep PR runs fast and avoid configuration-cache serialization issues.
+          else
+            # Push to main/master: run full including coverage aggregation and enforcement
+            ./gradlew testAll jacocoAggregate jacocoHtmlAggregate coverageEnforce --stacktrace --build-cache --console=plain
+          fi
+
+      - name: Upload module-level coverage HTML reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-html
+          path: '**/build/reports/jacoco/html/**'
+
+      - name: Upload aggregated coverage HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-aggregate
+          path: 'build/reports/jacoco/html/**'
+
+  publish-pages:
+    name: Publish coverage to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    if: github.event_name != 'pull_request' # Do not deploy Pages on PRs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download aggregated coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report-aggregate
+          path: site
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site
+          publish_branch: gh-pages
+          allow_empty_commit: true
+          user_name: 'github-actions[bot]'
+          user_email: '41898282+github-actions[bot]@users.noreply.github.com'
+
+  nightly-instrumented:
+    name: Nightly instrumented UI tests
+    runs-on: ubuntu-latest
+    env:
+      GRADLE_REMOTE_BUILD_CACHE_URL: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_URL }}
+      GRADLE_REMOTE_BUILD_CACHE_USERNAME: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_USERNAME }}
+      GRADLE_REMOTE_BUILD_CACHE_PASSWORD: ${{ secrets.GRADLE_REMOTE_BUILD_CACHE_PASSWORD }}
+    if: github.event_name == 'schedule'
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Install Android SDK (required for emulator)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: google_apis
+          arch: x86_64
+          emulator-options: '-no-window -no-audio -no-boot-anim'
+
+      - name: Run instrumented UI tests (Maestro/Espresso)
+        run: |
+          ./gradlew connectedAndroidTest --no-daemon --stacktrace
+
+      - name: Collect instrumented test reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumented-tests-report
+          path: '**/build/reports/androidTests/**'

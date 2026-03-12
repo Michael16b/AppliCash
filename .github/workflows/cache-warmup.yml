@@ -88,4 +88,4 @@ jobs:
         run: chmod +x gradlew
 
       - name: Warm-up Build & Test cache
-        run: ./gradlew assembleDebug testDebugUnitTest ${{ env.GRADLE_COMMON_ARGS }}
+        run: ./gradlew assembleDebug ${{ env.GRADLE_COMMON_ARGS }}
