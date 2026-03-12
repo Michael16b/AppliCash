@@ -112,4 +112,5 @@
     <string name="per_person_amount">%s per person</string>
     <string name="per_person_suffix">/person</string>
     <string name="expense">Expense</string>
+    <string name="attach_file">Attach File</string>
 </resources>

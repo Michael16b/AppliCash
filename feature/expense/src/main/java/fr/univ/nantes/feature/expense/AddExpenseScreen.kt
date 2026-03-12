@@ -96,6 +96,7 @@ import java.util.Date
 import java.util.Locale
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.serialization.Serializable
+import androidx.compose.foundation.layout.wrapContentWidth
 
 @Serializable
 data class AddExpenseRoute(val groupId: Long)
@@ -938,25 +939,24 @@ fun AddExpenseScreen(
                             )
                         }
                         Button(
-                            onClick = { /* TODO: file picker */ },
-                            modifier = Modifier.weight(1f).height(46.dp),
+                            onClick = {
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
                             shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                MaterialTheme.colorScheme.outlineVariant
-                            ),
                             elevation = ButtonDefaults.buttonElevation(0.dp)
                         ) {
-                            Icon(Icons.Outlined.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Outlined.AttachFile,
+                                contentDescription = stringResource(R.string.attach_file),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                stringResource(R.string.choose_file),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold
+                                text = stringResource(R.string.attach_file),
+                                color = Color.White
                             )
                         }
                     }
@@ -1055,6 +1055,23 @@ fun AddExpenseScreen(
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyLarge
                     )
+                }
+
+                // Add a file picker button to allow selecting image files
+                Button(
+                    onClick = {
+                        // Logic to open file picker for image files
+                    },
+                    modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Green500,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(Icons.Outlined.AttachFile, contentDescription = "Attach File", modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Attach Image", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
                 }
 
                 Spacer(Modifier.height(20.dp))
@@ -1442,14 +1459,7 @@ private fun AddExpenseScreenContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = fieldShape,
                                 singleLine = true,
-                                colors = fieldColors,
-                                leadingIcon = {
-                                    ParticipantAvatar(
-                                        name = selectedPayer,
-                                        color = avatarColors[0],
-                                        size = 24
-                                    )
-                                }
+                                colors = fieldColors
                             )
                         }
                     }
@@ -1629,7 +1639,6 @@ private fun AddExpenseScreenContent(
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.add_expense_button), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
                 }
-
                 Spacer(Modifier.height(20.dp))
             }
         }

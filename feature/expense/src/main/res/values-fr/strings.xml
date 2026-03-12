@@ -112,5 +112,6 @@
     <string name="receipt_preview">Aperçu du ticket</string>
     <string name="retake_photo">Refaire</string>
     <string name="remove_photo">Retirer</string>
+    <string name="attach_file">Joindre un fichier</string>
 
 </resources>
