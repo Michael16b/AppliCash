@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.roborazzi) apply false
-    alias(libs.plugins.google.gms.google.services) apply false
 }
 
 /**
