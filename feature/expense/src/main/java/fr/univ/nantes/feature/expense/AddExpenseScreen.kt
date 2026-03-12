@@ -88,7 +88,6 @@ import androidx.compose.ui.unit.sp
 import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.Green500
-import fr.univ.nantes.core.ui.Green700
 import fr.univ.nantes.core.ui.GreenBg50
 import fr.univ.nantes.core.ui.Teal600
 import java.io.File
