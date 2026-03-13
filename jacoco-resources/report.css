@@ -1,4 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap');
+
+/* Reset & Base */
+* {
+    box-sizing: border-box;
+}
 
 body {
     font-family: 'Inter', sans-serif;
@@ -17,6 +22,7 @@ h1 {
     color: #111827;
 }
 
+/* Breadcrumb (Navigation) */
 #breadcrumb {
     margin-bottom: 1rem;
     font-size: 0.875rem;
@@ -33,20 +39,25 @@ h1 {
     text-decoration: underline;
 }
 
-
-table.coverage {
+/* Tableau Principal */
+table.coverage,
+#coveragetable,
+.coverage-summary {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
     background: #ffffff;
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     overflow: hidden;
+    margin-bottom: 2rem;
 }
 
-
-thead th {
+/* En-têtes */
+thead th,
+#coveragetable th,
+.coverage-summary th {
     background-color: #f8fafc;
     padding: 0.75rem 1rem;
     text-align: left;
@@ -58,22 +69,30 @@ thead th {
     border-bottom: 1px solid #e5e7eb;
 }
 
-tbody td {
+/* Cellules */
+tbody td,
+#coveragetable td,
+.coverage-summary td {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid #f3f4f6;
     font-size: 0.875rem;
     vertical-align: middle;
 }
 
-tbody tr:last-child td {
+tbody tr:last-child td,
+#coveragetable tr:last-child td,
+.coverage-summary tr:last-child td {
     border-bottom: none;
 }
 
-tbody tr:hover td {
+tbody tr:hover td,
+#coveragetable tr:hover td,
+.coverage-summary tr:hover td {
     background-color: #f9fafb;
+    transition: background-color 0.15s ease;
 }
 
-
+/* Stylisation des chiffres */
 .ctr1, .ctr2, .it, .st {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.8rem;
@@ -81,6 +100,14 @@ tbody tr:hover td {
     color: #374151;
 }
 
+/* Pourcentages */
+.pc {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* Barres JaCoCo */
 td.bar img {
     height: 12px !important;
     border-radius: 6px;
@@ -95,15 +122,25 @@ img[src*="redbar.gif"] {
     filter: saturate(1.2);
 }
 
-#footer {
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e5e7eb;
-    font-size: 0.75rem;
-    color: #9ca3af;
-    text-align: center;
+/* Barres CSS natives */
+.bar {
+    height: 10px;
+    border-radius: 99px;
+    background-color: #e5e7eb;
+    overflow: hidden;
+    min-width: 60px;
 }
 
+.bar span {
+    display: block;
+    height: 100%;
+    border-radius: 99px;
+}
+
+.green { background-color: #22c55e; }
+.red   { background-color: #f87171; }
+
+/* Liens dans le tableau */
 a {
     color: #2563eb;
     text-decoration: none;
@@ -112,4 +149,33 @@ a {
 
 a:hover {
     color: #1d4ed8;
+    text-decoration: underline;
+}
+
+/* Header */
+#header {
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1rem 2rem;
+    margin: -2rem -2rem 2rem -2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* Tri colonnes */
+.sortable:hover {
+    background-color: #e2e8f0;
+    cursor: pointer;
+}
+
+/* Footer */
+#footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    text-align: center;
 }
