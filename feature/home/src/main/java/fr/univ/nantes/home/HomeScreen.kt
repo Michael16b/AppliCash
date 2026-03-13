@@ -394,14 +394,5 @@ fun HomeScreenPreview() {
             onGroupClick = {},
             onProfileClick = {}
         )
-//        GroupCard(
-//            group = GroupData(
-//                id = 1L,
-//                groupName = "Group 1",
-//                participants = listOf("Alice", "Bob"),
-//                expenses = listOf(Expense("Expense 1", 5.0, "Alice"), Expense("Expense 2", 10.0, "Bob"))
-//            ),
-//            onClick = {}
-//        )
     }
 }

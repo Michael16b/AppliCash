@@ -79,7 +79,6 @@ interface ExpenseRepository {
     suspend fun joinGroupByShareCode(shareCode: String, userName: String?): JoinGroupResult
     suspend fun startRealtimeSync(id: String, viewModelScope: CoroutineScope)
     fun stopRealtimeSync()
-    /** Effectue une synchronisation unique (one-shot) depuis Firebase pour un groupe donné. */
     suspend fun syncGroupFromFirebase(groupId: String)
 
 }
@@ -348,14 +347,12 @@ class ExpenseRepositoryImpl(
                             )
                         )
 
-                        // Replace participants: wipe local list then re-insert from Firebase
                         participantDao.deleteAllParticipantsByGroupId(id)
                         val participants = remoteData.participants.map {
                             ParticipantEntity(groupId = id, name = it)
                         }
                         participantDao.insertParticipants(participants)
 
-                        // Replace expenses: wipe local list then re-insert from Firebase
                         expenseDao.deleteAllExpensesByGroupId(id)
                         val expenses = remoteData.expenses.map {
                             ExpenseEntity(

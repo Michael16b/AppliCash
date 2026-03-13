@@ -151,7 +151,6 @@ class ExpenseViewModel(
     private val _events = MutableSharedFlow<ExpenseEvent>()
     val events: SharedFlow<ExpenseEvent> = _events.asSharedFlow()
 
-    /** Job observing the current group in Room — cancelled when switching groups. */
     private var groupObserverJob: Job? = null
     private var observedGroupId: String? = null
 
