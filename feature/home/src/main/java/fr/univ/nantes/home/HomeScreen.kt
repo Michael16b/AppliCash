@@ -58,8 +58,11 @@ import fr.univ.nantes.feature.expense.ExpenseEvent
 import fr.univ.nantes.feature.expense.ExpenseViewModel
 import fr.univ.nantes.feature.expense.GroupData
 import java.text.NumberFormat
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.Serializable
+
+private const val DEFAULT_HOME_REFRESH_INTERVAL_MS = 10_000L
 
 @Composable
 fun HomeScreen(
@@ -67,7 +70,9 @@ fun HomeScreen(
     viewModel: ExpenseViewModel? = null,
     onAddGroupClick: () -> Unit = {},
     onGroupClick: (GroupData) -> Unit = {},
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    refreshIntervalMs: Long = DEFAULT_HOME_REFRESH_INTERVAL_MS,
+    onRefresh: suspend () -> Unit = {}
 ) {
     val groups = viewModel?.convertedGroups?.collectAsState()?.value ?: emptyList()
     val userCurrencyCode = viewModel?.state?.collectAsState()?.value?.userCurrencyCode ?: "EUR"
@@ -80,6 +85,14 @@ fun HomeScreen(
                     snackbarHostState.showSnackbar(event.message)
                 }
             }
+        }
+    }
+
+    LaunchedEffect(refreshIntervalMs) {
+        if (refreshIntervalMs <= 0L) return@LaunchedEffect
+        while (true) {
+            delay(refreshIntervalMs)
+            onRefresh()
         }
     }
 
@@ -381,14 +394,5 @@ fun HomeScreenPreview() {
             onGroupClick = {},
             onProfileClick = {}
         )
-//        GroupCard(
-//            group = GroupData(
-//                id = 1L,
-//                groupName = "Group 1",
-//                participants = listOf("Alice", "Bob"),
-//                expenses = listOf(Expense("Expense 1", 5.0, "Alice"), Expense("Expense 2", 10.0, "Bob"))
-//            ),
-//            onClick = {}
-//        )
     }
 }

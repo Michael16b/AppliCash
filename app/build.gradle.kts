@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -47,13 +48,15 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.firebase.database)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Nav
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.compose.navigation)
-
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.database)
     // koin
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.android)

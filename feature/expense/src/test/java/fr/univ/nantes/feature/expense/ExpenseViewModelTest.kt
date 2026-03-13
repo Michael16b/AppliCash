@@ -236,62 +236,62 @@ class ExpenseViewModelTest {
 
     @Test
     fun updateGroupName_invokesRepositoryWithCorrectParams() {
-        viewModel.updateGroupName(42L, "New Name")
+        viewModel.updateGroupName("42L", "New Name")
         mainDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(42L, fakeRepository.lastUpdatedGroupNameId)
+        assertEquals("42L", fakeRepository.lastUpdatedGroupNameId)
         assertEquals("New Name", fakeRepository.lastUpdatedGroupName)
     }
 
     @Test
     fun updateGroupName_doesNotUpdateStateWhenCurrentGroupIdDoesNotMatch() {
         viewModel.setGroupName("Old Name")
-        viewModel.updateGroupName(42L, "New Name")
+        viewModel.updateGroupName("42L", "New Name")
         mainDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(42L, fakeRepository.lastUpdatedGroupNameId)
+        assertEquals("42L", fakeRepository.lastUpdatedGroupNameId)
         assertEquals("New Name", fakeRepository.lastUpdatedGroupName)
         assertEquals("Old Name", viewModel.state.value.groupName)
     }
 
     @Test
     fun addParticipantToGroup_invokesRepositoryWithCorrectParams() {
-        viewModel.addParticipantToGroup(10L, "Alice")
+        viewModel.addParticipantToGroup("10L", "Alice")
         mainDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(10L, fakeRepository.lastAddedParticipantGroupId)
+        assertEquals("10L", fakeRepository.lastAddedParticipantGroupId)
         assertEquals("Alice", fakeRepository.lastAddedParticipantName)
     }
 
     @Test
     fun addParticipantToGroup_trimsParticipantName() {
-        viewModel.addParticipantToGroup(10L, "  Alice  ")
+        viewModel.addParticipantToGroup("10L", "  Alice  ")
         mainDispatcher.scheduler.advanceUntilIdle()
         assertEquals("Alice", fakeRepository.lastAddedParticipantName)
     }
 
     @Test
     fun addParticipantToGroup_ignoresBlankName() {
-        viewModel.addParticipantToGroup(10L, "   ")
+        viewModel.addParticipantToGroup("10L", "   ")
         mainDispatcher.scheduler.advanceUntilIdle()
         assertNull(fakeRepository.lastAddedParticipantName)
     }
 
     @Test
     fun removeParticipantFromGroup_invokesRepositoryWithCorrectParams() {
-        viewModel.removeParticipantFromGroup(10L, "Alice")
+        viewModel.removeParticipantFromGroup("10L", "Alice")
         mainDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(10L, fakeRepository.lastRemovedParticipantGroupId)
+        assertEquals("10L", fakeRepository.lastRemovedParticipantGroupId)
         assertEquals("Alice", fakeRepository.lastRemovedParticipantName)
     }
 
     @Test
     fun updateGroup_invokesRepositoryWithCorrectParams() {
         viewModel.updateGroup(
-            groupId = 5L,
+            groupId = "5L",
             newName = "Renamed",
             addParticipants = listOf("Charlie"),
             removeParticipants = listOf("Dave")
         )
         mainDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(5L, fakeRepository.lastUpdateGroupId)
+        assertEquals("5L", fakeRepository.lastUpdateGroupId)
         assertEquals("Renamed", fakeRepository.lastUpdateNewName)
         assertEquals(listOf("Charlie"), fakeRepository.lastUpdateAddParticipants)
         assertEquals(listOf("Dave"), fakeRepository.lastUpdateRemoveParticipants)
@@ -300,7 +300,7 @@ class ExpenseViewModelTest {
     @Test
     fun updateGroup_withNullNewName_passesNullToRepository() {
         viewModel.updateGroup(
-            groupId = 5L,
+            groupId = "5L",
             newName = null,
             addParticipants = listOf("Charlie"),
             removeParticipants = emptyList()

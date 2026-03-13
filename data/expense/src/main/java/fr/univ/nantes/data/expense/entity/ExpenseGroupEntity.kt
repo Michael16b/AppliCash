@@ -8,8 +8,8 @@ import androidx.room.Index
     indices = [Index(value = ["shareCode"], unique = true)]
 )
 data class ExpenseGroupEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    @PrimaryKey
+    val id: String = java.util.UUID.randomUUID().toString(),
     val groupName: String,
     val createdAt: Long = System.currentTimeMillis(),
     val shareCode: String

@@ -53,7 +53,7 @@ private data class MemberField(val id: Int, val value: String)
 fun GroupScreen(
     viewModel: ExpenseViewModel,
     navigateToHome: () -> Unit = {},
-    onJoinGroupSuccess: (Long) -> Unit = {}
+    onJoinGroupSuccess: (String) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     GroupScreenContent(

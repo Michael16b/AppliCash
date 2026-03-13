@@ -25,10 +25,10 @@ class ParticipantDaoTest {
     }
 
     @Test
-    fun `insertParticipant returns a positive id`() = runTest {
+    fun `insertParticipant returns a string id`() = runTest {
         whenever(dao.insertParticipant(any())).thenReturn(1L)
 
-        val id = dao.insertParticipant(ParticipantEntity(groupId = 1L, name = "Alice"))
+        val id = dao.insertParticipant(ParticipantEntity(groupId = "group-1", name = "Alice"))
 
         assertEquals(1L, id)
     }
@@ -36,9 +36,9 @@ class ParticipantDaoTest {
     @Test
     fun `insertParticipants inserts all participants`() = runTest {
         val participants = listOf(
-            ParticipantEntity(groupId = 1L, name = "Alice"),
-            ParticipantEntity(groupId = 1L, name = "Bob"),
-            ParticipantEntity(groupId = 1L, name = "Charlie")
+            ParticipantEntity(groupId = "group-1", name = "Alice"),
+            ParticipantEntity(groupId = "group-1", name = "Bob"),
+            ParticipantEntity(groupId = "group-1", name = "Charlie")
         )
 
         dao.insertParticipants(participants)
@@ -49,12 +49,12 @@ class ParticipantDaoTest {
     @Test
     fun `getParticipantsByGroupId returns the participants list`() = runTest {
         val expected = listOf(
-            ParticipantEntity(id = 1, groupId = 1L, name = "Alice"),
-            ParticipantEntity(id = 2, groupId = 1L, name = "Bob")
+            ParticipantEntity(id = "p-1", groupId = "group-1", name = "Alice"),
+            ParticipantEntity(id = "p-2", groupId = "group-1", name = "Bob")
         )
-        whenever(dao.getParticipantsByGroupId(1L)).thenReturn(expected)
+        whenever(dao.getParticipantsByGroupId("group-1")).thenReturn(expected)
 
-        val result = dao.getParticipantsByGroupId(1L)
+        val result = dao.getParticipantsByGroupId("group-1")
 
         assertEquals(2, result.size)
         assertEquals("Alice", result[0].name)
@@ -63,28 +63,28 @@ class ParticipantDaoTest {
 
     @Test
     fun `getParticipantsByGroupId returns empty list when no participants exist`() = runTest {
-        whenever(dao.getParticipantsByGroupId(99L)).thenReturn(emptyList())
+        whenever(dao.getParticipantsByGroupId("group-99")).thenReturn(emptyList())
 
-        val result = dao.getParticipantsByGroupId(99L)
+        val result = dao.getParticipantsByGroupId("group-99")
 
         assertTrue(result.isEmpty())
     }
 
     @Test
     fun `deleteParticipantByName calls the method with the correct parameters`() = runTest {
-        dao.deleteParticipantByName(1L, "Alice")
-        verify(dao).deleteParticipantByName(1L, "Alice")
+        dao.deleteParticipantByName("group-1", "Alice")
+        verify(dao).deleteParticipantByName("group-1", "Alice")
     }
 
     @Test
     fun `deleteParticipant calls the method with the correct id`() = runTest {
-        dao.deleteParticipant(5L)
-        verify(dao).deleteParticipant(5L)
+        dao.deleteParticipant("p-5")
+        verify(dao).deleteParticipant("p-5")
     }
 
     @Test
     fun `BR3 - insertParticipant with duplicate name throws a simulated constraint exception`() = runTest {
-        val duplicate = ParticipantEntity(groupId = 1L, name = "Alice")
+        val duplicate = ParticipantEntity(groupId = "group-1", name = "Alice")
         // Simulates the UNIQUE constraint violation on (groupId, name)
         whenever(dao.insertParticipant(duplicate))
             .thenThrow(RuntimeException("UNIQUE constraint failed: participants.groupId, participants.name"))
@@ -99,11 +99,11 @@ class ParticipantDaoTest {
 
     @Test
     fun `updateParticipants adds and removes the correct participants`() = runTest {
-        val toAdd = listOf(ParticipantEntity(groupId = 1L, name = "Charlie"))
+        val toAdd = listOf(ParticipantEntity(groupId = "group-1", name = "Charlie"))
         val toRemove = listOf("Alice")
 
-        dao.updateParticipants(1L, toAdd, toRemove)
+        dao.updateParticipants("group-1", toAdd, toRemove)
 
-        verify(dao).updateParticipants(1L, toAdd, toRemove)
+        verify(dao).updateParticipants("group-1", toAdd, toRemove)
     }
 }
