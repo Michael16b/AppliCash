@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExpenseCalculator.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AppliCash</a> &gt; <a href="index.source.html" class="el_package">fr.univ.nantes.domain.expense</a> &gt; <span class="el_source">ExpenseCalculator.kt</span></div><h1>ExpenseCalculator.kt</h1><pre class="source lang-java linenums">package fr.univ.nantes.domain.expense
+
+/**
+ * Pure domain service that encapsulates all balance and reimbursement calculations.
+ *
+ * All methods are stateless and work on plain domain models — no Android or Room dependency.
+ *
+ * Business rules enforced:
+ *   BR7  – positive balance = credit, negative balance = debt
+ *   BR8  – split shares must total 100 % of the expense amount
+ *   BR10 – balances are computed from ALL expenses in the group
+ *   BR6  – the reimbursement algorithm minimises the number of transactions
+ */
+@Suppress(&quot;unused&quot;)
+object ExpenseCalculator {
+
+    /**
+     * Floating-point tolerance used to avoid treating tiny rounding errors as real debts.
+     * One cent (0.01) is a safe threshold for display and reimbursement purposes.
+     */
+    const val BALANCE_THRESHOLD = 0.01
+
+    // ── Balance calculation ───────────────────────────────────────────────────
+
+    /**
+     * Calculates the net balance for every participant.
+     *
+     * BR7  – positive = credit, negative = debt.
+     * BR10 – considers all [expenses] in the group.
+     *
+     * Equal split strategy: each participant owes (totalAmount / participantCount).
+     * Each participant's balance = amountPaid – fairShare.
+     *
+     * @param expenses   All expenses of the group (BR10).
+     * @param participants All members of the group.
+     * @return List of [Balance] objects, one per participant.
+     */
+    fun calculateBalances(expenses: List&lt;Expense&gt;, participants: List&lt;String&gt;): List&lt;Balance&gt; {
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (participants.isEmpty()) return emptyList()</span>
+
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        val total = expenses.sumOf { it.amount }</span>
+<span class="fc" id="L42">        val equalShare = total / participants.size</span>
+
+<span class="fc" id="L44">        val paidByParticipant = participants.associateWith { name -&gt;</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            expenses.filter { it.paidBy == name }.sumOf { it.amount }</span>
+        }
+
+<span class="fc" id="L48">        return participants.map { name -&gt;</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">            Balance(name, (paidByParticipant[name] ?: 0.0) - equalShare)</span>
+        }
+    }
+
+    /**
+     * Calculates balances using a custom per-expense split strategy.
+     *
+     * Each [Expense] carries a [Expense.splitDetails] map defining each participant's
+     * share of that expense. BR8 is enforced: the sum of all shares must equal the
+     * total expense amount (within [BALANCE_THRESHOLD]).
+     *
+     * @throws ExpenseDomainException.InvalidSplitException if any expense's shares don't sum correctly (BR8).
+     */
+    fun calculateBalancesWithSplit(expenses: List&lt;Expense&gt;, participants: List&lt;String&gt;): List&lt;Balance&gt; {
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (participants.isEmpty()) return emptyList()</span>
+
+        // BR8: validate every expense with explicit split details
+<span class="fc" id="L66">        expenses.forEach { expense -&gt;</span>
+<span class="fc bfc" id="L67" title="All 4 branches covered.">            if (expense.splitDetails.isNotEmpty()) {</span>
+<span class="fc" id="L68">                val splitSum = expense.splitDetails.values.sum()</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                if (Math.abs(splitSum - expense.amount) &gt; BALANCE_THRESHOLD) {</span>
+<span class="fc" id="L70">                    throw ExpenseDomainException.InvalidSplitException(</span>
+<span class="fc" id="L71">                        &quot;Expense '${expense.description}': split sum $splitSum ≠ amount ${expense.amount}&quot;</span>
+                    )
+                }
+            }
+<span class="fc" id="L75">        }</span>
+
+<span class="fc" id="L77">        val net = participants.associateWith { 0.0 }.toMutableMap()</span>
+
+<span class="fc" id="L79">        expenses.forEach { expense -&gt;</span>
+            // Credit the payer
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">            net[expense.paidBy] = (net[expense.paidBy] ?: 0.0) + expense.amount</span>
+
+<span class="fc bfc" id="L83" title="All 4 branches covered.">            if (expense.splitDetails.isNotEmpty()) {</span>
+                // Debit each participant by their explicit share
+<span class="fc" id="L85">                expense.splitDetails.forEach { (participant, share) -&gt;</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">                    net[participant] = (net[participant] ?: 0.0) - share</span>
+<span class="fc" id="L87">                }</span>
+            } else {
+                // Equal split fallback
+<span class="fc" id="L90">                val share = expense.amount / participants.size</span>
+<span class="fc" id="L91">                participants.forEach { p -&gt;</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">                    net[p] = (net[p] ?: 0.0) - share</span>
+<span class="fc" id="L93">                }</span>
+            }
+<span class="fc" id="L95">        }</span>
+
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        return participants.map { Balance(it, net[it] ?: 0.0) }</span>
+    }
+
+    // ── Reimbursement algorithm ───────────────────────────────────────────────
+
+    /**
+     * Computes the minimum number of reimbursement transactions needed to settle all debts.
+     *
+     * BR6 – greedy two-pointer algorithm on sorted debtors / creditors:
+     *   1. Sort debtors ascending (most negative first).
+     *   2. Sort creditors descending (most positive first).
+     *   3. At each step, settle as much as possible between the current debtor and creditor.
+     *   4. Advance the pointer of whoever is fully settled.
+     *
+     * Amounts below [BALANCE_THRESHOLD] are ignored to avoid micro-transactions caused by
+     * floating-point rounding.
+     *
+     * @param balances Pre-computed [Balance] list (e.g. from [calculateBalances]).
+     * @return Minimal list of [Reimbursement] transactions.
+     */
+    fun calculateReimbursements(balances: List&lt;Balance&gt;): List&lt;Reimbursement&gt; {
+<span class="fc" id="L118">        val reimbursements = mutableListOf&lt;Reimbursement&gt;()</span>
+
+        // BR6: sort to allow greedy minimisation
+<span class="fc" id="L121">        val debtors = balances</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">            .filter { it.amount &lt; -BALANCE_THRESHOLD }</span>
+<span class="fc" id="L123">            .sortedBy { it.amount }</span>
+<span class="fc" id="L124">            .map { it.copy() }</span>
+<span class="fc" id="L125">            .toMutableList()</span>
+<span class="fc" id="L126">        val creditors = balances</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">            .filter { it.amount &gt; BALANCE_THRESHOLD }</span>
+<span class="fc" id="L128">            .sortedByDescending { it.amount }</span>
+<span class="fc" id="L129">            .map { it.copy() }</span>
+<span class="fc" id="L130">            .toMutableList()</span>
+
+<span class="fc" id="L132">        var i = 0</span>
+<span class="fc" id="L133">        var j = 0</span>
+
+<span class="pc bpc" id="L135" title="1 of 4 branches missed.">        while (i &lt; debtors.size &amp;&amp; j &lt; creditors.size) {</span>
+<span class="fc" id="L136">            val debtor = debtors[i]</span>
+<span class="fc" id="L137">            val creditor = creditors[j]</span>
+
+<span class="fc" id="L139">            val amount = minOf(-debtor.amount, creditor.amount)</span>
+
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">            if (amount &gt; BALANCE_THRESHOLD) {</span>
+<span class="fc" id="L142">                reimbursements.add(Reimbursement(debtor.participant, creditor.participant, amount))</span>
+            }
+
+<span class="fc" id="L145">            debtors[i] = debtor.copy(amount = debtor.amount + amount)</span>
+<span class="fc" id="L146">            creditors[j] = creditor.copy(amount = creditor.amount - amount)</span>
+
+<span class="fc bfc" id="L148" title="All 2 branches covered.">            if (debtors[i].amount &gt;= -BALANCE_THRESHOLD) i++</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">            if (creditors[j].amount &lt;= BALANCE_THRESHOLD) j++</span>
+        }
+
+<span class="fc" id="L152">        return reimbursements</span>
+    }
+
+    // ── Split validation ──────────────────────────────────────────────────────
+
+    /**
+     * Validates that the shares in [splitDetails] sum to [totalAmount] within tolerance.
+     * BR8: splits must total 100 % of the expense.
+     *
+     * @throws ExpenseDomainException.InvalidSplitException if the constraint is violated.
+     */
+    fun validateSplit(totalAmount: Double, splitDetails: Map&lt;String, Double&gt;) {
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (splitDetails.isEmpty()) return</span>
+<span class="fc" id="L165">        val sum = splitDetails.values.sum()</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (Math.abs(sum - totalAmount) &gt; BALANCE_THRESHOLD) {</span>
+<span class="fc" id="L167">            throw ExpenseDomainException.InvalidSplitException(</span>
+<span class="fc" id="L168">                &quot;Split sum $sum does not equal total amount $totalAmount&quot;</span>
+            )
+        }
+<span class="fc" id="L171">    }</span>
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Converts [amount] using the provided exchange [rate].
+     * BR9: applies the provided exchange rate directly (amount × rate).
+     *
+     * @param amount The amount to convert.
+     * @param rate   The exchange rate to apply. Must be non-null and non-zero.
+     * @return Converted amount, or null if [rate] is null or zero.
+     */
+    fun convertAmount(amount: Double, rate: Double?): Double? {
+<span class="fc bfc" id="L184" title="All 4 branches covered.">        if (rate == null || rate == 0.0) return null</span>
+<span class="fc" id="L185">        return amount * rate</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExpenseModels.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AppliCash</a> &gt; <a href="index.source.html" class="el_package">fr.univ.nantes.domain.expense</a> &gt; <span class="el_source">ExpenseModels.kt</span></div><h1>ExpenseModels.kt</h1><pre class="source lang-java linenums">package fr.univ.nantes.domain.expense
+
+/**
+ * Domain model representing an expense entry within a group.
+ *
+ * Note: Double is used for amounts. For production financial apps, prefer BigDecimal
+ * or storing as Long (smallest currency unit, e.g. cents).
+ */
+<span class="fc" id="L9">@Suppress(&quot;unused&quot;)</span>
+<span class="fc" id="L10">data class Expense(</span>
+<span class="pc" id="L11">    val id: Long = 0,</span>
+<span class="fc" id="L12">    val description: String,</span>
+<span class="fc" id="L13">    val amount: Double,</span>
+<span class="fc" id="L14">    val paidBy: String,</span>
+<span class="pc" id="L15">    val splitType: SplitType = SplitType.EQUALLY,</span>
+    /** Maps participant name → share/amount depending on [splitType]. */
+<span class="fc" id="L17">    val splitDetails: Map&lt;String, Double&gt; = emptyMap(),</span>
+    /** Optional file path to a receipt photo stored by the app. */
+<span class="pc" id="L19">    val receiptPath: String? = null</span>
+<span class="fc" id="L20">)</span>
+
+<span class="fc" id="L22">@Suppress(&quot;unused&quot;)</span>
+<span class="pc" id="L23">enum class SplitType(val code: Int) {</span>
+<span class="fc" id="L24">    EQUALLY(0),</span>
+<span class="fc" id="L25">    BY_SHARE(1),</span>
+<span class="fc" id="L26">    BY_AMOUNT(2);</span>
+
+    companion object {
+        @Suppress(&quot;unused&quot;)
+<span class="nc bnc" id="L30" title="All 4 branches missed.">        fun fromCode(code: Int): SplitType = entries.firstOrNull { it.code == code } ?: EQUALLY</span>
+    }
+}
+
+/** Domain model representing a group of participants sharing expenses. */
+<span class="nc" id="L35">@Suppress(&quot;unused&quot;)</span>
+<span class="nc" id="L36">data class GroupData(</span>
+<span class="nc" id="L37">    val id: Long = 0,</span>
+<span class="nc" id="L38">    val groupName: String = &quot;&quot;,</span>
+<span class="nc" id="L39">    val participants: List&lt;String&gt; = emptyList(),</span>
+<span class="nc" id="L40">    val expenses: List&lt;Expense&gt; = emptyList()</span>
+<span class="nc" id="L41">)</span>
+
+/**
+ * Represents a participant's net balance within the group.
+ *
+ * BR7: positive amount = credit (others owe this person),
+ *      negative amount = debt  (this person owes others).
+ */
+<span class="fc" id="L49">@Suppress(&quot;unused&quot;)</span>
+<span class="fc" id="L50">data class Balance(</span>
+<span class="fc" id="L51">    val participant: String,</span>
+<span class="fc" id="L52">    val amount: Double</span>
+)
+
+/**
+ * Represents a single reimbursement transaction.
+ * [from] owes [amount] to [to].
+ */
+<span class="fc" id="L59">@Suppress(&quot;unused&quot;)</span>
+<span class="fc" id="L60">data class Reimbursement(</span>
+<span class="fc" id="L61">    val from: String,</span>
+<span class="fc" id="L62">    val to: String,</span>
+<span class="fc" id="L63">    val amount: Double</span>
+)
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
