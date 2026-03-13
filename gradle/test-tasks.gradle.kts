@@ -104,7 +104,7 @@ tasks.register("jacocoAggregate", JacocoReport::class.java) {
     })
 
     // Use jacocoAnt configuration created by the JaCoCo plugin (contains the actual JaCoCo JARs)
-    setJacocoClasspath(rootProject.configurations.named("jacocoAnt"))
+    setJacocoClasspath(rootProject.configurations.getByName("jacocoAnt"))
 
     // Collect exec files from subprojects using serializable paths (configuration-cache friendly)
     val execFilePaths: List<String> = subprojects.map { p -> p.layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile.absolutePath }
