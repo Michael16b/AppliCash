@@ -143,11 +143,3 @@ You requested both publishing to Pages and storing artifacts: both are implement
 - If CI cache misses are frequent, consider using a more specific cache key that includes dependency lockfiles or Gradle version.
 - To make PR runs even faster, a 'fast-tests' task can run only small module subsets or unit tests that changed; this requires more advanced git-aware Gradle logic.
 
----
-
-If you want, I can now:
-- Implement per-module coverage checks that fail the build per-module below 80%.
-- Add a fast 'smoke' test task for PRs (shorter run).
-- Configure a nightly job that publishes instrumented UI test HTML to Pages/another site.
-
-Tell me which you'd like next and I will implement and validate it.
