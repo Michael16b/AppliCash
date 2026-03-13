@@ -347,6 +347,13 @@ class FakeExpenseRepository : ExpenseRepository {
     var lastUpdateNewName: String? = null
     var lastUpdateAddParticipants: List<String>? = null
     var lastUpdateRemoveParticipants: List<String>? = null
+    var lastAddedExpenseGroupId: Long? = null
+    var lastAddedExpenseDescription: String? = null
+    var lastAddedExpenseAmount: Double? = null
+    var lastAddedExpensePaidBy: String? = null
+    var lastAddedExpenseSplitType: Int? = null
+    var lastAddedExpenseSplitDetails: String? = null
+    var lastAddedExpenseReceiptPath: String? = null
 
     override fun getAllGroupsWithDetails(): Flow<List<GroupWithDetails>> = flowOf(emptyList())
 
@@ -371,8 +378,17 @@ class FakeExpenseRepository : ExpenseRepository {
         amount: Double,
         paidBy: String,
         splitType: Int,
-        splitDetails: String
-    ) = Unit
+        splitDetails: String,
+        receiptPath: String
+    ) {
+        lastAddedExpenseGroupId = groupId
+        lastAddedExpenseDescription = description
+        lastAddedExpenseAmount = amount
+        lastAddedExpensePaidBy = paidBy
+        lastAddedExpenseSplitType = splitType
+        lastAddedExpenseSplitDetails = splitDetails
+        lastAddedExpenseReceiptPath = receiptPath
+    }
 
     override suspend fun deleteGroup(groupId: String) = Unit
 
@@ -400,15 +416,17 @@ class FakeExpenseRepository : ExpenseRepository {
         lastUpdateRemoveParticipants = removeParticipants
     }
 
-    override suspend fun canViewShareCode(groupId: String, userName: String?): Boolean {
-        TODO("Not yet implemented")
+    override suspend fun canViewShareCode(groupId: Long, userName: String?): Boolean {
+        // In tests the fake repository does not manage share codes; return false by default
+        return false
     }
 
     override suspend fun joinGroupByShareCode(
         shareCode: String,
         userName: String?
     ): JoinGroupResult {
-        TODO("Not yet implemented")
+        // Simplified: tests using joinGroupByCode will handle messages; return InvalidCode by default
+        return JoinGroupResult.InvalidCode
     }
 
     override suspend fun startRealtimeSync(id: String, viewModelScope: CoroutineScope) = Unit

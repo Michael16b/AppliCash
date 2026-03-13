@@ -63,7 +63,8 @@ interface ExpenseRepository {
         amount: Double,
         paidBy: String,
         splitType: Int = 0,
-        splitDetails: String = "{}"
+        splitDetails: String = "{}",
+        receiptPath: String = ""
     )
     suspend fun deleteGroup(groupId: String)
     suspend fun deleteExpense(expenseId: String)
@@ -161,7 +162,8 @@ class ExpenseRepositoryImpl(
         amount: Double,
         paidBy: String,
         splitType: Int,
-        splitDetails: String
+        splitDetails: String,
+        receiptPath: String
     ) {
         // BR4: amount must be > 0
         if (amount <= 0.0) throw ExpenseBusinessException.InvalidAmountException()
@@ -173,7 +175,8 @@ class ExpenseRepositoryImpl(
                 amount = amount,
                 paidBy = paidBy,
                 splitType = splitType,
-                splitDetails = splitDetails
+                splitDetails = splitDetails,
+                receiptPath = receiptPath
             )
         )
         val group = groupDao.getGroupById(groupId)

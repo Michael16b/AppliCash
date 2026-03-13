@@ -1,9 +1,16 @@
 package fr.univ.nantes.archi
 
 import android.os.Bundle
+import android.os.Environment
+import androidx.core.content.FileProvider
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -14,6 +21,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
@@ -47,6 +56,7 @@ import fr.univ.nantes.domain.profil.ProfileUseCase
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import androidx.compose.runtime.rememberCoroutineScope
+import java.io.File
 
 private const val GROUP_DETAIL_REFRESH_INTERVAL_MS = 10_000L
 
@@ -198,9 +208,71 @@ private fun App() {
                 LaunchedEffect(route.groupId) {
                     expenseViewModel.loadGroup(route.groupId)
                 }
+
+                // Receipt photo state and launcher
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val receiptPathState = remember { mutableStateOf<String?>(null) }
+                val currentFile = remember { mutableStateOf<File?>(null) }
+                val takePictureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+                    if (success) {
+                        currentFile.value?.let { file ->
+                            receiptPathState.value = file.absolutePath
+                        }
+                    } else {
+                        // failed or cancelled: delete temp file
+                        currentFile.value?.delete()
+                        currentFile.value = null
+                        receiptPathState.value = null
+                    }
+                }
+
+                // Attach file (pick image) launcher
+                val pickImageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                    try {
+                        uri?.let {
+                            // copy the selected image to app external files receipts folder so path can be used
+                            val inputStream = context.contentResolver.openInputStream(it)
+                            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                            val fileName = "RECEIPT_${route.groupId}_$timeStamp.jpg"
+                            val picturesDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                            val receiptsDir = File(picturesDir, "receipts")
+                            if (!receiptsDir.exists()) receiptsDir.mkdirs()
+                            val outFile = File(receiptsDir, fileName)
+                            inputStream?.use { input -> outFile.outputStream().use { output -> input.copyTo(output) } }
+                            receiptPathState.value = outFile.absolutePath
+                        }
+                    } catch (_: Exception) {
+                    }
+                }
+
+                val onStartCamera = {
+                    try {
+                        // create file in app external files Pictures/receipts
+                        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                        val fileName = "RECEIPT_${route.groupId}_$timeStamp.jpg"
+                        val picturesDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                        val receiptsDir = File(picturesDir, "receipts")
+                        if (!receiptsDir.exists()) receiptsDir.mkdirs()
+                        val file = File(receiptsDir, fileName)
+                        file.createNewFile()
+                        currentFile.value = file
+                        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                        takePictureLauncher.launch(uri)
+                    } catch (_: Exception) {
+                    }
+                }
+
                 AddExpenseScreen(
                     viewModel = expenseViewModel,
-                    navigateBack = { navController.popBackStack() }
+                    navigateBack = { navController.popBackStack() },
+                    onStartCamera = onStartCamera,
+                    onAttachFile = { pickImageLauncher.launch("image/*") },
+                    receiptPreviewPath = receiptPathState.value,
+                    onClearReceipt = {
+                        currentFile.value?.delete()
+                        currentFile.value = null
+                        receiptPathState.value = null
+                    }
                 )
             }
             composable<EditGroup> { backStackEntry ->

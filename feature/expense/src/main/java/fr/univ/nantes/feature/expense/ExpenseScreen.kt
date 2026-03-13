@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
@@ -18,6 +20,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -48,7 +52,10 @@ data object ExpenseRoute
 @Composable
 fun ExpenseScreen(
     viewModel: ExpenseViewModel,
-    navigateToBalance: () -> Unit
+    navigateToBalance: () -> Unit,
+    onStartCamera: () -> Unit = {},
+    receiptPreviewPath: String? = null,
+    onClearReceipt: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val convertedExpenses by viewModel.convertedCurrentExpenses.collectAsState()
@@ -204,6 +211,25 @@ fun ExpenseScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Camera button and lightweight preview
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                IconButton(onClick = { onStartCamera() }) {
+                    Icon(imageVector = Icons.Default.PhotoCamera, contentDescription = stringResource(R.string.take_photo))
+                }
+                receiptPreviewPath?.let { path ->
+                    Row {
+                        Text(text = path)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Button(onClick = { onStartCamera() }) {
+                            Text(stringResource(R.string.retake_photo))
+                        }
+                        Button(onClick = onClearReceipt) {
+                            Text(stringResource(R.string.remove_photo))
+                        }
+                    }
+                }
+            }
+
             Button(
                 onClick = {
                     if (!state.isLoggedIn) {
@@ -216,7 +242,7 @@ fun ExpenseScreen(
                         return@Button
                     }
                     val amountValue = amount.toDoubleOrNull() ?: 0.0
-                    viewModel.addExpense(description, amountValue, selectedPayer)
+                    viewModel.addExpense(description, amountValue, selectedPayer, receiptPath = receiptPreviewPath)
                     description = ""
                     amount = ""
                     selectedPayer = ""

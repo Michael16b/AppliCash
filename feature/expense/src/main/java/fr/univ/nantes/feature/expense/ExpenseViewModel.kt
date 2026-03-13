@@ -43,7 +43,8 @@ data class Expense(
     val amount: Double,
     val paidBy: String,
     val splitType: Int = 0, // 0=Equally, 1=By share, 2=By amount
-    val splitDetails: Map<String, Double> = emptyMap() // participant -> amount/share
+    val splitDetails: Map<String, Double> = emptyMap(), // participant -> amount/share
+    val receiptPath: String? = null
 )
 
 data class GroupData(
@@ -219,7 +220,8 @@ class ExpenseViewModel(
                                 amount = it.amount,
                                 paidBy = it.paidBy,
                                 splitType = it.splitType,
-                                splitDetails = parseSplitDetails(it.splitDetails)
+                                splitDetails = parseSplitDetails(it.splitDetails),
+                                receiptPath = it.receiptPath.takeIf { p -> p.isNotBlank() }
                             )
                         },
                         shareCode = groupWithDetails.group.shareCode
@@ -326,6 +328,89 @@ class ExpenseViewModel(
             initialValue = emptyList()
         )
 
+    // Helper: calculate balances from expenses and participants
+    private fun calculateBalancesFrom(expenses: List<Expense>, participants: List<String>): List<Balance> {
+        // Initialize map with zero balances for all participants
+        val balancesMap = participants.associateWith { 0.0 }.toMutableMap()
+
+        // For each expense, compute each participant's share and update balances
+        for (expense in expenses) {
+            val payer = expense.paidBy
+            val amount = expense.amount
+            // Ensure payer exists in map
+            balancesMap.putIfAbsent(payer, 0.0)
+
+            when (expense.splitType) {
+                0 -> {
+                    // Split equally among all participants (use provided participants list)
+                    val involved = if (participants.isNotEmpty()) participants else listOf(payer)
+                    val share = if (involved.isNotEmpty()) amount / involved.size else 0.0
+                    // payer paid full amount -> increase payer balance
+                    balancesMap[payer] = (balancesMap[payer] ?: 0.0) + amount
+                    // each participant owes share
+                    for (participant in involved) {
+                        balancesMap[participant] = (balancesMap[participant] ?: 0.0) - share
+                    }
+                }
+                else -> {
+                    // splitDetails holds amounts per participant (constructed by UI)
+                    balancesMap[payer] = (balancesMap[payer] ?: 0.0) + amount
+                    if (expense.splitDetails.isNotEmpty()) {
+                        for (participant in participants) {
+                            val share = expense.splitDetails[participant] ?: 0.0
+                            balancesMap[participant] = (balancesMap[participant] ?: 0.0) - share
+                        }
+                    } else {
+                        // If no split details, fall back to equal split among participants
+                        val involved = if (participants.isNotEmpty()) participants else listOf(payer)
+                        val share = if (involved.isNotEmpty()) amount / involved.size else 0.0
+                        for (participant in involved) {
+                            balancesMap[participant] = (balancesMap[participant] ?: 0.0) - share
+                        }
+                    }
+                }
+            }
+        }
+
+        // Normalize small rounding errors to zero
+        return balancesMap.map { (participant, amt) ->
+            val normalized = if (kotlin.math.abs(amt) < BALANCE_THRESHOLD) 0.0 else amt
+            Balance(participant = participant, amount = normalized)
+        }
+    }
+
+    // Helper: compute reimbursements (simple greedy algorithm)
+    private fun calculateReimbursementsFrom(balances: List<Balance>): List<Reimbursement> {
+        val creditors = balances.filter { it.amount > BALANCE_THRESHOLD }.map { it.copy() }.toMutableList()
+        val debtors = balances.filter { it.amount < -BALANCE_THRESHOLD }.map { it.copy() }.toMutableList()
+
+        // Sort creditors descending by amount, debtors ascending (most negative first)
+        creditors.sortByDescending { it.amount }
+        debtors.sortBy { it.amount }
+
+        val result = mutableListOf<Reimbursement>()
+
+        var i = 0
+        var j = 0
+        while (i < debtors.size && j < creditors.size) {
+            val debtor = debtors[i]
+            val creditor = creditors[j]
+            val debt = -debtor.amount
+            val credit = creditor.amount
+            val transfer = kotlin.math.min(debt, credit)
+            if (transfer > BALANCE_THRESHOLD) {
+                result.add(Reimbursement(from = debtor.participant, to = creditor.participant, amount = transfer))
+                // update amounts
+                debtors[i] = debtor.copy(amount = debtor.amount + transfer)
+                creditors[j] = creditor.copy(amount = creditor.amount - transfer)
+            }
+            // advance indices if settled
+            if (kotlin.math.abs(debtors[i].amount) < BALANCE_THRESHOLD) i++
+            if (kotlin.math.abs(creditors[j].amount) < BALANCE_THRESHOLD) j++
+        }
+        return result
+    }
+
     /**
      * Derived state flow for balances, automatically recalculated when expenses or participants change.
      * Uses converted amounts for display consistency.
@@ -333,7 +418,7 @@ class ExpenseViewModel(
     val balances: StateFlow<List<Balance>> = combine(
         convertedCurrentExpenses,
         _state.map { it.participants }
-    ) { convertedExpenses, participants ->
+    ) { convertedExpenses: List<Expense>, participants: List<String> ->
         calculateBalancesFrom(convertedExpenses, participants)
     }.stateIn(
         scope = viewModelScope,
@@ -344,7 +429,8 @@ class ExpenseViewModel(
     /**
      * Derived state flow for reimbursements, automatically recalculated when balances change.
      */
-    val reimbursements: StateFlow<List<Reimbursement>> = balances.map { calculateReimbursementsFrom(it) }
+    val reimbursements: StateFlow<List<Reimbursement>> = balances
+        .map { balancesList: List<Balance> -> calculateReimbursementsFrom(balancesList) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -503,7 +589,8 @@ class ExpenseViewModel(
         amount: Double,
         paidBy: String,
         splitType: Int = 0,
-        splitDetails: Map<String, Double> = emptyMap()
+        splitDetails: Map<String, Double> = emptyMap(),
+        receiptPath: String? = null
     ) {
         if (description.isNotBlank() && amount > 0 && paidBy.isNotBlank() && _state.value.participants.contains(paidBy)) {
             val expense = Expense(
@@ -524,7 +611,8 @@ class ExpenseViewModel(
                         amount = amount,
                         paidBy = paidBy,
                         splitType = splitType,
-                        splitDetails = serializeSplitDetails(splitDetails)
+                        splitDetails = serializeSplitDetails(splitDetails),
+                        receiptPath = receiptPath ?: ""
                     )
                 }
             }
@@ -532,120 +620,34 @@ class ExpenseViewModel(
     }
 
     /**
-     * Calculates the balance for each participant from the given [expenses] and [participants].
+     * Public wrapper used by tests to calculate balances from the current in-memory state.
+     * Uses the same logic as the internal derived StateFlow so tests can call it synchronously.
      */
-    private fun calculateBalancesFrom(expenses: List<Expense>, participants: List<String>): List<Balance> {
-        if (participants.isEmpty()) return emptyList()
-
-        val total = expenses.sumOf { it.amount }
-        val share = total / participants.size
-
-        val paidByParticipant = participants.associateWith { participant ->
-            expenses.filter { it.paidBy == participant }.sumOf { it.amount }
-        }
-
-        return participants.map { participant ->
-            Balance(participant, (paidByParticipant[participant] ?: 0.0) - share)
-        }
+    fun calculateBalances(): List<Balance> {
+        return calculateBalancesFrom(_state.value.expenses, _state.value.participants)
     }
 
     /**
-     * Calculates balances using the raw (non-converted) state values.
-     * Used by unit tests.
+     * Public wrapper used by tests to calculate reimbursements from the current in-memory state.
      */
-    fun calculateBalances(): List<Balance> = calculateBalancesFrom(_state.value.expenses, _state.value.participants)
-
-    /**
-     * Calculates optimal reimbursements from the given [balances].
-     */
-    private fun calculateReimbursementsFrom(balances: List<Balance>): List<Reimbursement> {
-        val reimbursements = mutableListOf<Reimbursement>()
-
-        val debtors = balances.filter { it.amount < 0 }.sortedBy { it.amount }.toMutableList()
-        val creditors = balances.filter { it.amount > 0 }.sortedByDescending { it.amount }.toMutableList()
-
-        var i = 0
-        var j = 0
-
-        while (i < debtors.size && j < creditors.size) {
-            val debtor = debtors[i]
-            val creditor = creditors[j]
-
-            val amount = minOf(-debtor.amount, creditor.amount)
-
-            if (amount > BALANCE_THRESHOLD) {
-                reimbursements.add(Reimbursement(debtor.participant, creditor.participant, amount))
-            }
-
-            debtors[i] = debtor.copy(amount = debtor.amount + amount)
-            creditors[j] = creditor.copy(amount = creditor.amount - amount)
-
-            if (debtors[i].amount >= -BALANCE_THRESHOLD) i++
-            if (creditors[j].amount <= BALANCE_THRESHOLD) j++
-        }
-
-        return reimbursements
+    fun calculateReimbursements(): List<Reimbursement> {
+        return calculateReimbursementsFrom(calculateBalances())
     }
 
     /**
-     * Calculates reimbursements using the raw (non-converted) state values.
-     * Used by unit tests.
-     */
-    fun calculateReimbursements(): List<Reimbursement> = calculateReimbursementsFrom(calculateBalances())
-
-    /**
-     * Resets the ViewModel to its initial state.
-     *
-     * This clears the group name, all participants, and all expenses,
-     * but preserves the list of saved groups.
+     * Resets the in-memory transient form state (groupName, participants, expenses) while
+     * preserving the stored groups list. This mirrors the behavior expected by unit tests.
      */
     fun reset() {
-        _state.update { currentState ->
-            ExpenseState().copy(groups = currentState.groups)
-        }
-    }
-
-    /**
-     * Saves the current group as a complete group and adds it to the groups list.
-     * This clears the current working state for creating a new group.
-     *
-     * Normalizes participant names (trim) and removes duplicates before persisting.
-     */
-    fun saveGroup() {
-        val currentGroup = _state.value
-        // Normalize participant names: trim and remove duplicates
-        val normalizedParticipants = currentGroup.participants
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .distinct()
-
-        if (currentGroup.groupName.isNotBlank() && normalizedParticipants.isNotEmpty()) {
-            viewModelScope.launch {
-                val groupId = repository.createGroup(
-                    groupName = currentGroup.groupName,
-                    participants = normalizedParticipants
-                )
-
-                currentGroup.expenses.forEach { expense ->
-                    repository.addExpenseToGroup(
-                        groupId = groupId,
-                        description = expense.description,
-                        amount = expense.amount,
-                        paidBy = expense.paidBy,
-                        splitType = expense.splitType,
-                        splitDetails = serializeSplitDetails(expense.splitDetails)
-                    )
-                }
-
-                _state.update {
-                    it.copy(
-                        groupName = "",
-                        participants = emptyList(),
-                        expenses = emptyList(),
-                        currentGroupId = null
-                    )
-                }
-            }
+        _state.update {
+            it.copy(
+                groupName = "",
+                participants = emptyList(),
+                expenses = emptyList(),
+                currentGroupId = null,
+                joinGroupMessage = null,
+                joinGroupCodeInput = ""
+            )
         }
     }
 
@@ -755,6 +757,42 @@ class ExpenseViewModel(
                     _state.update { it.copy(joinGroupMessage = "Vous faites déjà partie de ce groupe.") }
                 }
             }
+        }
+    }
+
+    /**
+     * Saves a new group with the current state data (name, participants, expenses).
+     * The group ID is assigned by the repository.
+     */
+    fun saveGroup() {
+        val groupName = _state.value.groupName
+        val participants = _state.value.participants
+        val expenses = _state.value.expenses
+
+        if (groupName.isBlank() || participants.isEmpty()) {
+            // Group name and participants are required
+            return
+        }
+
+        viewModelScope.launch {
+            // Create the new group via repository (repository will insert participants)
+            val groupId = repository.createGroup(groupName, participants)
+
+            // Add each expense to the newly created group
+            for (expense in expenses) {
+                repository.addExpenseToGroup(
+                    groupId = groupId,
+                    description = expense.description,
+                    amount = expense.amount,
+                    paidBy = expense.paidBy,
+                    splitType = expense.splitType,
+                    splitDetails = serializeSplitDetails(expense.splitDetails),
+                    receiptPath = expense.receiptPath ?: ""
+                )
+            }
+
+            // Load the newly created group to update the UI
+            loadGroup(groupId)
         }
     }
 }

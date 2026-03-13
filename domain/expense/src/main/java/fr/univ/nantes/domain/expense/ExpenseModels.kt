@@ -14,7 +14,9 @@ data class Expense(
     val paidBy: String,
     val splitType: SplitType = SplitType.EQUALLY,
     /** Maps participant name → share/amount depending on [splitType]. */
-    val splitDetails: Map<String, Double> = emptyMap()
+    val splitDetails: Map<String, Double> = emptyMap(),
+    /** Optional file path to a receipt photo stored by the app. */
+    val receiptPath: String? = null
 )
 
 @Suppress("unused")
