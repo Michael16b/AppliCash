@@ -54,7 +54,6 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
     environment: firebase
-
     steps:
       - uses: actions/checkout@v4
       - name: Decode Firebase google-services.json
