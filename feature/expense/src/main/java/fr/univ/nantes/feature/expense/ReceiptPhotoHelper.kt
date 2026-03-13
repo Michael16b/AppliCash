@@ -1,6 +1,5 @@
 package fr.univ.nantes.feature.expense
 
-import android.content.Context
 import android.graphics.BitmapFactory
 import android.os.Environment
 import androidx.core.content.FileProvider
