@@ -182,7 +182,24 @@ tasks.register("coverageEnforce") {
         }
 
         val dbFactory = DocumentBuilderFactory.newInstance()
+        // Harden XML parser: prevent external DTD/entity loading to avoid attempts to fetch report.dtd
+        try {
+            // Disable external general/parameter entities and external DTD resolution when supported
+            dbFactory.setFeature("http://xml.org/sax/features/external-general-entities", false)
+            dbFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+            dbFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+        } catch (ignored: Exception) {
+            // Some parsers may not support these features; ignore failures and continue with best-effort defaults
+        }
+        dbFactory.isXIncludeAware = false
+        dbFactory.isExpandEntityReferences = false
+
         val dBuilder = dbFactory.newDocumentBuilder()
+        // Provide an EntityResolver that returns an empty stream for any external entity to avoid network/file access
+        dBuilder.entityResolver = org.xml.sax.EntityResolver { publicId, systemId ->
+            org.xml.sax.InputSource(java.io.StringReader(""))
+        }
+
         val doc = dBuilder.parse(xmlFile)
         doc.documentElement.normalize()
 
