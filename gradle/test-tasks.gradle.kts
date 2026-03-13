@@ -171,121 +171,91 @@ tasks.register("coverageEnforce") {
     description = "Enforce aggregated coverage thresholds: fail if <80%, warn if >=80% and <95%"
     dependsOn("jacocoAggregate", "jacocoHtmlAggregate")
 
-    // Pre-compute aggregated XML path to avoid capturing Project in the action
-    val aggXmlPath = File(layout.buildDirectory.file("reports/jacoco/jacoco.xml").get().asFile.absolutePath).absolutePath
+    // Compute the aggregated XML path at configuration time (serializable String)
+    val aggXmlPath = layout.buildDirectory.file("reports/jacoco/jacoco.xml").get().asFile.absolutePath
 
-    doLast {
-        val xmlFile = File(aggXmlPath)
-        if (!xmlFile.exists()) {
-            logger.warn("Aggregated JaCoCo XML report not found at: ${xmlFile.absolutePath}")
-            return@doLast
-        }
+    // Use an Action<Task> implementation that does NOT access task.project or task.logger at execution time
+    doLast(object : org.gradle.api.Action<org.gradle.api.Task> {
+        override fun execute(task: org.gradle.api.Task) {
+            val xmlFile = java.io.File(aggXmlPath)
+            if (!xmlFile.exists()) {
+                println("coverageEnforce: Aggregated JaCoCo XML report not found at: ${xmlFile.absolutePath}")
+                return
+            }
 
-        val dbFactory = DocumentBuilderFactory.newInstance()
-        // Try to disable external DTD/entity loading for safety. Some parsers may not support all features — catch and continue.
-        try {
-            dbFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
-            dbFactory.setFeature("http://xml.org/sax/features/external-general-entities", false)
-            dbFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
-        } catch (e: Exception) {
-            // Some XML implementations may not support these features; continue with an EntityResolver fallback below.
-            logger.info("coverageEnforce: could not set XML parser features to disable external DTDs: ${e.message}")
-        }
-        dbFactory.isXIncludeAware = false
-        dbFactory.isNamespaceAware = true
+            val dbFactory = DocumentBuilderFactory.newInstance()
+            try {
+                dbFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+                dbFactory.setFeature("http://xml.org/sax/features/external-general-entities", false)
+                dbFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+            } catch (e: Exception) {
+                println("coverageEnforce: could not set XML parser features to disable external DTDs: ${e.message}")
+            }
+            dbFactory.isXIncludeAware = false
+            dbFactory.isNamespaceAware = true
 
-        val dBuilder = dbFactory.newDocumentBuilder()
-
-        // EntityResolver: if a systemId referencing report.dtd is requested, try to find a local copy in the project
-        dBuilder.setEntityResolver(object : org.xml.sax.EntityResolver {
-            override fun resolveEntity(publicId: String?, systemId: String?): org.xml.sax.InputSource? {
-                try {
-                    // If the parser asks for a report.dtd, try to find it in the workspace (subprojects/build reports)
-                    if (systemId != null && systemId.endsWith("report.dtd")) {
-                        val root = rootProject.projectDir
-                        val found = root.walkTopDown().firstOrNull { it.name == "report.dtd" }
-                        if (found != null && found.exists()) {
-                            logger.lifecycle("coverageEnforce: resolving report.dtd from ${found.absolutePath}")
-                            return org.xml.sax.InputSource(found.inputStream())
+            val dBuilder = dbFactory.newDocumentBuilder()
+            dBuilder.setEntityResolver(object : org.xml.sax.EntityResolver {
+                override fun resolveEntity(publicId: String?, systemId: String?): org.xml.sax.InputSource? {
+                    try {
+                        if (systemId != null && systemId.endsWith("report.dtd")) {
+                            return org.xml.sax.InputSource(java.io.StringReader(""))
                         }
-
-                        // As a fallback, attempt to copy any discovered report.dtd into the aggregated reports folder
-                        val fallbackFound = root.walkTopDown().firstOrNull { it.name == "report.dtd" }
-                        if (fallbackFound != null && fallbackFound.exists()) {
-                            val destDir = File(layout.buildDirectory.dir("reports/jacoco").get().asFile, "")
-                            if (!destDir.exists()) destDir.mkdirs()
-                            val dest = File(destDir, "report.dtd")
-                            try {
-                                fallbackFound.copyTo(dest, overwrite = true)
-                                logger.lifecycle("coverageEnforce: copied report.dtd to ${dest.absolutePath}")
-                                return org.xml.sax.InputSource(dest.inputStream())
-                            } catch (ioe: Exception) {
-                                logger.info("coverageEnforce: failed to copy report.dtd: ${ioe.message}")
-                            }
-                        }
-
-                        // If nothing found, return an empty InputSource to avoid external resolution attempts
+                    } catch (ex: Exception) {
                         return org.xml.sax.InputSource(java.io.StringReader(""))
                     }
-                } catch (ex: Exception) {
-                    logger.info("coverageEnforce: entity resolver error: ${ex.message}")
-                    return org.xml.sax.InputSource(java.io.StringReader(""))
+                    return null
                 }
-                // For anything else, return null to use default behavior (which should be safe because we disabled external entities above)
-                return null
-            }
-        })
+            })
 
-        val doc = try {
-            dBuilder.parse(xmlFile)
-        } catch (e: org.xml.sax.SAXException) {
-            // If parsing fails due to external DTD issues, provide a clearer error message
-            throw org.gradle.api.GradleException("Failed to parse aggregated JaCoCo XML (${xmlFile.absolutePath}): ${e.message}")
-        }
-        doc.documentElement.normalize()
-
-        // Prefer LINE counter, fallback to INSTRUCTION if LINE not present
-        val counters = doc.getElementsByTagName("counter")
-        var covered = 0L
-        var missed = 0L
-        for (i in 0 until counters.length) {
-            val node = counters.item(i)
-            val elem = node as org.w3c.dom.Element
-            val type = elem.getAttribute("type")
-            if (type == "LINE") {
-                covered = elem.getAttribute("covered").toLong()
-                missed = elem.getAttribute("missed").toLong()
-                break
+            val doc = try {
+                dBuilder.parse(xmlFile)
+            } catch (e: org.xml.sax.SAXException) {
+                throw org.gradle.api.GradleException("Failed to parse aggregated JaCoCo XML (${xmlFile.absolutePath}): ${e.message}")
             }
-        }
-        if (covered == 0L && missed == 0L) {
-            // Try INSTRUCTION
+            doc.documentElement.normalize()
+
+            val counters = doc.getElementsByTagName("counter")
+            var covered = 0L
+            var missed = 0L
             for (i in 0 until counters.length) {
                 val node = counters.item(i)
                 val elem = node as org.w3c.dom.Element
                 val type = elem.getAttribute("type")
-                if (type == "INSTRUCTION") {
+                if (type == "LINE") {
                     covered = elem.getAttribute("covered").toLong()
                     missed = elem.getAttribute("missed").toLong()
                     break
                 }
             }
-        }
+            if (covered == 0L && missed == 0L) {
+                for (i in 0 until counters.length) {
+                    val node = counters.item(i)
+                    val elem = node as org.w3c.dom.Element
+                    val type = elem.getAttribute("type")
+                    if (type == "INSTRUCTION") {
+                        covered = elem.getAttribute("covered").toLong()
+                        missed = elem.getAttribute("missed").toLong()
+                        break
+                    }
+                }
+            }
 
-        val total = covered + missed
-        if (total == 0L) {
-            logger.warn("No coverage data found in aggregated JaCoCo report.")
-            return@doLast
-        }
+            val total = covered + missed
+            if (total == 0L) {
+                println("coverageEnforce: No coverage data found in aggregated JaCoCo report.")
+                return
+            }
 
-        val coverage = covered.toDouble() / total.toDouble()
-        val percent = String.format("%.2f", coverage * 100)
-        if (coverage < 0.80) {
-            throw org.gradle.api.GradleException("Aggregated coverage is ${percent}% — below the required minimum of 80% (build failed).")
-        } else if (coverage < 0.95) {
-            logger.warn("Aggregated coverage is ${percent}% — below the 95% informational threshold. (minimum enforced: 80%)")
-        } else {
-            logger.lifecycle("Aggregated coverage is ${percent}% — meets thresholds.")
+            val coverage = covered.toDouble() / total.toDouble()
+            val percent = String.format("%.2f", coverage * 100)
+            if (coverage < 0.80) {
+                throw org.gradle.api.GradleException("Aggregated coverage is ${percent}% — below the required minimum of 80% (build failed).")
+            } else if (coverage < 0.95) {
+                println("coverageEnforce: Aggregated coverage is ${percent}% — below the 95% informational threshold. (minimum enforced: 80%)")
+            } else {
+                println("coverageEnforce: Aggregated coverage is ${percent}% — meets thresholds.")
+            }
         }
-    }
+    })
 }
