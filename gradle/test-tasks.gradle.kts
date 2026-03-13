@@ -47,7 +47,9 @@ subprojects {
 tasks.register("testAll") {
     group = "verification"
     description = "Run all unit tests in all modules (JVM tests)"
-    dependsOn(subprojects.flatMap { sp -> sp.tasks.matching { it.name == "test" }.toList() })
+    dependsOn(subprojects.flatMap { sp ->
+        sp.tasks.matching { it.name == "test" || it.name == "testDebugUnitTest" }.toList()
+    })
 }
 
 // Root task to run only tests in affected modules supplied via -PaffectedModules=module1,module2
@@ -73,7 +75,7 @@ tasks.register("fastTests") {
                 logger.warn("fastTests: project $projectPath not found, falling back to testAll for this entry")
                 depsMutable.add(rootProject.tasks.named("testAll"))
             } else {
-                val matching = p.tasks.matching { t -> t.name == "test" || t.name == "testDebugUnitTest" }
+                val matching = p.tasks.matching { t -> t.name == "test" || t.name == "testDebugUnitTest" || t.name == "testReleaseUnitTest" }
                 if (matching.isEmpty()) {
                     logger.warn("fastTests: no test tasks found in $projectPath, skipping")
                 } else {
