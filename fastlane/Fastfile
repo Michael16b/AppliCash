@@ -1,0 +1,47 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build signed AAB/APK and keep mapping"
+  lane :build_signed do
+    keystore_path = ENV['KEYSTORE_PATH'] || '../.ci/keystore.jks'
+    keystore_password = ENV['KEYSTORE_PASSWORD']
+    key_alias = ENV['KEY_ALIAS']
+    key_password = ENV['KEY_PASSWORD']
+
+    gradle(task: 'clean')
+    gradle(task: 'bundleRelease', properties: {
+      'android.injected.signing.store.file' => keystore_path,
+      'android.injected.signing.store.password' => keystore_password,
+      'android.injected.signing.key.alias' => key_alias,
+      'android.injected.signing.key.password' => key_password
+    })
+
+    # copy mapping
+    mapping_src = Dir['app/build/outputs/mapping/release/mapping.txt'].first
+    if mapping_src
+      sh("mkdir -p fastlane/output && cp #{mapping_src} fastlane/output/mapping.txt")
+    end
+  end
+
+  desc "Upload to Play Internal using supply"
+  lane :upload_internal do
+    json_key_path = ENV['SUPPLY_JSON_KEY'] || '../.ci/play-service-account.json'
+    aab_path = Dir['app/build/outputs/bundle/release/*.aab'].first
+    if !aab_path
+      UI.user_error!("No AAB found to upload")
+    end
+
+    supply(
+      json_key: json_key_path,
+      package_name: Actions.lane_context[SharedValues::PACKAGE_NAME] || 'com.applicash.app',
+      track: 'internal',
+      aab: aab_path
+    )
+
+    # upload mapping
+    mapping = 'fastlane/output/mapping.txt'
+    if File.exist?(mapping)
+      sh("fastlane supply --json_key #{json_key_path} --package_name #{Actions.lane_context[SharedValues::PACKAGE_NAME] || 'com.applicash.app'} --mapping #{mapping} --track internal")
+    end
+  end
+end
