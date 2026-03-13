@@ -124,9 +124,9 @@ tasks.register("jacocoAggregate", JacocoReport::class.java) {
 
     reports {
         xml.required.set(true)
-        // Explicitly set xml output location using layout (configuration-cache friendly)
         xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/jacoco.xml"))
-        html.required.set(false)
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/html"))
     }
 }
 
