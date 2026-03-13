@@ -85,6 +85,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.vector.ImageVector
 import fr.univ.nantes.core.ui.AppTopBar
 import fr.univ.nantes.core.ui.AppliCashTheme
 import fr.univ.nantes.core.ui.Green500
@@ -94,7 +95,6 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -114,14 +114,14 @@ private val quickAmounts = listOf(5.0, 10.0, 20.0, 50.0, 100.0)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
- fun AddExpenseScreen(
-     viewModel: ExpenseViewModel,
-     navigateBack: () -> Unit,
-     onStartCamera: () -> Unit = {},
-     onAttachFile: () -> Unit = {},
-     receiptPreviewPath: String? = null,
-     onClearReceipt: () -> Unit = {}
- ) {
+fun AddExpenseScreen(
+    viewModel: ExpenseViewModel,
+    navigateBack: () -> Unit,
+    onStartCamera: () -> Unit = {},
+    onAttachFile: () -> Unit = {},
+    receiptPreviewPath: String? = null,
+    onClearReceipt: () -> Unit = {}
+) {
     val state by viewModel.state.collectAsState()
     val participants = state.participants
 
@@ -922,7 +922,9 @@ private val quickAmounts = listOf(5.0, 10.0, 20.0, 50.0, 100.0)
                     ) {
                         Button(
                             onClick = { onStartCamera() },
-                            modifier = Modifier.weight(1f).height(46.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Green500,
@@ -930,7 +932,11 @@ private val quickAmounts = listOf(5.0, 10.0, 20.0, 50.0, 100.0)
                             ),
                             elevation = ButtonDefaults.buttonElevation(0.dp)
                         ) {
-                            Icon(Icons.Outlined.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(
+                                Icons.Outlined.CameraAlt,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 stringResource(R.string.take_photo),
@@ -938,13 +944,15 @@ private val quickAmounts = listOf(5.0, 10.0, 20.0, 50.0, 100.0)
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
-                         Button(
-                             onClick = { onAttachFile() },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                        Button(
+                            onClick = { onAttachFile() },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(46.dp),
                             shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
                             elevation = ButtonDefaults.buttonElevation(0.dp)
                         ) {
                             Icon(
@@ -967,9 +975,19 @@ private val quickAmounts = listOf(5.0, 10.0, 20.0, 50.0, 100.0)
                             val bitmap = BitmapFactory.decodeFile(path)
                             if (bitmap != null) {
                                 Spacer(Modifier.height(8.dp))
-                                Image(bitmap = bitmap.asImageBitmap(), contentDescription = stringResource(R.string.receipt_preview), contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().height(160.dp))
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = stringResource(R.string.receipt_preview),
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(160.dp)
+                                )
                             } else {
-                                 Text(text = path, style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    text = path,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
                             }
 
                             Row(

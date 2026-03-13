@@ -42,8 +42,7 @@ data class Expense(
     val amount: Double,
     val paidBy: String,
     val splitType: Int = 0, // 0=Equally, 1=By share, 2=By amount
-    val splitDetails: Map<String, Double> = emptyMap() // participant -> amount/share
-    ,
+    val splitDetails: Map<String, Double> = emptyMap(), // participant -> amount/share
     val receiptPath: String? = null
 )
 
@@ -418,22 +417,21 @@ class ExpenseViewModel(
     ) { convertedExpenses: List<Expense>, participants: List<String> ->
         calculateBalancesFrom(convertedExpenses, participants)
     }.stateIn(
-         scope = viewModelScope,
-         started = SharingStarted.WhileSubscribed(5000),
-         initialValue = emptyList()
-     )
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
-     /**
-      * Derived state flow for reimbursements, automatically recalculated when balances change.
-      */
-    val reimbursements: StateFlow<List<Reimbursement>> = balances.map { balancesList: List<Balance> ->
-        calculateReimbursementsFrom(balancesList)
-    }
-         .stateIn(
-             scope = viewModelScope,
-             started = SharingStarted.WhileSubscribed(5000),
-             initialValue = emptyList()
-         )
+    /**
+     * Derived state flow for reimbursements, automatically recalculated when balances change.
+     */
+    val reimbursements: StateFlow<List<Reimbursement>> = balances
+        .map { balancesList: List<Balance> -> calculateReimbursementsFrom(balancesList) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     /**
      * Loads an existing group from Room and updates the current state
