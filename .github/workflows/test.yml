@@ -139,6 +139,26 @@ jobs:
         with:
           files: '**/build/test-results/**/*.xml'
 
+      - name: Setup Python (for generating Markdown test report)
+        if: always()
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Generate JUnit Markdown report
+        if: always()
+        run: |
+          python .github/scripts/junit_to_md.py "**/build/test-results/**/*.xml" build/test-report.md
+
+      - name: Post or update PR comment with test report
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-file: build/test-report.md
+          identifier: junit-test-report
+
       - name: Inject modern CSS into JaCoCo report
         if: always()
         run: |
