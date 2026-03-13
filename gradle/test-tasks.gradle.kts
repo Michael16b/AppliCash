@@ -106,14 +106,24 @@ tasks.register("jacocoAggregate", JacocoReport::class.java) {
     // Use jacocoAnt configuration created by the JaCoCo plugin (contains the actual JaCoCo JARs)
     setJacocoClasspath(rootProject.configurations.getByName("jacocoAnt"))
 
-    // Collect exec files from subprojects using serializable paths (configuration-cache friendly)
-    val execFilePaths: List<String> = subprojects.map { p -> p.layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile.absolutePath }
-    val execFiles = files(execFilePaths.map { File(it) })
-    executionData.setFrom(execFiles)
+    // Collect exec files from subprojects (JVM modules use jacoco/jacoco.exec, Android uses outputs/unit_test_code_coverage/debugUnitTest/*.exec)
+    val execFilePaths: List<File> = subprojects.flatMap { p ->
+        listOf(
+            p.layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile,
+            p.layout.buildDirectory.file("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec").get().asFile,
+        )
+    }.filter { it.exists() }
+    executionData.setFrom(files(execFilePaths))
 
     // Collect class dirs and source dirs across subprojects (use plain File paths)
+    // Include both JVM module paths (main) and Android module paths (debug)
     val classDirsFiles = subprojects.flatMap { p ->
-        listOf(p.layout.buildDirectory.dir("classes/kotlin/main").get().asFile, p.layout.buildDirectory.dir("classes/java/main").get().asFile)
+        listOf(
+            p.layout.buildDirectory.dir("classes/kotlin/main").get().asFile,
+            p.layout.buildDirectory.dir("classes/java/main").get().asFile,
+            p.layout.buildDirectory.dir("classes/kotlin/debug").get().asFile,
+            p.layout.buildDirectory.dir("classes/java/debug").get().asFile,
+        )
     }.filter { it.exists() }
     val srcDirsFiles = subprojects.flatMap { p ->
         listOf(File(p.projectDir, "src/main/kotlin"), File(p.projectDir, "src/main/java"))
