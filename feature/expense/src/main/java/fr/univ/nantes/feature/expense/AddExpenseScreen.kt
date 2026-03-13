@@ -1012,7 +1012,6 @@ fun AddExpenseScreen(
                             }
                         }
                     }
-
                 }
 
                 Spacer(Modifier.height(4.dp))
