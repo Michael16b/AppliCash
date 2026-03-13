@@ -48,6 +48,8 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import androidx.compose.runtime.rememberCoroutineScope
 
+private const val GROUP_DETAIL_REFRESH_INTERVAL_MS = 10_000L
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -145,10 +147,15 @@ private fun App() {
                         }
                     },
                     modifier = Modifier.fillMaxSize(),
+                    refreshIntervalMs = GROUP_DETAIL_REFRESH_INTERVAL_MS,
+                    onRefresh = { expenseViewModel.refreshAllGroups() }
                 )
             }
             composable<GroupDetail> { backStackEntry ->
                 val route = backStackEntry.toRoute<GroupDetail>()
+                LaunchedEffect(route.groupId) {
+                    expenseViewModel.loadGroup(route.groupId)
+                }
                 val state by expenseViewModel.state.collectAsState()
                 val group = state.groups.find { it.id == route.groupId }
                 if (group != null) {
@@ -180,7 +187,9 @@ private fun App() {
                             }
                         },
                         userCurrencyCode = state.userCurrencyCode,
-                        convertAmount = { amount, from -> expenseViewModel.convertAmount(amount, from) }
+                        convertAmount = { amount, from -> expenseViewModel.convertAmount(amount, from) },
+                        refreshIntervalMs = GROUP_DETAIL_REFRESH_INTERVAL_MS,
+                        onRefresh = { expenseViewModel.refreshGroup(route.groupId) }
                     )
                 }
             }

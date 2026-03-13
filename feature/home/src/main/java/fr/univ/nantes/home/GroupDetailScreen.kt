@@ -84,11 +84,13 @@ import fr.univ.nantes.feature.expense.Reimbursement
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 /** Source currency for all expenses entered in the app. */
 private const val EXPENSE_CURRENCY = "EUR"
+private const val DEFAULT_REFRESH_INTERVAL_MS = 10_000L
 
 @Serializable
 data class GroupDetail(val groupId: String)
@@ -104,11 +106,21 @@ fun GroupDetailScreen(
     isLoggedIn: Boolean = true,
     onRequireLogin: () -> Unit = {},
     userCurrencyCode: String = EXPENSE_CURRENCY,
-    convertAmount: suspend (Double, String) -> Double? = { amount, _ -> amount }
+    convertAmount: suspend (Double, String) -> Double? = { amount, _ -> amount },
+    refreshIntervalMs: Long = DEFAULT_REFRESH_INTERVAL_MS,
+    onRefresh: suspend () -> Unit = {}
 ) {
     @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+
+    LaunchedEffect(group.id, refreshIntervalMs) {
+        if (refreshIntervalMs <= 0L) return@LaunchedEffect
+        while (true) {
+            delay(refreshIntervalMs)
+            onRefresh()
+        }
+    }
 
     val originalFormat = remember(EXPENSE_CURRENCY) {
         NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {

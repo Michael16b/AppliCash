@@ -8,6 +8,7 @@ import fr.univ.nantes.data.expense.repository.JoinGroupResult
 import fr.univ.nantes.domain.profil.ProfileUseCase
 import fr.univ.nantes.domain.profil.normalizeCurrencyCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -149,6 +150,10 @@ class ExpenseViewModel(
 
     private val _events = MutableSharedFlow<ExpenseEvent>()
     val events: SharedFlow<ExpenseEvent> = _events.asSharedFlow()
+
+    /** Job observing the current group in Room — cancelled when switching groups. */
+    private var groupObserverJob: Job? = null
+    private var observedGroupId: String? = null
 
     /**
      * Groups with amounts converted to the user's preferred currency.
@@ -353,29 +358,80 @@ class ExpenseViewModel(
      *
      * @param groupId The ID of the group to load
      */
-    fun loadGroup(groupId: String) {
-        viewModelScope.launch {
-            val groupWithDetails = repository.getGroupWithDetails(groupId)
-            if (groupWithDetails != null) {
-                _state.update {
-                    it.copy(
-                        groupName = groupWithDetails.group.groupName,
-                        participants = groupWithDetails.participants.map { participant -> participant.name },
-                        expenses = groupWithDetails.expenses.map {
-                            Expense(
-                                id = it.id,
-                                description = it.description,
-                                amount = it.amount,
-                                paidBy = it.paidBy,
-                                splitType = it.splitType,
-                                splitDetails = parseSplitDetails(it.splitDetails)
-                            )
-                        },
-                        currentGroupId = groupId
-                    )
+    suspend fun loadGroup(groupId: String) {
+        if (observedGroupId == groupId && groupObserverJob?.isActive == true) {
+            refreshGroup(groupId)
+            return
+        }
+
+        observedGroupId = groupId
+        repository.startRealtimeSync(groupId, viewModelScope)
+
+        // Cancel any previous group observation, then start a new one.
+        groupObserverJob?.cancel()
+        groupObserverJob = viewModelScope.launch {
+            repository.observeGroupWithDetails(groupId).collect { groupWithDetails ->
+                if (groupWithDetails != null) {
+                    _state.update {
+                        it.copy(
+                            groupName = groupWithDetails.group.groupName,
+                            participants = groupWithDetails.participants.map { participant -> participant.name },
+                            expenses = groupWithDetails.expenses.map { expense ->
+                                Expense(
+                                    id = expense.id,
+                                    description = expense.description,
+                                    amount = expense.amount,
+                                    paidBy = expense.paidBy,
+                                    splitType = expense.splitType,
+                                    splitDetails = parseSplitDetails(expense.splitDetails)
+                                )
+                            },
+                            currentGroupId = groupId
+                        )
+                    }
                 }
             }
         }
+    }
+
+    suspend fun refreshGroup(groupId: String) {
+        val groupWithDetails = repository.getGroupWithDetails(groupId) ?: return
+        _state.update {
+            it.copy(
+                groupName = groupWithDetails.group.groupName,
+                participants = groupWithDetails.participants.map { participant -> participant.name },
+                expenses = groupWithDetails.expenses.map { expense ->
+                    Expense(
+                        id = expense.id,
+                        description = expense.description,
+                        amount = expense.amount,
+                        paidBy = expense.paidBy,
+                        splitType = expense.splitType,
+                        splitDetails = parseSplitDetails(expense.splitDetails)
+                    )
+                },
+                currentGroupId = groupId
+            )
+        }
+    }
+
+    /**
+     * Force une relecture depuis Firebase pour tous les groupes actuellement en cache local.
+     * Utilisé par le polling périodique de la liste des groupes (HomeScreen).
+     */
+    fun refreshAllGroups() {
+        viewModelScope.launch {
+            _state.value.groups.forEach { group ->
+                repository.syncGroupFromFirebase(group.id)
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        groupObserverJob?.cancel()
+        observedGroupId = null
+        repository.stopRealtimeSync()
     }
 
     /**

@@ -19,6 +19,10 @@ interface ExpenseGroupDao {
     @Query("SELECT * FROM expense_groups WHERE id = :groupId")
     suspend fun getGroupWithDetails(groupId: String): GroupWithDetails?
 
+    @Transaction
+    @Query("SELECT * FROM expense_groups WHERE id = :groupId")
+    fun observeGroupWithDetails(groupId: String): Flow<GroupWithDetails?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGroup(group: ExpenseGroupEntity): Long
 

@@ -19,4 +19,10 @@ interface ExpenseDao {
 
     @Query("DELETE FROM expenses WHERE id = :expenseId")
     suspend fun deleteExpense(expenseId: String)
+
+    @Query("SELECT * FROM expenses WHERE id = :expenseId LIMIT 1")
+    suspend fun getExpenseById(expenseId: String): ExpenseEntity?
+
+    @Query("DELETE FROM expenses WHERE groupId = :groupId")
+    suspend fun deleteAllExpensesByGroupId(groupId: String)
 }

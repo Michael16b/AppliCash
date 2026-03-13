@@ -24,6 +24,9 @@ interface ParticipantDao {
     @Query("DELETE FROM participants WHERE groupId = :groupId AND name = :participantName")
     suspend fun deleteParticipantByName(groupId: String, participantName: String)
 
+    @Query("DELETE FROM participants WHERE groupId = :groupId")
+    suspend fun deleteAllParticipantsByGroupId(groupId: String)
+
     @Transaction
     suspend fun updateParticipants(
         groupId: String,

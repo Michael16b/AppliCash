@@ -8,6 +8,7 @@ import fr.univ.nantes.data.expense.repository.JoinGroupResult
 import fr.univ.nantes.domain.profil.Profile
 import fr.univ.nantes.domain.profil.ProfileRepository
 import fr.univ.nantes.domain.profil.ProfileUseCase
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -349,6 +350,8 @@ class FakeExpenseRepository : ExpenseRepository {
 
     override fun getAllGroupsWithDetails(): Flow<List<GroupWithDetails>> = flowOf(emptyList())
 
+    override fun observeGroupWithDetails(groupId: String): Flow<GroupWithDetails?> = flowOf(null)
+
     override suspend fun getGroupWithDetails(groupId: String): GroupWithDetails? = null
 
     override suspend fun createGroup(groupName: String, participants: List<String>): String {
@@ -407,4 +410,8 @@ class FakeExpenseRepository : ExpenseRepository {
     ): JoinGroupResult {
         TODO("Not yet implemented")
     }
+
+    override suspend fun startRealtimeSync(id: String, viewModelScope: CoroutineScope) = Unit
+    override fun stopRealtimeSync() = Unit
+    override suspend fun syncGroupFromFirebase(groupId: String) = Unit
 }

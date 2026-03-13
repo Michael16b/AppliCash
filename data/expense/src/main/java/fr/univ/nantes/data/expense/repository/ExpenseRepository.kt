@@ -1,7 +1,10 @@
 package fr.univ.nantes.data.expense.repository
 
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import fr.univ.nantes.data.expense.dao.ExpenseDao
 import fr.univ.nantes.data.expense.dao.ExpenseGroupDao
 import fr.univ.nantes.data.expense.dao.ParticipantDao
@@ -11,7 +14,10 @@ import fr.univ.nantes.data.expense.entity.ExpenseEntity
 import fr.univ.nantes.data.expense.entity.ExpenseGroupEntity
 import fr.univ.nantes.data.expense.entity.ParticipantEntity
 import fr.univ.nantes.data.expense.model.GroupWithDetails
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlin.random.Random
 
@@ -47,6 +53,7 @@ sealed interface JoinGroupResult {
 
 interface ExpenseRepository {
     fun getAllGroupsWithDetails(): Flow<List<GroupWithDetails>>
+    fun observeGroupWithDetails(groupId: String): Flow<GroupWithDetails?>
     suspend fun getGroupWithDetails(groupId: String): GroupWithDetails?
     suspend fun createGroup(groupName: String, participants: List<String>): String
     suspend fun addParticipantToGroup(groupId: String, participantName: String)
@@ -70,6 +77,10 @@ interface ExpenseRepository {
     )
     suspend fun canViewShareCode(groupId: String, userName: String?): Boolean
     suspend fun joinGroupByShareCode(shareCode: String, userName: String?): JoinGroupResult
+    suspend fun startRealtimeSync(id: String, viewModelScope: CoroutineScope)
+    fun stopRealtimeSync()
+    /** Effectue une synchronisation unique (one-shot) depuis Firebase pour un groupe donné. */
+    suspend fun syncGroupFromFirebase(groupId: String)
 
 }
 
@@ -86,6 +97,10 @@ class ExpenseRepositoryImpl(
 
     override fun getAllGroupsWithDetails(): Flow<List<GroupWithDetails>> {
         return groupDao.getAllGroupsWithDetails()
+    }
+
+    override fun observeGroupWithDetails(groupId: String): Flow<GroupWithDetails?> {
+        return groupDao.observeGroupWithDetails(groupId)
     }
 
     override suspend fun getGroupWithDetails(groupId: String): GroupWithDetails? {
@@ -138,6 +153,7 @@ class ExpenseRepositoryImpl(
         participantDao.insertParticipant(
             ParticipantEntity(groupId = groupId, name = participantName)
         )
+        syncParticipantsToFirebase(groupId)
     }
 
     override suspend fun addExpenseToGroup(
@@ -171,15 +187,27 @@ class ExpenseRepositoryImpl(
     }
 
     override suspend fun deleteGroup(groupId: String) {
+        val group = groupDao.getGroupById(groupId)
         groupDao.deleteGroup(groupId)
+        if (group != null) {
+            firebaseDb.child(group.shareCode).removeValue()
+        }
     }
 
     override suspend fun deleteExpense(expenseId: String) {
+        val expense = expenseDao.getExpenseById(expenseId)
         expenseDao.deleteExpense(expenseId)
+        if (expense != null) {
+            syncExpensesToFirebase(expense.groupId)
+        }
     }
 
     override suspend fun updateGroupName(groupId: String, groupName: String) {
         groupDao.updateGroupName(groupId, groupName)
+        val group = groupDao.getGroupById(groupId)
+        if (group != null) {
+            firebaseDb.child(group.shareCode).child("groupName").setValue(groupName)
+        }
     }
 
     override suspend fun removeParticipantFromGroup(groupId: String, participantName: String) {
@@ -189,6 +217,7 @@ class ExpenseRepositoryImpl(
             throw ExpenseBusinessException.MemberHasExpensesException(participantName)
         }
         participantDao.deleteParticipantByName(groupId, participantName)
+        syncParticipantsToFirebase(groupId)
     }
 
     override suspend fun updateGroup(
@@ -226,6 +255,13 @@ class ExpenseRepositoryImpl(
             addParticipants = addParticipants.map { ParticipantEntity(groupId = groupId, name = it) },
             removeNames = removeParticipants
         )
+        if (newName != null) {
+            val group = groupDao.getGroupById(groupId)
+            if (group != null) {
+                firebaseDb.child(group.shareCode).child("groupName").setValue(newName)
+            }
+        }
+        syncParticipantsToFirebase(groupId)
     }
 
     override suspend fun joinGroupByShareCode(shareCode: String, userName: String?): JoinGroupResult {
@@ -266,7 +302,7 @@ class ExpenseRepositoryImpl(
             }
 
             return JoinGroupResult.Success(localGroupId)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             return JoinGroupResult.InvalidCode
         }
     }
@@ -290,10 +326,111 @@ class ExpenseRepositoryImpl(
         }
     }
 
+    private var activeListener: ValueEventListener? = null
+    private var activeGroupRef: DatabaseReference? = null
+
+    override suspend fun startRealtimeSync(id: String, viewModelScope: CoroutineScope) {
+        stopRealtimeSync()
+
+        viewModelScope.launch {
+            val group = groupDao.getGroupById(id) ?: return@launch
+            activeGroupRef = firebaseDb.child(group.shareCode)
+
+            activeListener = object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val remoteData = snapshot.getValue(GroupSnapshot::class.java) ?: return
+
+                    viewModelScope.launch(Dispatchers.IO) {
+                        groupDao.insertGroup(
+                            group.copy(
+                                groupName = remoteData.groupName,
+                                shareCode = remoteData.shareCode.ifBlank { group.shareCode }
+                            )
+                        )
+
+                        // Replace participants: wipe local list then re-insert from Firebase
+                        participantDao.deleteAllParticipantsByGroupId(id)
+                        val participants = remoteData.participants.map {
+                            ParticipantEntity(groupId = id, name = it)
+                        }
+                        participantDao.insertParticipants(participants)
+
+                        // Replace expenses: wipe local list then re-insert from Firebase
+                        expenseDao.deleteAllExpensesByGroupId(id)
+                        val expenses = remoteData.expenses.map {
+                            ExpenseEntity(
+                                groupId = id,
+                                description = it.description,
+                                amount = it.amount,
+                                paidBy = it.paidBy,
+                                splitType = it.splitType,
+                                splitDetails = it.splitDetails
+                            )
+                        }
+                        expenseDao.insertExpenses(expenses)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {}
+            }
+
+            activeGroupRef?.addValueEventListener(activeListener!!)
+        }
+    }
+
+    override fun stopRealtimeSync() {
+        activeListener?.let { activeGroupRef?.removeEventListener(it) }
+        activeListener = null
+        activeGroupRef = null
+    }
+
+    override suspend fun syncGroupFromFirebase(groupId: String) {
+        val group = groupDao.getGroupById(groupId) ?: return
+        try {
+            val snapshot = firebaseDb.child(group.shareCode).get().await()
+            val remoteData = snapshot.getValue(GroupSnapshot::class.java) ?: return
+
+            groupDao.insertGroup(group.copy(groupName = remoteData.groupName))
+
+            participantDao.deleteAllParticipantsByGroupId(groupId)
+            participantDao.insertParticipants(
+                remoteData.participants.map { ParticipantEntity(groupId = groupId, name = it) }
+            )
+
+            expenseDao.deleteAllExpensesByGroupId(groupId)
+            expenseDao.insertExpenses(
+                remoteData.expenses.map {
+                    ExpenseEntity(
+                        groupId = groupId,
+                        description = it.description,
+                        amount = it.amount,
+                        paidBy = it.paidBy,
+                        splitType = it.splitType,
+                        splitDetails = it.splitDetails
+                    )
+                }
+            )
+        } catch (_: Exception) { }
+    }
+
     override suspend fun canViewShareCode(groupId: String, userName: String?): Boolean {
         val normalizedUser = userName?.trim().orEmpty()
         if (normalizedUser.isBlank()) return false
 
         return  participantDao.isParticipantInGroup(groupId, normalizedUser)
+    }
+
+    private suspend fun syncParticipantsToFirebase(groupId: String) {
+        val group = groupDao.getGroupById(groupId) ?: return
+        val participants = participantDao.getParticipantsByGroupId(groupId).map { it.name }
+        firebaseDb.child(group.shareCode).child("participants").setValue(participants)
+    }
+
+    private suspend fun syncExpensesToFirebase(groupId: String) {
+        val group = groupDao.getGroupById(groupId) ?: return
+        val allExpenses = expenseDao.getExpensesByGroupId(groupId).map {
+            ExpenseSnapshot(it.description, it.amount, it.paidBy, it.splitType, it.splitDetails)
+        }
+        firebaseDb.child(group.shareCode).child("expenses").setValue(allExpenses)
     }
 }
