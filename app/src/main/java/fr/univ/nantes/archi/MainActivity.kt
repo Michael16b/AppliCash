@@ -217,6 +217,25 @@ private fun App() {
                     }
                 }
 
+                // Attach file (pick image) launcher
+                val pickImageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                    try {
+                        uri?.let {
+                            // copy the selected image to app external files receipts folder so path can be used
+                            val inputStream = context.contentResolver.openInputStream(it)
+                            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                            val fileName = "RECEIPT_${route.groupId}_$timeStamp.jpg"
+                            val picturesDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                            val receiptsDir = File(picturesDir, "receipts")
+                            if (!receiptsDir.exists()) receiptsDir.mkdirs()
+                            val outFile = File(receiptsDir, fileName)
+                            inputStream?.use { input -> outFile.outputStream().use { output -> input.copyTo(output) } }
+                            receiptPathState.value = outFile.absolutePath
+                        }
+                    } catch (_: Exception) {
+                    }
+                }
+
                 val onStartCamera = {
                     try {
                         // create file in app external files Pictures/receipts
@@ -231,7 +250,6 @@ private fun App() {
                         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                         takePictureLauncher.launch(uri)
                     } catch (_: Exception) {
-                        // ignore for MVP
                     }
                 }
 
@@ -239,6 +257,7 @@ private fun App() {
                     viewModel = expenseViewModel,
                     navigateBack = { navController.popBackStack() },
                     onStartCamera = onStartCamera,
+                    onAttachFile = { pickImageLauncher.launch("image/*") },
                     receiptPreviewPath = receiptPathState.value,
                     onClearReceipt = {
                         currentFile.value?.delete()

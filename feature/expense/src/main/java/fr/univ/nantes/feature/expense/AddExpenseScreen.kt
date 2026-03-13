@@ -114,13 +114,14 @@ private val quickAmounts = listOf(5.0, 10.0, 20.0, 50.0, 100.0)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddExpenseScreen(
-    viewModel: ExpenseViewModel,
-    navigateBack: () -> Unit,
-    onStartCamera: () -> Unit = {},
-    receiptPreviewPath: String? = null,
-    onClearReceipt: () -> Unit = {}
-) {
+ fun AddExpenseScreen(
+     viewModel: ExpenseViewModel,
+     navigateBack: () -> Unit,
+     onStartCamera: () -> Unit = {},
+     onAttachFile: () -> Unit = {},
+     receiptPreviewPath: String? = null,
+     onClearReceipt: () -> Unit = {}
+ ) {
     val state by viewModel.state.collectAsState()
     val participants = state.participants
 
@@ -937,9 +938,8 @@ fun AddExpenseScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
-                        Button(
-                            onClick = {
-                            },
+                         Button(
+                             onClick = { onAttachFile() },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onSurfaceVariant),
                             modifier = Modifier
                                 .weight(1f)
