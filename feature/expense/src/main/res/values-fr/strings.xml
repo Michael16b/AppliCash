@@ -87,6 +87,7 @@
     <string name="receipt_section_label">Ticket de caisse (optionnel)</string>
     <string name="take_photo">Prendre une photo</string>
     <string name="choose_file">Choisir</string>
+    <string name="photo_quality_low">La photo semble être de mauvaise qualité, pensez à la refaire.</string>
     <string name="shares_per_participant_label">Parts par participant</string>
     <string name="amounts_per_participant_label">Montants par participant</string>
     <string name="share_suffix">part(s)</string>
@@ -108,5 +109,9 @@
     <string name="per_person_suffix">/pers.</string>
     <string name="expense">Dépense</string>
     <string name="join_group_success_message">Succès</string>
+    <string name="receipt_preview">Aperçu du ticket</string>
+    <string name="retake_photo">Refaire</string>
+    <string name="remove_photo">Retirer</string>
+    <string name="attach_file">Joindre un fichier</string>
 
 </resources>

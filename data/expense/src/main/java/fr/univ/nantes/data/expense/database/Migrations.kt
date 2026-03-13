@@ -48,3 +48,14 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_participants_groupId_name` ON `participants` (`groupId`, `name`)")
     }
 }
+
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Add a new column 'receiptPath' with default empty string to keep backward compatibility
+        try {
+            db.execSQL("ALTER TABLE expenses ADD COLUMN receiptPath TEXT NOT NULL DEFAULT ''")
+        } catch (_: Exception) {
+            // ignore if column already exists
+        }
+    }
+}

@@ -88,6 +88,10 @@
     <string name="receipt_section_label">Receipt (optional)</string>
     <string name="take_photo">Take a photo</string>
     <string name="choose_file">Choose</string>
+    <string name="receipt_preview">Receipt preview</string>
+    <string name="retake_photo">Retake</string>
+    <string name="remove_photo">Remove</string>
+    <string name="photo_quality_low">The photo seems low quality, consider retaking it.</string>
     <string name="shares_per_participant_label">Shares per participant</string>
     <string name="amounts_per_participant_label">Amounts per participant</string>
     <string name="share_suffix">share(s)</string>
@@ -108,4 +112,5 @@
     <string name="per_person_amount">%s per person</string>
     <string name="per_person_suffix">/person</string>
     <string name="expense">Expense</string>
+    <string name="attach_file">Attach File</string>
 </resources>
