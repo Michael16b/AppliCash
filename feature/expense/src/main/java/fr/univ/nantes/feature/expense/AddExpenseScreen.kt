@@ -96,7 +96,6 @@ import java.util.Date
 import java.util.Locale
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.serialization.Serializable
-import androidx.compose.foundation.layout.wrapContentWidth
 
 @Serializable
 data class AddExpenseRoute(val groupId: Long)
@@ -941,7 +940,7 @@ fun AddExpenseScreen(
                         Button(
                             onClick = {
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onSurfaceVariant),
                             modifier = Modifier
                                 .weight(1f)
                                 .height(46.dp),
