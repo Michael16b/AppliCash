@@ -4,6 +4,8 @@ on:
   push:
     branches: ["main"]
     tags: ['v*']
+  pull_request:
+    branches: ["main"]
 
 env:
   CI_DIR: .ci
@@ -35,7 +37,8 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
-      - name: Build signed APK
+      - name: Build signed Release APK (when keystore available)
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
         env:
           KEYSTORE_PATH: ${{ env.CI_DIR }}/keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -48,11 +51,20 @@ jobs:
             -Pandroid.injected.signing.key.alias=${KEY_ALIAS} \
             -Pandroid.injected.signing.key.password=${KEY_PASSWORD}
 
+      - name: Build Debug APK (for PRs/forks without keystore)
+        if: ${{ secrets.KEYSTORE_BASE64 == '' }}
+        run: |
+          ./gradlew clean assembleDebug --no-daemon
+
       - name: Find APK
         id: find_apk
         run: |
           set -e
+          # Prefer release APK, fall back to debug
           APK=$(ls app/build/outputs/apk/release/*.apk 2>/dev/null | head -n1 || true)
+          if [ -z "$APK" ]; then
+            APK=$(ls app/build/outputs/apk/debug/*.apk 2>/dev/null | head -n1 || true)
+          fi
           if [ -z "$APK" ]; then
             echo "No APK found" >&2
             exit 1
