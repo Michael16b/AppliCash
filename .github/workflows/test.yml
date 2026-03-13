@@ -139,6 +139,17 @@ jobs:
         with:
           files: '**/build/test-results/**/*.xml'
 
+      - name: Inject modern CSS into JaCoCo report
+        if: always()
+        run: |
+          CSS_TARGET="build/reports/jacoco/html/jacoco-resources/report.css"
+          if [ -f "$CSS_TARGET" ]; then
+            cp gradle/jacoco-modern.css "$CSS_TARGET"
+            echo "Modern CSS injected successfully"
+          else
+            echo "JaCoCo report CSS not found, skipping injection"
+          fi
+
       - name: Debug - List jacoco outputs
         if: always()
         run: |
