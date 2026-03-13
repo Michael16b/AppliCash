@@ -566,6 +566,38 @@ class ExpenseViewModel(
     }
 
     /**
+     * Public wrapper used by tests to calculate balances from the current in-memory state.
+     * Uses the same logic as the internal derived StateFlow so tests can call it synchronously.
+     */
+    fun calculateBalances(): List<Balance> {
+        return calculateBalancesFrom(_state.value.expenses, _state.value.participants)
+    }
+
+    /**
+     * Public wrapper used by tests to calculate reimbursements from the current in-memory state.
+     */
+    fun calculateReimbursements(): List<Reimbursement> {
+        return calculateReimbursementsFrom(calculateBalances())
+    }
+
+    /**
+     * Resets the in-memory transient form state (groupName, participants, expenses) while
+     * preserving the stored groups list. This mirrors the behavior expected by unit tests.
+     */
+    fun reset() {
+        _state.update {
+            it.copy(
+                groupName = "",
+                participants = emptyList(),
+                expenses = emptyList(),
+                currentGroupId = null,
+                joinGroupMessage = null,
+                joinGroupCodeInput = ""
+            )
+        }
+    }
+
+    /**
      * Converts [amount] from currency [from] to the user's preferred currency.
      * Returns null if the exchange rate is unavailable.
      */

@@ -368,8 +368,11 @@ class FakeExpenseRepository : ExpenseRepository {
         amount: Double,
         paidBy: String,
         splitType: Int,
-        splitDetails: String
-    ) = Unit
+        splitDetails: String,
+        receiptPath: String
+    ) {
+
+    }
 
     override suspend fun deleteGroup(groupId: Long) = Unit
 
@@ -398,13 +401,15 @@ class FakeExpenseRepository : ExpenseRepository {
     }
 
     override suspend fun canViewShareCode(groupId: Long, userName: String?): Boolean {
-        TODO("Not yet implemented")
+        // In tests the fake repository does not manage share codes; return false by default
+        return false
     }
 
     override suspend fun joinGroupByShareCode(
         shareCode: String,
         userName: String?
     ): JoinGroupResult {
-        TODO("Not yet implemented")
+        // Simplified: tests using joinGroupByCode will handle messages; return InvalidCode by default
+        return JoinGroupResult.InvalidCode
     }
 }
