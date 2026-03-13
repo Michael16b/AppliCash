@@ -8,7 +8,7 @@
  */
 <span class="fc" id="L9">@Suppress(&quot;unused&quot;)</span>
 <span class="fc" id="L10">data class Expense(</span>
-<span class="pc" id="L11">    val id: Long = 0,</span>
+<span class="pc" id="L11">    val id: String = &quot;&quot;,</span>
 <span class="fc" id="L12">    val description: String,</span>
 <span class="fc" id="L13">    val amount: Double,</span>
 <span class="fc" id="L14">    val paidBy: String,</span>
@@ -34,7 +34,7 @@
 /** Domain model representing a group of participants sharing expenses. */
 <span class="nc" id="L35">@Suppress(&quot;unused&quot;)</span>
 <span class="nc" id="L36">data class GroupData(</span>
-<span class="nc" id="L37">    val id: Long = 0,</span>
+<span class="nc" id="L37">    val id: String = &quot;&quot;,</span>
 <span class="nc" id="L38">    val groupName: String = &quot;&quot;,</span>
 <span class="nc" id="L39">    val participants: List&lt;String&gt; = emptyList(),</span>
 <span class="nc" id="L40">    val expenses: List&lt;Expense&gt; = emptyList()</span>
