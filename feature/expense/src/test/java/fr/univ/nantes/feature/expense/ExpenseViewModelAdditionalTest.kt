@@ -347,7 +347,7 @@ class FakeExpenseRepository : ExpenseRepository {
     var lastUpdateNewName: String? = null
     var lastUpdateAddParticipants: List<String>? = null
     var lastUpdateRemoveParticipants: List<String>? = null
-    var lastAddedExpenseGroupId: Long? = null
+    var lastAddedExpenseGroupId: String? = null
     var lastAddedExpenseDescription: String? = null
     var lastAddedExpenseAmount: Double? = null
     var lastAddedExpensePaidBy: String? = null
@@ -416,7 +416,7 @@ class FakeExpenseRepository : ExpenseRepository {
         lastUpdateRemoveParticipants = removeParticipants
     }
 
-    override suspend fun canViewShareCode(groupId: Long, userName: String?): Boolean {
+    override suspend fun canViewShareCode(groupId: String, userName: String?): Boolean {
         // In tests the fake repository does not manage share codes; return false by default
         return false
     }
