@@ -100,44 +100,33 @@ tasks.register("jacocoAggregate", JacocoReport::class.java) {
 
     // Ensure compile/test tasks are executed before aggregation to avoid implicit dependency errors
     dependsOn(subprojects.flatMap { sp ->
-        sp.tasks.matching {
-            it.name == "test" ||
-            it.name == "testDebugUnitTest" ||
-            it.name == "compileKotlin" ||
-            it.name == "compileJava" ||
-            it.name == "compileDebugKotlin" ||
-            it.name == "compileDebugJavaWithJavac"
-        }.toList()
+        sp.tasks.matching { it.name == "test" || it.name == "compileKotlin" || it.name == "compileJava" }.toList()
     })
 
     // Use jacocoAnt configuration created by the JaCoCo plugin (contains the actual JaCoCo JARs)
-    setJacocoClasspath(rootProject.configurations.getByName("jacocoAnt"))
+    setJacocoClasspath(rootProject.configurations.named("jacocoAnt"))
 
-    // Collect exec files lazily at execution time (not at configuration time)
-    executionData.setFrom(fileTree(rootProject.projectDir) {
-        include("**/build/jacoco/jacoco.exec")
-        include("**/build/outputs/unit_test_code_coverage/**/*.exec")
-    })
+    // Collect exec files from subprojects using serializable paths (configuration-cache friendly)
+    val execFilePaths: List<String> = subprojects.map { p -> p.layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile.absolutePath }
+    val execFiles = files(execFilePaths.map { File(it) })
+    executionData.setFrom(execFiles)
 
-    // Collect class dirs lazily at execution time
-    additionalClassDirs.setFrom(fileTree(rootProject.projectDir) {
-        include("**/build/classes/kotlin/main/**")
-        include("**/build/classes/java/main/**")
-        include("**/build/classes/kotlin/debug/**")
-        include("**/build/classes/java/debug/**")
-        exclude("**/build/classes/**/*Test*")
-        exclude("**/build/classes/**/*Roborazzi*")
-    })
-
-    sourceDirectories.setFrom(subprojects.flatMap { p ->
+    // Collect class dirs and source dirs across subprojects (use plain File paths)
+    val classDirsFiles = subprojects.flatMap { p ->
+        listOf(p.layout.buildDirectory.dir("classes/kotlin/main").get().asFile, p.layout.buildDirectory.dir("classes/java/main").get().asFile)
+    }.filter { it.exists() }
+    val srcDirsFiles = subprojects.flatMap { p ->
         listOf(File(p.projectDir, "src/main/kotlin"), File(p.projectDir, "src/main/java"))
-    })
+    }
+
+    additionalClassDirs.setFrom(files(classDirsFiles))
+    sourceDirectories.setFrom(files(srcDirsFiles))
 
     reports {
         xml.required.set(true)
+        // Explicitly set xml output location using layout (configuration-cache friendly)
         xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/jacoco.xml"))
-        html.required.set(true)
-        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/html"))
+        html.required.set(false)
     }
 }
 
