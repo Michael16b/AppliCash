@@ -4,6 +4,9 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.tasks.Sync
 
+// Apply JaCoCo plugin to root project so jacocoAnt classpath is available
+pluginManager.apply(JacocoPlugin::class.java)
+
 // Apply JaCoCo plugin to subprojects that expose test tasks
 subprojects {
     // Apply only if the subproject has a test task
@@ -100,10 +103,8 @@ tasks.register("jacocoAggregate", JacocoReport::class.java) {
         sp.tasks.matching { it.name == "test" || it.name == "compileKotlin" || it.name == "compileJava" }.toList()
     })
 
-    // Ensure jacoco classpath is set (required by newer Gradle/Jacoco task validation)
-    val jacocoCfg = rootProject.configurations.findByName("jacoco") ?: rootProject.configurations.maybeCreate("jacoco")
-    // Use explicit setter to avoid Kotlin resolution issues
-    setJacocoClasspath(rootProject.files(jacocoCfg))
+    // Use jacocoAnt configuration created by the JaCoCo plugin (contains the actual JaCoCo JARs)
+    setJacocoClasspath(rootProject.configurations.named("jacocoAnt"))
 
     // Collect exec files from subprojects using serializable paths (configuration-cache friendly)
     val execFilePaths: List<String> = subprojects.map { p -> p.layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile.absolutePath }
