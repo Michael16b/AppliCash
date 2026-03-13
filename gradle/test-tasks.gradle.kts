@@ -100,7 +100,14 @@ tasks.register("jacocoAggregate", JacocoReport::class.java) {
 
     // Ensure compile/test tasks are executed before aggregation to avoid implicit dependency errors
     dependsOn(subprojects.flatMap { sp ->
-        sp.tasks.matching { it.name == "test" || it.name == "compileKotlin" || it.name == "compileJava" }.toList()
+        sp.tasks.matching {
+            it.name == "test" ||
+            it.name == "testDebugUnitTest" ||
+            it.name == "compileKotlin" ||
+            it.name == "compileJava" ||
+            it.name == "compileDebugKotlin" ||
+            it.name == "compileDebugJavaWithJavac"
+        }.toList()
     })
 
     // Use jacocoAnt configuration created by the JaCoCo plugin (contains the actual JaCoCo JARs)
