@@ -21,7 +21,7 @@ object ReceiptPhotoHelper {
     fun createReceiptFile(context: Context, groupId: Long? = null): File {
         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
         val fileName = "RECEIPT_${groupId ?: "G"}_$timeStamp.jpg"
-        val picturesDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        val picturesDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES) ?: context.filesDir
         val receiptsDir = File(picturesDir, "receipts")
         if (!receiptsDir.exists()) receiptsDir.mkdirs()
         val file = File(receiptsDir, fileName)
