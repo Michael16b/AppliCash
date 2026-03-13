@@ -4,6 +4,9 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.tasks.Sync
 
+// Apply JaCoCo plugin to root project so jacocoAnt classpath is available
+pluginManager.apply(JacocoPlugin::class.java)
+
 // Apply JaCoCo plugin to subprojects that expose test tasks
 subprojects {
     // Apply only if the subproject has a test task
@@ -47,7 +50,9 @@ subprojects {
 tasks.register("testAll") {
     group = "verification"
     description = "Run all unit tests in all modules (JVM tests)"
-    dependsOn(subprojects.flatMap { sp -> sp.tasks.matching { it.name == "test" }.toList() })
+    dependsOn(subprojects.flatMap { sp ->
+        sp.tasks.matching { it.name == "test" || it.name == "testDebugUnitTest" }.toList()
+    })
 }
 
 // Root task to run only tests in affected modules supplied via -PaffectedModules=module1,module2
@@ -73,7 +78,7 @@ tasks.register("fastTests") {
                 logger.warn("fastTests: project $projectPath not found, falling back to testAll for this entry")
                 depsMutable.add(rootProject.tasks.named("testAll"))
             } else {
-                val matching = p.tasks.matching { t -> t.name == "test" || t.name == "testDebugUnitTest" }
+                val matching = p.tasks.matching { t -> t.name == "test" || t.name == "testDebugUnitTest" || t.name == "testReleaseUnitTest" }
                 if (matching.isEmpty()) {
                     logger.warn("fastTests: no test tasks found in $projectPath, skipping")
                 } else {
@@ -95,35 +100,44 @@ tasks.register("jacocoAggregate", JacocoReport::class.java) {
 
     // Ensure compile/test tasks are executed before aggregation to avoid implicit dependency errors
     dependsOn(subprojects.flatMap { sp ->
-        sp.tasks.matching { it.name == "test" || it.name == "compileKotlin" || it.name == "compileJava" }.toList()
+        sp.tasks.matching {
+            it.name == "test" ||
+            it.name == "testDebugUnitTest" ||
+            it.name == "compileKotlin" ||
+            it.name == "compileJava" ||
+            it.name == "compileDebugKotlin" ||
+            it.name == "compileDebugJavaWithJavac"
+        }.toList()
     })
 
-    // Ensure jacoco classpath is set (required by newer Gradle/Jacoco task validation)
-    val jacocoCfg = rootProject.configurations.findByName("jacoco") ?: rootProject.configurations.maybeCreate("jacoco")
-    // Use explicit setter to avoid Kotlin resolution issues
-    setJacocoClasspath(rootProject.files(jacocoCfg))
+    // Use jacocoAnt configuration created by the JaCoCo plugin (contains the actual JaCoCo JARs)
+    setJacocoClasspath(rootProject.configurations.getByName("jacocoAnt"))
 
-    // Collect exec files from subprojects using serializable paths (configuration-cache friendly)
-    val execFilePaths: List<String> = subprojects.map { p -> p.layout.buildDirectory.file("jacoco/jacoco.exec").get().asFile.absolutePath }
-    val execFiles = files(execFilePaths.map { File(it) })
-    executionData.setFrom(execFiles)
+    // Collect exec files lazily at execution time (not at configuration time)
+    executionData.setFrom(fileTree(rootProject.projectDir) {
+        include("**/build/jacoco/jacoco.exec")
+        include("**/build/outputs/unit_test_code_coverage/**/*.exec")
+    })
 
-    // Collect class dirs and source dirs across subprojects (use plain File paths)
-    val classDirsFiles = subprojects.flatMap { p ->
-        listOf(p.layout.buildDirectory.dir("classes/kotlin/main").get().asFile, p.layout.buildDirectory.dir("classes/java/main").get().asFile)
-    }.filter { it.exists() }
-    val srcDirsFiles = subprojects.flatMap { p ->
+    // Collect class dirs lazily at execution time
+    additionalClassDirs.setFrom(fileTree(rootProject.projectDir) {
+        include("**/build/classes/kotlin/main/**")
+        include("**/build/classes/java/main/**")
+        include("**/build/classes/kotlin/debug/**")
+        include("**/build/classes/java/debug/**")
+        exclude("**/build/classes/**/*Test*")
+        exclude("**/build/classes/**/*Roborazzi*")
+    })
+
+    sourceDirectories.setFrom(subprojects.flatMap { p ->
         listOf(File(p.projectDir, "src/main/kotlin"), File(p.projectDir, "src/main/java"))
-    }
-
-    additionalClassDirs.setFrom(files(classDirsFiles))
-    sourceDirectories.setFrom(files(srcDirsFiles))
+    })
 
     reports {
         xml.required.set(true)
-        // Explicitly set xml output location using layout (configuration-cache friendly)
         xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/jacoco.xml"))
-        html.required.set(false)
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/html"))
     }
 }
 
