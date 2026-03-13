@@ -139,6 +139,14 @@ jobs:
         with:
           files: '**/build/test-results/**/*.xml'
 
+      - name: Debug - List jacoco outputs
+        if: always()
+        run: |
+          echo "=== Exec files ==="
+          find . -name "*.exec" 2>/dev/null || echo "No .exec files found"
+          echo "=== Jacoco HTML ==="
+          find build/reports/jacoco -type f 2>/dev/null || echo "No jacoco HTML found"
+
       - name: Upload module-level coverage HTML reports
         uses: actions/upload-artifact@v4
         with:
