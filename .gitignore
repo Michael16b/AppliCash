@@ -18,3 +18,5 @@ local.properties
 # Paparazzi — on versionne les images de référence (RG3/CA4)
 # mais on ignore les fichiers de delta produits lors des échecs
 **/out/failures/
+
+app/google-services.json

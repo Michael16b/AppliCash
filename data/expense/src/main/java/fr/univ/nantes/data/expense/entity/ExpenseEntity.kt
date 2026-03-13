@@ -18,9 +18,9 @@ import androidx.room.PrimaryKey
     indices = [Index(value = ["groupId"])]
 )
 data class ExpenseEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    val groupId: Long,
+    @PrimaryKey
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val groupId: String,
     val description: String,
     val amount: Double,
     val paidBy: String,

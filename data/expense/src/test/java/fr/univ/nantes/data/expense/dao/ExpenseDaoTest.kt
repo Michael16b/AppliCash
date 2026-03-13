@@ -25,11 +25,11 @@ class ExpenseDaoTest {
     }
 
     @Test
-    fun `insertExpense returns a positive id`() = runTest {
+    fun `insertExpense returns a generated row id`() = runTest {
         whenever(dao.insertExpense(any())).thenReturn(1L)
 
         val id = dao.insertExpense(
-            ExpenseEntity(groupId = 1L, description = "Meal", amount = 25.0, paidBy = "Alice")
+            ExpenseEntity(groupId = "group-1", description = "Meal", amount = 25.0, paidBy = "Alice")
         )
 
         assertEquals(1L, id)
@@ -37,7 +37,7 @@ class ExpenseDaoTest {
 
     @Test
     fun `insertExpense is called with the correct entity`() = runTest {
-        val entity = ExpenseEntity(groupId = 1L, description = "Taxi", amount = 15.0, paidBy = "Bob")
+        val entity = ExpenseEntity(groupId = "group-1", description = "Taxi", amount = 15.0, paidBy = "Bob")
         whenever(dao.insertExpense(entity)).thenReturn(2L)
         val captor = argumentCaptor<ExpenseEntity>()
 
@@ -52,8 +52,8 @@ class ExpenseDaoTest {
     @Test
     fun `insertExpenses inserts a list of expenses`() = runTest {
         val expenses = listOf(
-            ExpenseEntity(groupId = 1L, description = "Hotel", amount = 120.0, paidBy = "Alice"),
-            ExpenseEntity(groupId = 1L, description = "Flight", amount = 350.0, paidBy = "Bob")
+            ExpenseEntity(groupId = "group-1", description = "Hotel", amount = 120.0, paidBy = "Alice"),
+            ExpenseEntity(groupId = "group-1", description = "Flight", amount = 350.0, paidBy = "Bob")
         )
 
         dao.insertExpenses(expenses)
@@ -64,12 +64,12 @@ class ExpenseDaoTest {
     @Test
     fun `getExpensesByGroupId returns the expenses for the group`() = runTest {
         val expected = listOf(
-            ExpenseEntity(id = 1, groupId = 1L, description = "Meal", amount = 25.0, paidBy = "Alice"),
-            ExpenseEntity(id = 2, groupId = 1L, description = "Taxi", amount = 10.0, paidBy = "Bob")
+            ExpenseEntity(id = "exp-1", groupId = "group-1", description = "Meal", amount = 25.0, paidBy = "Alice"),
+            ExpenseEntity(id = "exp-2", groupId = "group-1", description = "Taxi", amount = 10.0, paidBy = "Bob")
         )
-        whenever(dao.getExpensesByGroupId(1L)).thenReturn(expected)
+        whenever(dao.getExpensesByGroupId("group-1")).thenReturn(expected)
 
-        val result = dao.getExpensesByGroupId(1L)
+        val result = dao.getExpensesByGroupId("group-1")
 
         assertEquals(2, result.size)
         assertEquals(25.0, result[0].amount, 0.001)
@@ -78,23 +78,23 @@ class ExpenseDaoTest {
 
     @Test
     fun `getExpensesByGroupId returns empty list when no expenses exist`() = runTest {
-        whenever(dao.getExpensesByGroupId(99L)).thenReturn(emptyList())
+        whenever(dao.getExpensesByGroupId("group-99")).thenReturn(emptyList())
 
-        val result = dao.getExpensesByGroupId(99L)
+        val result = dao.getExpensesByGroupId("group-99")
 
         assertTrue(result.isEmpty())
     }
 
     @Test
     fun `deleteExpense calls the method with the correct id`() = runTest {
-        dao.deleteExpense(3L)
-        verify(dao).deleteExpense(3L)
+        dao.deleteExpense("exp-3")
+        verify(dao).deleteExpense("exp-3")
     }
 
     @Test
     fun `BR4 - ExpenseEntity with zero amount should not be inserted via the repository`() {
         // Documents that BR4 is enforced at the repository level, not the DAO level
-        val entity = ExpenseEntity(groupId = 1L, description = "Invalid", amount = 0.0, paidBy = "Alice")
+        val entity = ExpenseEntity(groupId = "group-1", description = "Invalid", amount = 0.0, paidBy = "Alice")
         assertEquals(0.0, entity.amount, 0.001)
         // BR4 validation is tested in ExpenseRepositoryImplTest
     }

@@ -16,17 +16,20 @@ interface ParticipantDao {
     suspend fun insertParticipants(participants: List<ParticipantEntity>)
 
     @Query("SELECT * FROM participants WHERE groupId = :groupId")
-    suspend fun getParticipantsByGroupId(groupId: Long): List<ParticipantEntity>
+    suspend fun getParticipantsByGroupId(groupId: String): List<ParticipantEntity>
 
     @Query("DELETE FROM participants WHERE id = :participantId")
-    suspend fun deleteParticipant(participantId: Long)
+    suspend fun deleteParticipant(participantId: String)
 
     @Query("DELETE FROM participants WHERE groupId = :groupId AND name = :participantName")
-    suspend fun deleteParticipantByName(groupId: Long, participantName: String)
+    suspend fun deleteParticipantByName(groupId: String, participantName: String)
+
+    @Query("DELETE FROM participants WHERE groupId = :groupId")
+    suspend fun deleteAllParticipantsByGroupId(groupId: String)
 
     @Transaction
     suspend fun updateParticipants(
-        groupId: Long,
+        groupId: String,
         addParticipants: List<ParticipantEntity>,
         removeNames: List<String>
     ) {
@@ -37,6 +40,6 @@ interface ParticipantDao {
     }
 
     @Query("SELECT EXISTS(SELECT 1 FROM participants WHERE groupId = :groupId AND name = :participantName)")
-    suspend fun isParticipantInGroup(groupId: Long, participantName: String): Boolean
+    suspend fun isParticipantInGroup(groupId: String, participantName: String): Boolean
 }
 

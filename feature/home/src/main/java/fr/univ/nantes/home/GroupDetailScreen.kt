@@ -48,7 +48,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -84,14 +83,16 @@ import fr.univ.nantes.feature.expense.Reimbursement
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 /** Source currency for all expenses entered in the app. */
 private const val EXPENSE_CURRENCY = "EUR"
+private const val DEFAULT_REFRESH_INTERVAL_MS = 10_000L
 
 @Serializable
-data class GroupDetail(val groupId: Long)
+data class GroupDetail(val groupId: String)
 
 @SuppressLint("RememberReturnType")
 @Composable
@@ -99,16 +100,26 @@ fun GroupDetailScreen(
     group: GroupData,
     onBack: () -> Unit,
     onAddExpense: () -> Unit = {},
-    onDeleteExpense: (Long) -> Unit = {},
+    onDeleteExpense: (String) -> Unit = {},
     onEditGroup: () -> Unit = {},
     isLoggedIn: Boolean = true,
     onRequireLogin: () -> Unit = {},
     userCurrencyCode: String = EXPENSE_CURRENCY,
-    convertAmount: suspend (Double, String) -> Double? = { amount, _ -> amount }
+    convertAmount: suspend (Double, String) -> Double? = { amount, _ -> amount },
+    refreshIntervalMs: Long = DEFAULT_REFRESH_INTERVAL_MS,
+    onRefresh: suspend () -> Unit = {}
 ) {
     @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+
+    LaunchedEffect(group.id, refreshIntervalMs) {
+        if (refreshIntervalMs <= 0L) return@LaunchedEffect
+        while (true) {
+            delay(refreshIntervalMs)
+            onRefresh()
+        }
+    }
 
     val originalFormat = remember(EXPENSE_CURRENCY) {
         NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
@@ -349,7 +360,7 @@ private fun ExpensesTab(
     userFormat: NumberFormat,
     showConversion: Boolean,
     convertAmount: suspend (Double, String) -> Double?,
-    onDeleteExpense: (Long) -> Unit
+    onDeleteExpense: (String) -> Unit
 ) {
     if (group.expenses.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -390,7 +401,7 @@ private fun ExpenseItem(
     userFormat: NumberFormat,
     showConversion: Boolean,
     convertAmount: suspend (Double, String) -> Double?,
-    onDeleteExpense: (Long) -> Unit
+    onDeleteExpense: (String) -> Unit
 ) {
     val sharePerPerson = if (group.participants.isNotEmpty()) {
         expense.amount / group.participants.size
@@ -910,13 +921,13 @@ private fun calculateReimbursements(balances: List<Balance>): List<Reimbursement
 @Composable
 private fun GroupDetailPreview() {
     val group = GroupData(
-        id = 1,
+        id = "1",
         groupName = "Vacances été 2025",
         participants = listOf("Alice", "Bob", "Charlie"),
         expenses = listOf(
-            Expense(1, "Essence", 80.0, "Alice"),
-            Expense(2, "Hôtel", 300.0, "Bob"),
-            Expense(3, "Restaurant", 120.0, "Alice")
+            Expense("1", "Essence", 80.0, "Alice"),
+            Expense("2", "Hôtel", 300.0, "Bob"),
+            Expense("3", "Restaurant", 120.0, "Alice")
         )
     )
     AppliCashTheme {
@@ -928,13 +939,13 @@ private fun GroupDetailPreview() {
 @Composable
 private fun BalancesTabPreview() {
     val group = GroupData(
-        id = 2,
+        id = "2",
         groupName = "Week-end ski",
         participants = listOf("Julie", "Marc", "Sophie"),
         expenses = listOf(
-            Expense(1, "Location chalet", 300.0, "Marc"),
-            Expense(2, "Forfait ski", 150.0, "Julie"),
-            Expense(3, "Courses", 60.0, "Sophie")
+            Expense("1", "Location chalet", 300.0, "Marc"),
+            Expense("2", "Forfait ski", 150.0, "Julie"),
+            Expense("3", "Courses", 60.0, "Sophie")
         )
     )
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.FRANCE).apply {
@@ -955,12 +966,12 @@ private fun BalancesTabPreview() {
 @Composable
 private fun BalancesTabSettledPreview() {
     val group = GroupData(
-        id = 3,
+        id = "3",
         groupName = "Dîner d'équipe",
         participants = listOf("Alice", "Bob"),
         expenses = listOf(
-            Expense(1, "Restaurant", 60.0, "Alice"),
-            Expense(2, "Dessert", 60.0, "Bob")
+            Expense("1", "Restaurant", 60.0, "Alice"),
+            Expense("2", "Dessert", 60.0, "Bob")
         )
     )
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.FRANCE).apply {
@@ -986,7 +997,7 @@ private fun ShareCodeCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -994,53 +1005,62 @@ private fun ShareCodeCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(12.dp), // Réduit de 16dp à 12dp
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = stringResource(R.string.share_code_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = stringResource(R.string.share_code_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = shareCode,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = Teal400,
+            // En-tête : Titre et Description plus compacts
+            Column {
+                Text(
+                    text = stringResource(R.string.share_code_title),
+                    style = MaterialTheme.typography.titleSmall, // Un peu plus petit
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(R.string.share_code_description),
+                    style = MaterialTheme.typography.bodySmall, // Passage en Small
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Ligne de Code interactive (Gain de place majeur ici)
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp))
-                    .padding(vertical = 12.dp),
-                textAlign = TextAlign.Center
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                    .background(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                    .padding(start = 12.dp, end = 4.dp), // Padding réduit
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                TextButton(onClick = onShareCode) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = stringResource(R.string.share_code_title),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = stringResource(R.string.share))
-                }
-                TextButton(
-                    onClick = onCopyCode
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ContentCopy,
-                        contentDescription = stringResource(R.string.copy_share_code_content_description),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = stringResource(R.string.copy_share_code_button))
+                Text(
+                    text = shareCode,
+                    style = MaterialTheme.typography.titleMedium, // Plus petit que headlineSmall
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Teal400,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Actions regroupées à droite du code
+                Row {
+                    IconButton(onClick = onCopyCode) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = stringResource(R.string.copy_share_code_content_description),
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onShareCode) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = stringResource(R.string.share_code_title),
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }

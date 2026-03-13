@@ -8,6 +8,7 @@ import fr.univ.nantes.data.expense.repository.JoinGroupResult
 import fr.univ.nantes.domain.profil.ProfileUseCase
 import fr.univ.nantes.domain.profil.normalizeCurrencyCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -37,7 +38,7 @@ import org.json.JSONObject
  * as Long representing the smallest currency unit (e.g., cents).
  */
 data class Expense(
-    val id: Long = 0,
+    val id: String = "",
     val description: String,
     val amount: Double,
     val paidBy: String,
@@ -47,7 +48,7 @@ data class Expense(
 )
 
 data class GroupData(
-    val id: Long = 0,
+    val id: String = "",
     val groupName: String = "",
     val participants: List<String> = emptyList(),
     val expenses: List<Expense> = emptyList(),
@@ -59,7 +60,7 @@ data class ExpenseState(
     val participants: List<String> = emptyList(),
     val expenses: List<Expense> = emptyList(),
     val groups: List<GroupData> = emptyList(),
-    val currentGroupId: Long? = null,
+    val currentGroupId: String? = null,
     val currentUserName: String? = null,
     val isLoggedIn: Boolean = false,
     val userCurrencyCode: String = "EUR",
@@ -150,6 +151,9 @@ class ExpenseViewModel(
 
     private val _events = MutableSharedFlow<ExpenseEvent>()
     val events: SharedFlow<ExpenseEvent> = _events.asSharedFlow()
+
+    private var groupObserverJob: Job? = null
+    private var observedGroupId: String? = null
 
     /**
      * Groups with amounts converted to the user's preferred currency.
@@ -439,36 +443,86 @@ class ExpenseViewModel(
      *
      * @param groupId The ID of the group to load
      */
-    fun loadGroup(groupId: Long) {
-        viewModelScope.launch {
-            val groupWithDetails = repository.getGroupWithDetails(groupId)
-            if (groupWithDetails != null) {
-                _state.update {
-                    it.copy(
-                        groupName = groupWithDetails.group.groupName,
-                        participants = groupWithDetails.participants.map { participant -> participant.name },
-                        expenses = groupWithDetails.expenses.map {
-                            Expense(
-                                id = it.id,
-                                description = it.description,
-                                amount = it.amount,
-                                paidBy = it.paidBy,
-                                splitType = it.splitType,
-                                splitDetails = parseSplitDetails(it.splitDetails),
-                                receiptPath = it.receiptPath.takeIf { p -> p.isNotBlank() }
-                            )
-                        },
-                        currentGroupId = groupId
-                    )
+    suspend fun loadGroup(groupId: String) {
+        if (observedGroupId == groupId && groupObserverJob?.isActive == true) {
+            refreshGroup(groupId)
+            return
+        }
+
+        observedGroupId = groupId
+        repository.startRealtimeSync(groupId, viewModelScope)
+
+        // Cancel any previous group observation, then start a new one.
+        groupObserverJob?.cancel()
+        groupObserverJob = viewModelScope.launch {
+            repository.observeGroupWithDetails(groupId).collect { groupWithDetails ->
+                if (groupWithDetails != null) {
+                    _state.update {
+                        it.copy(
+                            groupName = groupWithDetails.group.groupName,
+                            participants = groupWithDetails.participants.map { participant -> participant.name },
+                            expenses = groupWithDetails.expenses.map { expense ->
+                                Expense(
+                                    id = expense.id,
+                                    description = expense.description,
+                                    amount = expense.amount,
+                                    paidBy = expense.paidBy,
+                                    splitType = expense.splitType,
+                                    splitDetails = parseSplitDetails(expense.splitDetails)
+                                )
+                            },
+                            currentGroupId = groupId
+                        )
+                    }
                 }
             }
         }
     }
 
+    suspend fun refreshGroup(groupId: String) {
+        val groupWithDetails = repository.getGroupWithDetails(groupId) ?: return
+        _state.update {
+            it.copy(
+                groupName = groupWithDetails.group.groupName,
+                participants = groupWithDetails.participants.map { participant -> participant.name },
+                expenses = groupWithDetails.expenses.map { expense ->
+                    Expense(
+                        id = expense.id,
+                        description = expense.description,
+                        amount = expense.amount,
+                        paidBy = expense.paidBy,
+                        splitType = expense.splitType,
+                        splitDetails = parseSplitDetails(expense.splitDetails)
+                    )
+                },
+                currentGroupId = groupId
+            )
+        }
+    }
+
+    /**
+     * Force une relecture depuis Firebase pour tous les groupes actuellement en cache local.
+     * Utilisé par le polling périodique de la liste des groupes (HomeScreen).
+     */
+    fun refreshAllGroups() {
+        viewModelScope.launch {
+            _state.value.groups.forEach { group ->
+                repository.syncGroupFromFirebase(group.id)
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        groupObserverJob?.cancel()
+        observedGroupId = null
+        repository.stopRealtimeSync()
+    }
+
     /**
      * Returns the ID of the currently loaded group, or null if no group is loaded.
      */
-    fun getCurrentGroupId(): Long? {
+    fun getCurrentGroupId(): String? {
         return _state.value.currentGroupId
     }
 
@@ -609,7 +663,7 @@ class ExpenseViewModel(
     /**
      * Deletes an expense by id from the repository and reloads the given group.
      */
-    fun deleteExpense(expenseId: Long, groupId: Long) {
+    fun deleteExpense(expenseId: String, groupId: String) {
         viewModelScope.launch {
             repository.deleteExpense(expenseId)
             loadGroup(groupId)
@@ -619,7 +673,7 @@ class ExpenseViewModel(
     /**
      * Updates the name of an existing group in the database.
      */
-    fun updateGroupName(groupId: Long, newName: String) {
+    fun updateGroupName(groupId: String, newName: String) {
         viewModelScope.launch {
             repository.updateGroupName(groupId, newName)
             if (_state.value.currentGroupId == groupId) {
@@ -632,7 +686,7 @@ class ExpenseViewModel(
      * Adds a participant to an existing group in the database.
      * The name is trimmed and checked for duplicates before being added.
      */
-    fun addParticipantToGroup(groupId: Long, participantName: String) {
+    fun addParticipantToGroup(groupId: String, participantName: String) {
         val trimmedName = participantName.trim()
         if (trimmedName.isNotBlank() && !_state.value.participants.contains(trimmedName)) {
             viewModelScope.launch {
@@ -645,7 +699,7 @@ class ExpenseViewModel(
     /**
      * Removes a participant from an existing group in the database.
      */
-    fun removeParticipantFromGroup(groupId: Long, participantName: String) {
+    fun removeParticipantFromGroup(groupId: String, participantName: String) {
         viewModelScope.launch {
             repository.removeParticipantFromGroup(groupId, participantName)
             loadGroup(groupId)
@@ -657,16 +711,13 @@ class ExpenseViewModel(
      * then refreshes the current group state once to avoid redundant DB reads.
      */
     fun updateGroup(
-        groupId: Long,
+        groupId: String,
         newName: String?,
         addParticipants: List<String>,
         removeParticipants: List<String>
     ) {
         viewModelScope.launch {
             repository.updateGroup(groupId, newName, addParticipants, removeParticipants)
-            if (newName != null && _state.value.currentGroupId == groupId) {
-                _state.update { it.copy(groupName = newName) }
-            }
         }
     }
 
@@ -678,7 +729,7 @@ class ExpenseViewModel(
         _state.update { it.copy(joinGroupMessage = null) }
     }
 
-    fun joinGroupByCode(onSuccess: (Long) -> Unit = {}) {
+    fun joinGroupByCode(onSuccess: (String) -> Unit = {}) {
         val shareCode = _state.value.joinGroupCodeInput.trim()
         if (shareCode.isBlank()) {
             _state.update { it.copy(joinGroupMessage = "Veuillez saisir un code de groupe.") }

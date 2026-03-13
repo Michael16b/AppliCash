@@ -50,19 +50,19 @@ class HomePaparazziTest {
     fun homeScreen_withGroups() {
         val groups = listOf(
             GroupData(
-                id = 1L,
+                id = "1",
                 groupName = "Summer Vacation 2025",
                 participants = listOf("Alice", "Bob", "Charlie"),
                 expenses = listOf(
-                    Expense(1, "Hotel", 300.0, "Alice"),
-                    Expense(2, "Restaurant", 80.0, "Bob")
+                    Expense("1", "Hotel", 300.0, "Alice"),
+                    Expense("2", "Restaurant", 80.0, "Bob")
                 )
             ),
             GroupData(
-                id = 2L,
+                id = "2",
                 groupName = "Ski Weekend",
                 participants = listOf("Julie", "Marc"),
-                expenses = listOf(Expense(3, "Chalet rental", 200.0, "Julie"))
+                expenses = listOf(Expense("3", "Chalet rental", 200.0, "Julie"))
             )
         )
         composeRule.setContent {
@@ -77,13 +77,13 @@ class HomePaparazziTest {
     @Test
     fun groupDetailScreen_expensesTab() {
         val group = GroupData(
-            id = 1L,
+            id = "1",
             groupName = "Summer Vacation 2025",
             participants = listOf("Alice", "Bob", "Charlie"),
             expenses = listOf(
-                Expense(1, "Gas", 80.0, "Alice"),
-                Expense(2, "Hotel", 300.0, "Bob"),
-                Expense(3, "Restaurant", 120.0, "Charlie")
+                Expense("1", "Gas", 80.0, "Alice"),
+                Expense("2", "Hotel", 300.0, "Bob"),
+                Expense("3", "Restaurant", 120.0, "Charlie")
             )
         )
         composeRule.setContent {
@@ -98,13 +98,13 @@ class HomePaparazziTest {
     @Test
     fun groupDetailScreen_balancesTab_withDebts() {
         val group = GroupData(
-            id = 2L,
+            id = "2",
             groupName = "Ski Weekend",
             participants = listOf("Julie", "Marc", "Sophie"),
             expenses = listOf(
-                Expense(1, "Chalet rental", 300.0, "Marc"),
-                Expense(2, "Ski pass", 150.0, "Julie"),
-                Expense(3, "Groceries", 60.0, "Sophie")
+                Expense("1", "Chalet rental", 300.0, "Marc"),
+                Expense("2", "Ski pass", 150.0, "Julie"),
+                Expense("3", "Groceries", 60.0, "Sophie")
             )
         )
         val fmt = NumberFormat.getCurrencyInstance(Locale.US).apply {
@@ -128,12 +128,12 @@ class HomePaparazziTest {
     @Test
     fun groupDetailScreen_balancesTab_allSettled() {
         val group = GroupData(
-            id = 3L,
+            id = "3",
             groupName = "Team Dinner",
             participants = listOf("Alice", "Bob"),
             expenses = listOf(
-                Expense(1, "Restaurant", 60.0, "Alice"),
-                Expense(2, "Dessert", 60.0, "Bob")
+                Expense("1", "Restaurant", 60.0, "Alice"),
+                Expense("2", "Dessert", 60.0, "Bob")
             )
         )
         val fmt = NumberFormat.getCurrencyInstance(Locale.US).apply {

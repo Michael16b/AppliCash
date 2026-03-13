@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.foundation)
+    implementation(platform(libs.firebase.bom))
     testImplementation(libs.junit)
     testImplementation(libs.androidx.junit)
     testImplementation(platform(libs.androidx.compose.bom))

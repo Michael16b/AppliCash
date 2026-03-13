@@ -8,6 +8,7 @@ import fr.univ.nantes.data.expense.repository.JoinGroupResult
 import fr.univ.nantes.domain.profil.Profile
 import fr.univ.nantes.domain.profil.ProfileRepository
 import fr.univ.nantes.domain.profil.ProfileUseCase
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -168,7 +169,7 @@ class ExpenseViewModelAdditionalTest {
         viewModel.saveGroup()
         advanceUntilIdle()
         // Group name is blank — repository.createGroup must NOT be called
-        assertEquals(0L, fakeRepository.createGroupCallCount)
+        assertEquals(0, fakeRepository.createGroupCallCount)
     }
 
     @Test
@@ -176,7 +177,7 @@ class ExpenseViewModelAdditionalTest {
         viewModel.setGroupName("Trip")
         viewModel.saveGroup()
         advanceUntilIdle()
-        assertEquals(0L, fakeRepository.createGroupCallCount)
+        assertEquals(0, fakeRepository.createGroupCallCount)
     }
 
     @Test
@@ -187,7 +188,7 @@ class ExpenseViewModelAdditionalTest {
         viewModel.saveGroup()
         advanceUntilIdle()
         // Should have been called once with trimmed names
-        assertEquals(1L, fakeRepository.createGroupCallCount)
+        assertEquals(1, fakeRepository.createGroupCallCount)
         assertNotNull(fakeRepository.lastCreatedParticipants)
         assertTrue(fakeRepository.lastCreatedParticipants!!.contains("Alice"))
     }
@@ -334,19 +335,19 @@ class ExpenseViewModelAdditionalTest {
  */
 class FakeExpenseRepository : ExpenseRepository {
 
-    var createGroupCallCount = 0L
+    var createGroupCallCount = 0
     var lastCreatedParticipants: List<String>? = null
-    var lastAddedParticipantGroupId: Long? = null
+    var lastAddedParticipantGroupId: String? = null
     var lastAddedParticipantName: String? = null
-    var lastRemovedParticipantGroupId: Long? = null
+    var lastRemovedParticipantGroupId: String? = null
     var lastRemovedParticipantName: String? = null
-    var lastUpdatedGroupNameId: Long? = null
+    var lastUpdatedGroupNameId: String? = null
     var lastUpdatedGroupName: String? = null
-    var lastUpdateGroupId: Long? = null
+    var lastUpdateGroupId: String? = null
     var lastUpdateNewName: String? = null
     var lastUpdateAddParticipants: List<String>? = null
     var lastUpdateRemoveParticipants: List<String>? = null
-    var lastAddedExpenseGroupId: Long? = null
+    var lastAddedExpenseGroupId: String? = null
     var lastAddedExpenseDescription: String? = null
     var lastAddedExpenseAmount: Double? = null
     var lastAddedExpensePaidBy: String? = null
@@ -356,21 +357,23 @@ class FakeExpenseRepository : ExpenseRepository {
 
     override fun getAllGroupsWithDetails(): Flow<List<GroupWithDetails>> = flowOf(emptyList())
 
-    override suspend fun getGroupWithDetails(groupId: Long): GroupWithDetails? = null
+    override fun observeGroupWithDetails(groupId: String): Flow<GroupWithDetails?> = flowOf(null)
 
-    override suspend fun createGroup(groupName: String, participants: List<String>): Long {
+    override suspend fun getGroupWithDetails(groupId: String): GroupWithDetails? = null
+
+    override suspend fun createGroup(groupName: String, participants: List<String>): String {
         createGroupCallCount++
         lastCreatedParticipants = participants
-        return createGroupCallCount
+        return "uuid-$createGroupCallCount"
     }
 
-    override suspend fun addParticipantToGroup(groupId: Long, participantName: String) {
+    override suspend fun addParticipantToGroup(groupId: String, participantName: String) {
         lastAddedParticipantGroupId = groupId
         lastAddedParticipantName = participantName
     }
 
     override suspend fun addExpenseToGroup(
-        groupId: Long,
+        groupId: String,
         description: String,
         amount: Double,
         paidBy: String,
@@ -387,22 +390,22 @@ class FakeExpenseRepository : ExpenseRepository {
         lastAddedExpenseReceiptPath = receiptPath
     }
 
-    override suspend fun deleteGroup(groupId: Long) = Unit
+    override suspend fun deleteGroup(groupId: String) = Unit
 
-    override suspend fun deleteExpense(expenseId: Long) = Unit
+    override suspend fun deleteExpense(expenseId: String) = Unit
 
-    override suspend fun updateGroupName(groupId: Long, groupName: String) {
+    override suspend fun updateGroupName(groupId: String, groupName: String) {
         lastUpdatedGroupNameId = groupId
         lastUpdatedGroupName = groupName
     }
 
-    override suspend fun removeParticipantFromGroup(groupId: Long, participantName: String) {
+    override suspend fun removeParticipantFromGroup(groupId: String, participantName: String) {
         lastRemovedParticipantGroupId = groupId
         lastRemovedParticipantName = participantName
     }
 
     override suspend fun updateGroup(
-        groupId: Long,
+        groupId: String,
         newName: String?,
         addParticipants: List<String>,
         removeParticipants: List<String>
@@ -413,7 +416,7 @@ class FakeExpenseRepository : ExpenseRepository {
         lastUpdateRemoveParticipants = removeParticipants
     }
 
-    override suspend fun canViewShareCode(groupId: Long, userName: String?): Boolean {
+    override suspend fun canViewShareCode(groupId: String, userName: String?): Boolean {
         // In tests the fake repository does not manage share codes; return false by default
         return false
     }
@@ -425,4 +428,8 @@ class FakeExpenseRepository : ExpenseRepository {
         // Simplified: tests using joinGroupByCode will handle messages; return InvalidCode by default
         return JoinGroupResult.InvalidCode
     }
+
+    override suspend fun startRealtimeSync(id: String, viewModelScope: CoroutineScope) = Unit
+    override fun stopRealtimeSync() = Unit
+    override suspend fun syncGroupFromFirebase(groupId: String) = Unit
 }

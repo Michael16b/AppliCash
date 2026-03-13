@@ -26,7 +26,7 @@ class ExpenseGroupDaoTest {
     }
 
     @Test
-    fun `insertGroup returns a positive id`() = runTest {
+    fun `insertGroup returns a positive row id`() = runTest {
         whenever(dao.insertGroup(any())).thenReturn(1L)
 
         val id = dao.insertGroup(ExpenseGroupEntity(groupName = "Holidays", shareCode = "HOL123"))
@@ -46,51 +46,51 @@ class ExpenseGroupDaoTest {
 
     @Test
     fun `deleteGroup calls the method with the correct id`() = runTest {
-        dao.deleteGroup(3L)
-        verify(dao).deleteGroup(3L)
+        dao.deleteGroup("group-3")
+        verify(dao).deleteGroup("group-3")
     }
 
     @Test
     fun `updateGroupName calls the method with the correct parameters`() = runTest {
-        dao.updateGroupName(1L, "New Name")
-        verify(dao).updateGroupName(1L, "New Name")
+        dao.updateGroupName("group-1", "New Name")
+        verify(dao).updateGroupName("group-1", "New Name")
     }
 
     @Test
     fun `getGroupById returns null when group does not exist`() = runTest {
-        whenever(dao.getGroupById(99L)).thenReturn(null)
+        whenever(dao.getGroupById("uuid-99")).thenReturn(null)
 
-        val result = dao.getGroupById(99L)
+        val result = dao.getGroupById("uuid-99")
 
         assertNull(result)
     }
 
     @Test
     fun `getGroupById returns the entity when group exists`() = runTest {
-        val entity = ExpenseGroupEntity(id = 1L, groupName = "Test", shareCode = "TST789")
-        whenever(dao.getGroupById(1L)).thenReturn(entity)
+        val entity = ExpenseGroupEntity(id = "uuid-1", groupName = "Test", shareCode = "TST789")
+        whenever(dao.getGroupById("uuid-1")).thenReturn(entity)
 
-        val result = dao.getGroupById(1L)
+        val result = dao.getGroupById("uuid-1")
 
         assertEquals(entity, result)
     }
 
     @Test
     fun `getGroupWithDetails returns null when group does not exist`() = runTest {
-        whenever(dao.getGroupWithDetails(99L)).thenReturn(null)
+        whenever(dao.getGroupWithDetails("uuid-99")).thenReturn(null)
 
-        val result = dao.getGroupWithDetails(99L)
+        val result = dao.getGroupWithDetails("uuid-99")
 
         assertNull(result)
     }
 
     @Test
     fun `getGroupWithDetails returns the group with its details`() = runTest {
-        val group = ExpenseGroupEntity(id = 1L, groupName = "Friends", shareCode = "FRD234")
+        val group = ExpenseGroupEntity(id = "uuid-1", groupName = "Friends", shareCode = "FRD234")
         val details = GroupWithDetails(group = group, participants = emptyList(), expenses = emptyList())
-        whenever(dao.getGroupWithDetails(1L)).thenReturn(details)
+        whenever(dao.getGroupWithDetails("uuid-1")).thenReturn(details)
 
-        val result = dao.getGroupWithDetails(1L)
+        val result = dao.getGroupWithDetails("uuid-1")
 
         assertEquals(details, result)
         assertEquals("Friends", result?.group?.groupName)

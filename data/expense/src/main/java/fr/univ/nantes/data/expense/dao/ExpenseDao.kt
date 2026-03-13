@@ -15,9 +15,14 @@ interface ExpenseDao {
     suspend fun insertExpenses(expenses: List<ExpenseEntity>)
 
     @Query("SELECT * FROM expenses WHERE groupId = :groupId ORDER BY createdAt DESC")
-    suspend fun getExpensesByGroupId(groupId: Long): List<ExpenseEntity>
+    suspend fun getExpensesByGroupId(groupId: String): List<ExpenseEntity>
 
     @Query("DELETE FROM expenses WHERE id = :expenseId")
-    suspend fun deleteExpense(expenseId: Long)
-}
+    suspend fun deleteExpense(expenseId: String)
 
+    @Query("SELECT * FROM expenses WHERE id = :expenseId LIMIT 1")
+    suspend fun getExpenseById(expenseId: String): ExpenseEntity?
+
+    @Query("DELETE FROM expenses WHERE groupId = :groupId")
+    suspend fun deleteAllExpensesByGroupId(groupId: String)
+}
