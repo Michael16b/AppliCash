@@ -122,10 +122,10 @@ jobs:
             AFFECTED=${{ needs.detect-affected.outputs.affectedModules }}
             if [ -n "$AFFECTED" ]; then
               echo "Running fastTests for affected modules: $AFFECTED"
-              ./gradlew fastTests -PaffectedModules="$AFFECTED" --parallel --configuration-cache --build-cache --console=plain || exit 1
+              ./gradlew fastTests -PaffectedModules="$AFFECTED" jacocoAggregate jacocoHtmlAggregate --parallel --build-cache --console=plain || exit 1
             else
               echo "No affected modules detected, running full testAll"
-              ./gradlew testAll --parallel --configuration-cache --build-cache --console=plain || exit 1
+              ./gradlew testAll jacocoAggregate jacocoHtmlAggregate --parallel --build-cache --console=plain || exit 1
             fi
             # Skip JaCoCo aggregation on PRs to keep PR runs fast and avoid configuration-cache serialization issues.
           else
