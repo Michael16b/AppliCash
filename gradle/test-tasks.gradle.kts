@@ -169,7 +169,7 @@ tasks.register<Sync>("jacocoHtmlAggregate") {
 tasks.register("coverageEnforce") {
     group = "verification"
     description = "Enforce aggregated coverage thresholds: fail if <80%, warn if >=80% and <95%"
-    dependsOn("jacocoAggregate")
+    dependsOn("jacocoAggregate", "jacocoHtmlAggregate")
 
     // Pre-compute aggregated XML path to avoid capturing Project in the action
     val aggXmlPath = File(layout.buildDirectory.file("reports/jacoco/jacoco.xml").get().asFile.absolutePath).absolutePath
@@ -182,8 +182,66 @@ tasks.register("coverageEnforce") {
         }
 
         val dbFactory = DocumentBuilderFactory.newInstance()
+        // Try to disable external DTD/entity loading for safety. Some parsers may not support all features — catch and continue.
+        try {
+            dbFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+            dbFactory.setFeature("http://xml.org/sax/features/external-general-entities", false)
+            dbFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+        } catch (e: Exception) {
+            // Some XML implementations may not support these features; continue with an EntityResolver fallback below.
+            logger.info("coverageEnforce: could not set XML parser features to disable external DTDs: ${e.message}")
+        }
+        dbFactory.isXIncludeAware = false
+        dbFactory.isNamespaceAware = true
+
         val dBuilder = dbFactory.newDocumentBuilder()
-        val doc = dBuilder.parse(xmlFile)
+
+        // EntityResolver: if a systemId referencing report.dtd is requested, try to find a local copy in the project
+        dBuilder.setEntityResolver(object : org.xml.sax.EntityResolver {
+            override fun resolveEntity(publicId: String?, systemId: String?): org.xml.sax.InputSource? {
+                try {
+                    // If the parser asks for a report.dtd, try to find it in the workspace (subprojects/build reports)
+                    if (systemId != null && systemId.endsWith("report.dtd")) {
+                        val root = rootProject.projectDir
+                        val found = root.walkTopDown().firstOrNull { it.name == "report.dtd" }
+                        if (found != null && found.exists()) {
+                            logger.lifecycle("coverageEnforce: resolving report.dtd from ${found.absolutePath}")
+                            return org.xml.sax.InputSource(found.inputStream())
+                        }
+
+                        // As a fallback, attempt to copy any discovered report.dtd into the aggregated reports folder
+                        val fallbackFound = root.walkTopDown().firstOrNull { it.name == "report.dtd" }
+                        if (fallbackFound != null && fallbackFound.exists()) {
+                            val destDir = File(layout.buildDirectory.dir("reports/jacoco").get().asFile, "")
+                            if (!destDir.exists()) destDir.mkdirs()
+                            val dest = File(destDir, "report.dtd")
+                            try {
+                                fallbackFound.copyTo(dest, overwrite = true)
+                                logger.lifecycle("coverageEnforce: copied report.dtd to ${dest.absolutePath}")
+                                return org.xml.sax.InputSource(dest.inputStream())
+                            } catch (ioe: Exception) {
+                                logger.info("coverageEnforce: failed to copy report.dtd: ${ioe.message}")
+                            }
+                        }
+
+                        // If nothing found, return an empty InputSource to avoid external resolution attempts
+                        return org.xml.sax.InputSource(java.io.StringReader(""))
+                    }
+                } catch (ex: Exception) {
+                    logger.info("coverageEnforce: entity resolver error: ${ex.message}")
+                    return org.xml.sax.InputSource(java.io.StringReader(""))
+                }
+                // For anything else, return null to use default behavior (which should be safe because we disabled external entities above)
+                return null
+            }
+        })
+
+        val doc = try {
+            dBuilder.parse(xmlFile)
+        } catch (e: org.xml.sax.SAXException) {
+            // If parsing fails due to external DTD issues, provide a clearer error message
+            throw org.gradle.api.GradleException("Failed to parse aggregated JaCoCo XML (${xmlFile.absolutePath}): ${e.message}")
+        }
         doc.documentElement.normalize()
 
         // Prefer LINE counter, fallback to INSTRUCTION if LINE not present
