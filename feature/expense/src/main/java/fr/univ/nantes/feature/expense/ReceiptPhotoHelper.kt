@@ -1,6 +1,8 @@
 package fr.univ.nantes.feature.expense
 
+import android.content.Context
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Environment
 import androidx.core.content.FileProvider
 import java.io.File
@@ -27,7 +29,7 @@ object ReceiptPhotoHelper {
         return file
     }
 
-    fun getUriForFile(context: Context, file: File): android.net.Uri {
+    fun getUriForFile(context: Context, file: File): Uri {
         return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
     }
 
