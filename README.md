@@ -34,6 +34,8 @@ Quality is integrated into every step of our development. We maintain a strict t
 Our automated reports, including code coverage and test execution results, are published at:
 👉 **[https://michael16b.github.io/AppliCash/](https://michael16b.github.io/AppliCash/)**
 
+👉 **[https://github.com/Michael16b/AppliCash/pull/66#issuecomment-4058461290](https://github.com/Michael16b/AppliCash/pull/66#issuecomment-4058461290)**
+
 ### 🧪 Coverage Matrix
 | Layer | Test Type | Tools |
 | :--- | :--- | :--- |
